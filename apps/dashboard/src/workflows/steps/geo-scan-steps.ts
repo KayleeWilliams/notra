@@ -1,6 +1,11 @@
 import "@/workflows/runtime";
 import { flushGeoLog } from "@notra/ai/evlog";
 import { publishGeoVisibilityChange } from "@notra/geo-core/geo/live";
+import {
+  collectGeoOlostepResults,
+  pendingGeoOlostepBatches,
+  submitGeoOlostepBatches,
+} from "@notra/geo-core/geo/olostep";
 import { runGeoScanPersonaBatch } from "@notra/geo-core/geo/persona-scan";
 import {
   finalizeGeoScanProject,
@@ -20,6 +25,10 @@ import type {
   GeoScanProjectPlanResult,
   GeoScanProjectTotals,
 } from "@notra/geo-core/types/geo";
+import type {
+  GeoOlostepQuery,
+  GeoOlostepResults,
+} from "@notra/geo-core/types/geo-olostep";
 import { flushPostHogServer } from "@notra/posthog/server";
 import { Effect } from "effect";
 
@@ -159,6 +168,29 @@ export async function runGeoScanTaskBatchStep(
   } finally {
     await flushObservability();
   }
+}
+
+/** Submits the queries at `indexes`; returns the created batch ids. */
+export async function submitGeoOlostepBatchesStep(
+  queries: GeoOlostepQuery[],
+  indexes: number[]
+): Promise<string[]> {
+  "use step";
+  return await Effect.runPromise(submitGeoOlostepBatches(queries, indexes));
+}
+
+export async function pendingGeoOlostepBatchesStep(
+  batchIds: string[]
+): Promise<string[]> {
+  "use step";
+  return await Effect.runPromise(pendingGeoOlostepBatches(batchIds));
+}
+
+export async function collectGeoOlostepResultsStep(
+  batchIds: string[]
+): Promise<GeoOlostepResults> {
+  "use step";
+  return await Effect.runPromise(collectGeoOlostepResults(batchIds));
 }
 
 export async function runGeoScanSequenceBatchStep(

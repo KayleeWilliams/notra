@@ -9,6 +9,11 @@ export class GeoScanError extends Data.TaggedError("GeoScanError")<{
   readonly cause?: unknown;
 }> {}
 
+export class GeoOlostepError extends Data.TaggedError("GeoOlostepError")<{
+  readonly message: string;
+  readonly cause?: unknown;
+}> {}
+
 export class GeoNoSuccessfulChecksError extends Data.TaggedError(
   "GeoNoSuccessfulChecksError"
 )<{

@@ -5,6 +5,10 @@ import {
   GEO_SCAN_SEQUENCE_BATCH_SIZE,
   GEO_SCAN_TASK_BATCH_SIZE,
 } from "@notra/geo-core/constants/geo";
+import {
+  GEO_OLOSTEP_MAX_WAIT_MS,
+  GEO_OLOSTEP_POLL_INTERVAL,
+} from "@notra/geo-core/constants/geo-olostep";
 import { GEO_SCAN_PERSONA_BATCH_SIZE } from "@notra/geo-core/constants/geo-personas";
 import { geoScanWorkflowPayloadSchema } from "@notra/geo-core/schemas/geo-workflows";
 import type {
@@ -15,6 +19,16 @@ import type {
   GeoScanProjectTotals,
   GeoScanResult,
 } from "@notra/geo-core/types/geo";
+import type {
+  GeoOlostepQuery,
+  GeoOlostepResults,
+} from "@notra/geo-core/types/geo-olostep";
+import { isGeoOlostepEngine } from "@notra/geo-core/utils/geo-olostep";
+import { missingGeoOlostepQueryIndexes } from "@notra/geo-core/utils/geo-olostep-batches";
+import {
+  applyGeoOlostepResults,
+  buildGeoOlostepQueries,
+} from "@notra/geo-core/utils/geo-olostep-plan";
 import {
   classifyGeoScanExecutionFailure,
   chunkGeoScanItems,
@@ -35,13 +49,16 @@ import {
   fetchLogRetention,
 } from "./steps/content-generation-steps";
 import {
+  collectGeoOlostepResultsStep,
   finalizeGeoScanProjectStep,
   listGeoScanProjectsStep,
+  pendingGeoOlostepBatchesStep,
   prepareGeoScanProjectStep,
   renewGeoScanClaimStep,
   runGeoScanPersonaBatchStep,
   runGeoScanSequenceBatchStep,
   runGeoScanTaskBatchStep,
+  submitGeoOlostepBatchesStep,
   trackGeoScanRetryScheduledStep,
 } from "./steps/geo-scan-steps";
 import { refreshGeoContentGapsStep } from "./steps/refresh-geo-content-gaps";
@@ -165,6 +182,74 @@ async function runGeoScanBatchWindow<T>(
   if (failed) {
     throw failure;
   }
+}
+
+/** A failed submission yields no batches instead of failing the scan. */
+function submitGeoOlostepRound(
+  queries: GeoOlostepQuery[],
+  indexes: number[]
+): Promise<string[]> {
+  if (indexes.length === 0) {
+    return Promise.resolve([]);
+  }
+  return submitGeoOlostepBatchesStep(queries, indexes).catch(
+    (error: unknown) => {
+      console.error("[GEO] Olostep batch submission failed:", error);
+      return [];
+    }
+  );
+}
+
+/**
+ * Sleeps between status checks, renewing the claim like the batch window
+ * does, until the batches finish or `GEO_OLOSTEP_MAX_WAIT_MS` passes, then
+ * returns the results of every item that finished.
+ */
+async function awaitGeoOlostepRound(
+  context: GeoScanProjectContext,
+  batchIds: string[],
+  state: { claimedAt: string }
+): Promise<GeoOlostepResults> {
+  const deadline = Date.now() + GEO_OLOSTEP_MAX_WAIT_MS;
+  let pending = batchIds;
+  while (pending.length > 0 && Date.now() < deadline) {
+    const now = Date.now();
+    if (isClaimRenewalDue(state.claimedAt, now)) {
+      // react-doctor-disable-next-line react-doctor/async-await-in-loop -- each renewal depends on the previous claim token
+      state.claimedAt = await renewGeoScanClaimStep(
+        context.projectId,
+        state.claimedAt,
+        nextClaimRenewalToken(state.claimedAt, now)
+      );
+    }
+    // react-doctor-disable-next-line react-doctor/async-await-in-loop -- polling waits on the previous status check
+    pending = await pendingGeoOlostepBatchesStep(pending);
+    if (pending.length > 0) {
+      // react-doctor-disable-next-line react-doctor/async-await-in-loop -- durable sleep between status checks
+      await sleep(GEO_OLOSTEP_POLL_INTERVAL);
+    }
+  }
+  return batchIds.length > 0 ? collectGeoOlostepResultsStep(batchIds) : {};
+}
+
+/** Waits for the first round, then retries failed or unfinished items once. */
+async function resolveGeoOlostepResults(
+  context: GeoScanProjectContext,
+  queries: GeoOlostepQuery[],
+  firstBatchIds: string[],
+  state: { claimedAt: string }
+): Promise<GeoOlostepResults> {
+  const first = await awaitGeoOlostepRound(context, firstBatchIds, state);
+  const missing = missingGeoOlostepQueryIndexes(queries, first);
+  if (missing.length === 0) {
+    return first;
+  }
+  const retry = await awaitGeoOlostepRound(
+    context,
+    await submitGeoOlostepRound(queries, missing),
+    state
+  );
+  return { ...first, ...retry };
 }
 
 /**
@@ -340,24 +425,51 @@ async function runGeoScanProjectRun(
   const attempted =
     plan.tasks.length + plan.sequences.length + plan.personas.length;
 
+  const olostepQueries = buildGeoOlostepQueries(plan);
+
   try {
+    // Submitted first so Olostep works through its batches while the API
+    // engines run; the wait comes after so only one loop renews the claim.
+    const olostepBatchIds = await submitGeoOlostepRound(
+      olostepQueries,
+      olostepQueries.map((_, index) => index)
+    );
     await runGeoScanBatchWindow(
       plan.context,
-      plan.tasks,
+      plan.tasks.filter((task) => !isGeoOlostepEngine(task.engine)),
+      GEO_SCAN_TASK_BATCH_SIZE,
+      runGeoScanTaskBatchStep,
+      state
+    );
+    const resolved =
+      olostepQueries.length > 0
+        ? applyGeoOlostepResults(
+            plan,
+            await resolveGeoOlostepResults(
+              plan.context,
+              olostepQueries,
+              olostepBatchIds,
+              state
+            )
+          )
+        : plan;
+    await runGeoScanBatchWindow(
+      plan.context,
+      resolved.tasks.filter((task) => isGeoOlostepEngine(task.engine)),
       GEO_SCAN_TASK_BATCH_SIZE,
       runGeoScanTaskBatchStep,
       state
     );
     await runGeoScanBatchWindow(
       plan.context,
-      plan.sequences,
+      resolved.sequences,
       GEO_SCAN_SEQUENCE_BATCH_SIZE,
       runGeoScanSequenceBatchStep,
       state
     );
     await runGeoScanBatchWindow(
       plan.context,
-      plan.personas,
+      resolved.personas,
       GEO_SCAN_PERSONA_BATCH_SIZE,
       runGeoScanPersonaBatchStep,
       state

@@ -41,6 +41,7 @@ const ENGINE_ICON_RULES: readonly EngineIconRule[] = [
     key: "google",
     patterns: [
       "ai-overview",
+      "ai-mode",
       "google-agent",
       "google-cloudvertex",
       "googleother",

@@ -74,6 +74,9 @@ mock.module("../src/workflows/steps/geo-scan-steps", () => ({
   renewGeoScanClaimStep: renewClaim,
   finalizeGeoScanProjectStep: finalize,
   trackGeoScanRetryScheduledStep: trackRetry,
+  submitGeoOlostepBatchesStep: mock(async () => []),
+  pendingGeoOlostepBatchesStep: mock(async () => []),
+  collectGeoOlostepResultsStep: mock(async () => ({})),
 }));
 const { geoScanWorkflow } = await import("../src/workflows/geo-scan");
 

@@ -2,7 +2,8 @@ import type { AgentTokenUsage } from "@notra/ai/types/agents";
 import type { GeoCheckWrite } from "@notra/db/types/geo-checks";
 import type { GeoPersonaSnapshot } from "@notra/db/types/geo-personas";
 
-import type { GeoCheckContext } from "./geo";
+import type { GeoCheckContext, GeoGroundedEngine } from "./geo";
+import type { GeoOlostepConversationEngine } from "./geo-olostep";
 
 export interface GeoConversationReplayInput {
   context: Omit<GeoCheckContext, "scanId" | "capturedAt">;
@@ -37,3 +38,8 @@ export interface GeoConversationOutcome {
   judgeUsage?: AgentTokenUsage;
   droppedTurns: number;
 }
+
+/** What a conversation talks to: a search-grounded route or Olostep results. */
+export type GeoConversationEngine =
+  | GeoGroundedEngine
+  | GeoOlostepConversationEngine;

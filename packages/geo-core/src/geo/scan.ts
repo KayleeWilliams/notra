@@ -71,12 +71,14 @@ import type {
   GeoSkipFields,
   GeoZdrMode,
 } from "../types/geo";
+import type { GeoConversationEngine } from "../types/geo-conversations";
 import { logGeoBillingFailure } from "../utils/geo-billing-log";
 import { normalizePosition } from "../utils/geo-check-evaluation";
 import {
   geoBoxAgentForEngine,
   isGeoBoxCodingAgent,
 } from "../utils/geo-coding-agents";
+import { resolveGeoConversationEngine } from "../utils/geo-conversation-engine";
 import { engineModelOf } from "../utils/geo-engine-family";
 import {
   geoScanEmptyEngineSkipReason,
@@ -97,6 +99,7 @@ import {
   geoLogWarn,
   logGeoSkip,
 } from "../utils/geo-log";
+import { isGeoOlostepEngine } from "../utils/geo-olostep";
 import { hasOwnedSourceCitation } from "../utils/geo-owned-source";
 import {
   interleaveGeoScanItemsByKey,
@@ -140,6 +143,7 @@ import {
 import { extractGrounding } from "./grounding";
 import { toGeoSettings } from "./mappers";
 import { loadGeoModelCatalog } from "./model-catalog";
+import { askGeoOlostepAnswer } from "./olostep";
 import { loadGeoProjectBrand } from "./project-brand";
 import { requireGeoProject } from "./projects";
 import { syncGeoPromptTranslations } from "./prompt-translations";
@@ -369,8 +373,12 @@ const askEngine = Effect.fn("geo.askEngine")(function* (
   zdr: GeoZdrMode,
   gatewayPin: GeoModelGateway | undefined,
   language: string,
-  logContext: GatewayModelOptions["logContext"]
+  logContext: GatewayModelOptions["logContext"],
+  olostepRetrieveId?: string
 ) {
+  if (gatewayPin === "olostep") {
+    return yield* askGeoOlostepAnswer(engine, olostepRetrieveId);
+  }
   if (gatewayPin === "cursor") {
     return yield* askCursorEngineEffect(engine, promptText);
   }
@@ -424,7 +432,8 @@ const runGeoCheck = Effect.fn("geo.runCheck")(function* (
       task.zdr,
       resolveGeoEngineGateway(context.catalog, task.engine),
       task.language,
-      logContext
+      logContext,
+      task.olostepRetrieveId
     ));
   if (answer.absent) {
     const durationMs = Math.round(performance.now() - startedMs);
@@ -1025,6 +1034,9 @@ const buildGeoScanProjectPlan = Effect.fn("geo.buildScanProjectPlan")(
       ({ engine }) =>
         engine === GEO_OPENCODE_ENGINE_ID || isGeoBoxCodingAgent(engine)
     );
+    const olostepEngines = rawEngines.filter(({ engine }) =>
+      isGeoOlostepEngine(engine)
+    );
     const sequences: GeoScanPlannedSequence[] = scanSourceLanguage
       ? sequenceRows.flatMap((sequence) => [
           ...groundedEngines.map(({ grounded, zdr }) => ({
@@ -1033,6 +1045,14 @@ const buildGeoScanProjectPlan = Effect.fn("geo.buildScanProjectPlan")(
             language: sourceLanguage,
             engine: grounded.key,
             groundedKey: grounded.key,
+            zdr,
+          })),
+          ...olostepEngines.map(({ engine, zdr }) => ({
+            sequenceId: sequence.id,
+            steps: sequence.steps,
+            language: sourceLanguage,
+            engine,
+            groundedKey: null,
             zdr,
           })),
           ...trackedCodingAgents.map((tracked) => ({
@@ -1078,14 +1098,24 @@ const buildGeoScanProjectPlan = Effect.fn("geo.buildScanProjectPlan")(
             persona.conversationPrompts.slice(0, GEO_PERSONA_MAX_TURNS)
           );
           return snapshot.conversationPrompts.length > 0
-            ? groundedEngines.map(({ grounded, zdr }) => ({
-                personaId: persona.id,
-                prompts: snapshot.conversationPrompts,
-                snapshot,
-                engine: grounded.key,
-                groundedKey: grounded.key,
-                zdr,
-              }))
+            ? [
+                ...groundedEngines.map(({ grounded, zdr }) => ({
+                  personaId: persona.id,
+                  prompts: snapshot.conversationPrompts,
+                  snapshot,
+                  engine: grounded.key,
+                  groundedKey: grounded.key,
+                  zdr,
+                })),
+                ...olostepEngines.map(({ engine, zdr }) => ({
+                  personaId: persona.id,
+                  prompts: snapshot.conversationPrompts,
+                  snapshot,
+                  engine,
+                  groundedKey: null,
+                  zdr,
+                })),
+              ]
             : [];
         })
       : [];
@@ -1380,7 +1410,8 @@ const runGeoScanSequenceBatchBody = Effect.fn("geo.runScanSequenceBatch.body")(
               task.turn
             );
           }
-          if (!planned.groundedKey) {
+          const grounded = resolveGeoConversationEngine(planned);
+          if (!grounded && !planned.groundedKey) {
             return yield* withGeoScanEvent(
               runGeoOpenCodeSequenceCheck(
                 checkContext,
@@ -1418,7 +1449,6 @@ const runGeoScanSequenceBatchBody = Effect.fn("geo.runScanSequenceBatch.body")(
               Effect.map((result) => ({ sequence, result }))
             );
           }
-          const grounded = resolveGroundedEngineByKey(planned.groundedKey);
           if (!grounded) {
             return { sequence, result: null };
           }
@@ -1675,7 +1705,7 @@ const finalizeGeoScanProjectBody = Effect.fn("geo.finalizeScanProject.body")(
 const runGeoSequenceCheck = Effect.fn("geo.runSequenceCheck")(function* (
   context: GeoCheckContext,
   sequence: GeoSequenceDefinition,
-  grounded: GeoGroundedEngine,
+  grounded: GeoConversationEngine,
   zdr: GeoZdrMode
 ) {
   const steps = sequence.steps.slice(0, GEO_SEQUENCE_MAX_TURNS);

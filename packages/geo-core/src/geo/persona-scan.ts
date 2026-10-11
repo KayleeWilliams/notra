@@ -23,10 +23,12 @@ import type {
   GeoSkipFields,
   GeoZdrMode,
 } from "../types/geo";
+import type { GeoConversationEngine } from "../types/geo-conversations";
 import type {
   GeoPersonaRunResponse,
   PersonaForScan,
 } from "../types/geo-personas";
+import { resolveGeoConversationEngine } from "../utils/geo-conversation-engine";
 import { resolveGeoGroundedZdrMode } from "../utils/geo-engines";
 import {
   resolveGroundedEngineByKey,
@@ -137,7 +139,7 @@ export const runGeoPersonaConversation = Effect.fn(
 )(function* (
   context: GeoCheckContext,
   snapshot: GeoPersonaSnapshotV2,
-  grounded: GeoGroundedEngine,
+  grounded: GeoConversationEngine,
   zdr: GeoZdrMode
 ) {
   return yield* runGeoConversation(
@@ -159,7 +161,7 @@ const runPlannedPersona = Effect.fn("geo.runPlannedPersona")(function* (
   planned: GeoScanPlannedPersona
 ) {
   const tasks = geoScanPersonaTasks(planned);
-  const grounded = resolveGroundedEngineByKey(planned.groundedKey);
+  const grounded = resolveGeoConversationEngine(planned);
   // Older persisted plans lack a snapshot and cannot reconstruct the original
   // profile safely. Omit them rather than mix old prompts with current context.
   if (!grounded || !planned.snapshot) {
@@ -210,7 +212,9 @@ const runPlannedPersona = Effect.fn("geo.runPlannedPersona")(function* (
     grounded,
     planned.zdr
   );
-  const remaining = tasks.slice(outcome.rows.length);
+  const remaining = tasks.filter(
+    (task) => !outcome.rows.some((row) => row.turn === task.turn)
+  );
   yield* Effect.forEach(
     remaining,
     (task) =>
