@@ -1,4 +1,4 @@
-import { array, boolean, number, object, string, union, unknown } from "zod";
+import { array, boolean, number, object, string, union } from "zod";
 
 const geoOlostepSourceSchema = object({
   url: string(),

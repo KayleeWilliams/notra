@@ -184,20 +184,13 @@ async function runGeoScanBatchWindow<T>(
   }
 }
 
-/** A failed submission yields no batches instead of failing the scan. */
 function submitGeoOlostepRound(
   queries: GeoOlostepQuery[],
   indexes: number[]
 ): Promise<string[]> {
-  if (indexes.length === 0) {
-    return Promise.resolve([]);
-  }
-  return submitGeoOlostepBatchesStep(queries, indexes).catch(
-    (error: unknown) => {
-      console.error("[GEO] Olostep batch submission failed:", error);
-      return [];
-    }
-  );
+  return indexes.length > 0
+    ? submitGeoOlostepBatchesStep(queries, indexes)
+    : Promise.resolve([]);
 }
 
 /**
@@ -434,12 +427,15 @@ async function runGeoScanProjectRun(
       olostepQueries,
       olostepQueries.map((_, index) => index)
     );
-    await runGeoScanBatchWindow(
+    const apiFailure = await runGeoScanBatchWindow(
       plan.context,
       plan.tasks.filter((task) => !isGeoOlostepEngine(task.engine)),
       GEO_SCAN_TASK_BATCH_SIZE,
       runGeoScanTaskBatchStep,
       state
+    ).then(
+      () => null,
+      (error: unknown) => ({ error })
     );
     const resolved =
       olostepQueries.length > 0
@@ -453,6 +449,7 @@ async function runGeoScanProjectRun(
             )
           )
         : plan;
+    const runs = (engine: string) => !apiFailure || isGeoOlostepEngine(engine);
     await runGeoScanBatchWindow(
       plan.context,
       resolved.tasks.filter((task) => isGeoOlostepEngine(task.engine)),
@@ -462,18 +459,21 @@ async function runGeoScanProjectRun(
     );
     await runGeoScanBatchWindow(
       plan.context,
-      resolved.sequences,
+      resolved.sequences.filter((sequence) => runs(sequence.engine)),
       GEO_SCAN_SEQUENCE_BATCH_SIZE,
       runGeoScanSequenceBatchStep,
       state
     );
     await runGeoScanBatchWindow(
       plan.context,
-      resolved.personas,
+      resolved.personas.filter((persona) => runs(persona.engine)),
       GEO_SCAN_PERSONA_BATCH_SIZE,
       runGeoScanPersonaBatchStep,
       state
     );
+    if (apiFailure) {
+      throw apiFailure.error;
+    }
   } catch (error) {
     await finalizeProjectRun(plan, totals, "failed", state.claimedAt, {
       retried: options.retried,

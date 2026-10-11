@@ -7,6 +7,7 @@ import {
   GEO_OLOSTEP_BASE_URL,
   GEO_OLOSTEP_ITEMS_PAGE_LIMIT,
   GEO_OLOSTEP_REQUEST_TIMEOUT_MS,
+  GEO_OLOSTEP_TERMINAL_BATCH_STATUSES,
 } from "../constants/geo-olostep";
 import {
   geoOlostepAnswerSchema,
@@ -19,6 +20,7 @@ import type {
   GeoOlostepQuery,
   GeoOlostepResults,
 } from "../types/geo-olostep";
+import { logGeoFailure } from "../utils/geo-log";
 import { geoOlostepAnswer } from "../utils/geo-olostep-answer";
 import { buildGeoOlostepBatchRequests } from "../utils/geo-olostep-batches";
 import { GeoOlostepError, GeoScanError } from "./errors";
@@ -88,18 +90,36 @@ const submitGeoOlostepBatch = Effect.fn("geo.submitOlostepBatch")(function* (
   return batch.id;
 });
 
-/** Submits the queries at `indexes` and returns the created batch ids. */
+/**
+ * Submits the queries at `indexes` and returns the ids of the batches that
+ * were created. A rejected batch is logged and skipped so the ones already
+ * running are kept; its queries come back as missing for the retry round.
+ */
 export const submitGeoOlostepBatches = Effect.fn("geo.submitOlostepBatches")(
   function* (queries: readonly GeoOlostepQuery[], indexes: readonly number[]) {
-    return yield* Effect.forEach(
+    const batchIds = yield* Effect.forEach(
       buildGeoOlostepBatchRequests(queries, indexes),
-      submitGeoOlostepBatch,
+      (request) =>
+        submitGeoOlostepBatch(request).pipe(
+          Effect.catch((error) =>
+            Effect.sync(() => {
+              logGeoFailure(
+                "geo.olostep.submit_failed",
+                "Olostep batch submission failed",
+                error,
+                { items: request.queryIndexes.length }
+              );
+              return null;
+            })
+          )
+        ),
       { concurrency: "unbounded" }
     );
+    return batchIds.filter((batchId) => batchId !== null);
   }
 );
 
-/** Ids of the given batches that have not completed yet. */
+/** Ids of the given batches that may still finish more items. */
 export const pendingGeoOlostepBatches = Effect.fn("geo.pendingOlostepBatches")(
   function* (batchIds: readonly string[]) {
     const statuses = yield* Effect.forEach(
@@ -112,7 +132,8 @@ export const pendingGeoOlostepBatches = Effect.fn("geo.pendingOlostepBatches")(
       { concurrency: "unbounded" }
     );
     return batchIds.filter(
-      (_, index) => statuses[index]?.status !== "completed"
+      (_, index) =>
+        !GEO_OLOSTEP_TERMINAL_BATCH_STATUSES.has(statuses[index]?.status ?? "")
     );
   }
 );

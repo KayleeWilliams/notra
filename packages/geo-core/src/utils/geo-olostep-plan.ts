@@ -28,9 +28,11 @@ export function geoOlostepPersonaQuery(
     ...memories.map((memory) => memory.content),
   ]
     .filter(Boolean)
-    .join(" ")
-    .slice(0, GEO_OLOSTEP_PERSONA_INTRO_MAX_CHARS);
-  return `${intro}\n\n${prompt}`;
+    .join(" ");
+  const clipped = Array.from(intro)
+    .slice(0, GEO_OLOSTEP_PERSONA_INTRO_MAX_CHARS)
+    .join("");
+  return `${clipped}\n\n${prompt}`;
 }
 
 /**

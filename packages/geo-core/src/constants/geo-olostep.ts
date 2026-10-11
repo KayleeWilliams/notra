@@ -9,6 +9,10 @@ export const GEO_OLOSTEP_POLL_INTERVAL = "30s";
 export const GEO_OLOSTEP_MAX_WAIT_MS = 30 * 60 * 1000;
 export const GEO_OLOSTEP_REQUEST_TIMEOUT_MS = 30_000;
 export const GEO_OLOSTEP_ITEMS_PAGE_LIMIT = 100;
+/** Batch states after which no more items will finish. */
+export const GEO_OLOSTEP_TERMINAL_BATCH_STATUSES: ReadonlySet<string> = new Set(
+  ["completed", "failed", "cancelled"]
+);
 /** Keeps the persona intro short enough for a prompt URL. */
 export const GEO_OLOSTEP_PERSONA_INTRO_MAX_CHARS = 600;
 
