@@ -43,12 +43,8 @@ export async function copyTextToClipboard(
   text: string,
   successMessage: string
 ): Promise<void> {
-  if (!navigator.clipboard?.writeText) {
-    toast.error(commonToastMessage("clipboardUnsupported"));
-    return;
-  }
   try {
-    await navigator.clipboard.writeText(text);
+    await writeClipboardText(text);
   } catch {
     toast.error(commonToastMessage("copyFailed"));
     return;

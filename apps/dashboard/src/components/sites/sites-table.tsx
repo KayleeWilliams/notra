@@ -1,14 +1,30 @@
 "use client";
 
+import {
+  Copy01Icon,
+  DashboardSquare01Icon,
+  Delete02Icon,
+  FileEditIcon,
+  LinkSquare02Icon,
+  Rocket01Icon,
+  Settings01Icon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { trafficVisitDelta } from "@notra/geo-core/utils/ai-traffic";
+import {
+  ContextMenuItem,
+  ContextMenuSeparator,
+} from "@notra/ui/components/ui/context-menu";
 import {
   DataTable,
   type TableColumn,
 } from "@notra/ui/components/ui/data-table";
+import { useState } from "react";
 import { useLocale, useTranslations } from "use-intl";
 
 import { GeoStatDelta } from "@/components/geo/geo-stat-delta";
 import { RelativeTime } from "@/components/relative-time";
+import { SiteDeleteDialog } from "@/components/sites/site-delete-dialog";
 import {
   SiteOfflineStatus,
   SiteStatusDot,
@@ -19,6 +35,7 @@ import { useRouter } from "@/lib/navigation";
 import type { SitesTableProps } from "@/types/components/sites";
 import type { SiteListItem } from "@/types/sites";
 import { formatMetric } from "@/utils/analytics-charts";
+import { copyTextToClipboard } from "@/utils/copy-to-clipboard";
 import { siteListStatus } from "@/utils/site-deployments";
 import { displayUrl, siteHref } from "@/utils/site-links";
 import { paginatedTableHeightFor } from "@/utils/table";
@@ -41,13 +58,12 @@ function SiteVisitorsCell({
     return <span className="text-muted-foreground">-</span>;
   }
   return (
-    <span className="inline-flex items-baseline gap-2">
+    <span className="inline-flex items-center gap-2">
       <span className="font-medium tabular-nums">
         {formatMetric(totals.visitors, locale, "-")}
       </span>
       <GeoStatDelta
         delta={trafficVisitDelta(totals.visitors, totals.previousVisitors)}
-        variant="plain"
       />
     </span>
   );
@@ -60,7 +76,10 @@ export function SitesTable({
 }: SitesTableProps) {
   const t = useTranslations("sites.list");
   const tCommon = useTranslations("common");
+  const tTabs = useTranslations("sites.detail.tabs");
+  const tDelete = useTranslations("sites.settings.delete");
   const router = useRouter();
+  const [deleteSite, setDeleteSite] = useState<SiteListItem | null>(null);
 
   const columns: TableColumn<SiteListItem>[] = [
     {
@@ -142,19 +161,112 @@ export function SitesTable({
   ];
 
   return (
-    <DataTable
-      columns={columns}
-      data={sites}
-      getRowId={(site) => site.id}
-      defaultSort={{ key: "updated", direction: "desc" }}
-      height={paginatedTableHeightFor(sites.length, SITES_TABLE_ROW_HEIGHT)}
-      onRowClick={(site) => router.push(siteHref(organizationSlug, site.id))}
-      onRowPointerEnter={(site) =>
-        router.prefetch(siteHref(organizationSlug, site.id))
-      }
-      resizable
-      rowHeight={SITES_TABLE_ROW_HEIGHT}
-      scrollFade={false}
-    />
+    <>
+      <DataTable
+        columns={columns}
+        data={sites}
+        getRowId={(site) => site.id}
+        defaultSort={{ key: "updated", direction: "desc" }}
+        height={paginatedTableHeightFor(sites.length, SITES_TABLE_ROW_HEIGHT)}
+        onRowClick={(site) => router.push(siteHref(organizationSlug, site.id))}
+        onRowPointerEnter={(site) =>
+          router.prefetch(siteHref(organizationSlug, site.id))
+        }
+        renderRowContextMenu={(site) => (
+          <>
+            <ContextMenuItem
+              onClick={() => router.push(siteHref(organizationSlug, site.id))}
+            >
+              <HugeiconsIcon
+                icon={DashboardSquare01Icon}
+                size={16}
+                strokeWidth={1.5}
+              />
+              {t("actions.openSite")}
+            </ContextMenuItem>
+            <ContextMenuItem
+              render={
+                <a
+                  aria-label={t("actions.visitSite")}
+                  href={site.liveUrl}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                />
+              }
+            >
+              <HugeiconsIcon
+                icon={LinkSquare02Icon}
+                size={16}
+                strokeWidth={1.5}
+              />
+              {t("actions.visitSite")}
+            </ContextMenuItem>
+            <ContextMenuItem
+              onClick={() =>
+                copyTextToClipboard(site.liveUrl, tCommon("toasts.copied"))
+              }
+            >
+              <HugeiconsIcon icon={Copy01Icon} size={16} strokeWidth={1.5} />
+              {t("actions.copyLink")}
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuItem
+              onClick={() =>
+                router.push(siteHref(organizationSlug, site.id, "editor"))
+              }
+            >
+              <HugeiconsIcon icon={FileEditIcon} size={16} strokeWidth={1.5} />
+              {tTabs("editor")}
+            </ContextMenuItem>
+            <ContextMenuItem
+              onClick={() =>
+                router.push(siteHref(organizationSlug, site.id, "deployments"))
+              }
+            >
+              <HugeiconsIcon icon={Rocket01Icon} size={16} strokeWidth={1.5} />
+              {tTabs("deployments")}
+            </ContextMenuItem>
+            <ContextMenuItem
+              onClick={() =>
+                router.push(siteHref(organizationSlug, site.id, "settings"))
+              }
+            >
+              <HugeiconsIcon
+                icon={Settings01Icon}
+                size={16}
+                strokeWidth={1.5}
+              />
+              {tTabs("settings")}
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuItem
+              onClick={() => setDeleteSite(site)}
+              variant="destructive"
+            >
+              <HugeiconsIcon icon={Delete02Icon} size={16} strokeWidth={1.5} />
+              {tDelete("action")}
+            </ContextMenuItem>
+          </>
+        )}
+        resizable
+        rowHeight={SITES_TABLE_ROW_HEIGHT}
+        scrollFade={false}
+      />
+      {deleteSite ? (
+        <SiteDeleteDialog
+          key={deleteSite.id}
+          onOpenChange={(open) => {
+            if (!open) {
+              setDeleteSite(null);
+            }
+          }}
+          open
+          organizationId={organizationId}
+          organizationSlug={organizationSlug}
+          siteId={deleteSite.id}
+          siteName={deleteSite.name}
+        />
+      ) : null}
+    </>
   );
 }

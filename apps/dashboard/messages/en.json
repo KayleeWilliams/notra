@@ -7037,7 +7037,12 @@
         "visitors": "Visitors · 7d",
         "updated": "Updated"
       },
-      "noDeployments": "No deployments yet"
+      "noDeployments": "No deployments yet",
+      "actions": {
+        "openSite": "Open site",
+        "visitSite": "Visit live site",
+        "copyLink": "Copy site link"
+      }
     },
     "status": {
       "queued": "Queued",

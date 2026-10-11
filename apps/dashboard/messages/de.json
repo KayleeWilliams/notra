@@ -7037,7 +7037,12 @@
         "visitors": "Besucher · 7 T",
         "updated": "Aktualisiert"
       },
-      "noDeployments": "Noch keine Deployments"
+      "noDeployments": "Noch keine Deployments",
+      "actions": {
+        "openSite": "Site öffnen",
+        "visitSite": "Live-Site besuchen",
+        "copyLink": "Site-Link kopieren"
+      }
     },
     "status": {
       "queued": "In Warteschlange",
