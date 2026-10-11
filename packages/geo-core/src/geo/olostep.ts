@@ -80,6 +80,27 @@ function olostepRequest<S extends ZodType>(
   }).pipe(Effect.withSpan("geo.olostepRequest", { attributes: { path } }));
 }
 
+/**
+ * Olostep is best effort inside a scan: a failed request is logged and
+ * replaced by `fallback` so the scan's other engines still run.
+ */
+function withGeoOlostepFallback<A>(
+  event: `geo.olostep.${string}`,
+  message: string,
+  fallback: A,
+  fields: Record<string, unknown>
+) {
+  return <E, R>(effect: Effect.Effect<A, E, R>): Effect.Effect<A, never, R> =>
+    effect.pipe(
+      Effect.catch((error) =>
+        Effect.sync(() => {
+          logGeoFailure(event, message, error, fields);
+          return fallback;
+        })
+      )
+    );
+}
+
 const submitGeoOlostepBatch = Effect.fn("geo.submitOlostepBatch")(function* (
   request: GeoOlostepBatchRequest
 ) {
@@ -101,16 +122,11 @@ export const submitGeoOlostepBatches = Effect.fn("geo.submitOlostepBatches")(
       buildGeoOlostepBatchRequests(queries, indexes),
       (request) =>
         submitGeoOlostepBatch(request).pipe(
-          Effect.catch((error) =>
-            Effect.sync(() => {
-              logGeoFailure(
-                "geo.olostep.submit_failed",
-                "Olostep batch submission failed",
-                error,
-                { items: request.queryIndexes.length }
-              );
-              return null;
-            })
+          withGeoOlostepFallback<string | null>(
+            "geo.olostep.submit_failed",
+            "Olostep batch submission failed",
+            null,
+            { items: request.queryIndexes.length }
           )
         ),
       { concurrency: "unbounded" }
@@ -119,7 +135,10 @@ export const submitGeoOlostepBatches = Effect.fn("geo.submitOlostepBatches")(
   }
 );
 
-/** Ids of the given batches that may still finish more items. */
+/**
+ * Ids of the given batches that may still finish more items. A failed status
+ * check keeps the batch pending until the wait deadline.
+ */
 export const pendingGeoOlostepBatches = Effect.fn("geo.pendingOlostepBatches")(
   function* (batchIds: readonly string[]) {
     const statuses = yield* Effect.forEach(
@@ -128,12 +147,20 @@ export const pendingGeoOlostepBatches = Effect.fn("geo.pendingOlostepBatches")(
         olostepRequest(
           `/batches/${encodeURIComponent(batchId)}`,
           geoOlostepBatchSchema
+        ).pipe(
+          Effect.map((batch) => batch.status),
+          withGeoOlostepFallback<string | null>(
+            "geo.olostep.status_failed",
+            "Olostep batch status check failed",
+            null,
+            { batchId }
+          )
         ),
       { concurrency: "unbounded" }
     );
     return batchIds.filter(
       (_, index) =>
-        !GEO_OLOSTEP_TERMINAL_BATCH_STATUSES.has(statuses[index]?.status ?? "")
+        !GEO_OLOSTEP_TERMINAL_BATCH_STATUSES.has(statuses[index] ?? "")
     );
   }
 );
@@ -167,12 +194,25 @@ const listGeoOlostepBatchResults = Effect.fn("geo.listOlostepBatchResults")(
   }
 );
 
-/** Result handles of every finished item across the given batches. */
+/**
+ * Result handles of every finished item across the given batches. A batch
+ * whose listing fails contributes nothing, so its queries are retried.
+ */
 export const collectGeoOlostepResults = Effect.fn("geo.collectOlostepResults")(
   function* (batchIds: readonly string[]) {
-    const pages = yield* Effect.forEach(batchIds, listGeoOlostepBatchResults, {
-      concurrency: "unbounded",
-    });
+    const pages = yield* Effect.forEach(
+      batchIds,
+      (batchId) =>
+        listGeoOlostepBatchResults(batchId).pipe(
+          withGeoOlostepFallback<GeoOlostepResults>(
+            "geo.olostep.collect_failed",
+            "Olostep batch results could not be listed",
+            {},
+            { batchId }
+          )
+        ),
+      { concurrency: "unbounded" }
+    );
     const results: GeoOlostepResults = {};
     for (const page of pages) {
       Object.assign(results, page);

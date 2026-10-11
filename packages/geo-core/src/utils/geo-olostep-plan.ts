@@ -11,10 +11,25 @@ import type {
 import { isGeoOlostepEngine } from "./geo-olostep";
 
 /**
+ * Every scraped prompt is a fresh chat, so a follow-up repeats the questions
+ * asked before it in the conversation.
+ */
+function geoOlostepFollowUpQuery(
+  earlier: readonly string[],
+  prompt: string
+): string {
+  if (earlier.length === 0) {
+    return prompt;
+  }
+  const asked = earlier.map((question) => `- ${question}`).join("\n");
+  return `Earlier I asked:\n${asked}\n\n${prompt}`;
+}
+
+/**
  * A logged-out app has no memory of the persona, so each persona prompt opens
  * with who is asking.
  */
-export function geoOlostepPersonaQuery(
+function geoOlostepPersonaQuery(
   snapshot: GeoPersonaSnapshotV2,
   prompt: string
 ): string {
@@ -53,19 +68,24 @@ export function buildGeoOlostepQueries(
   const steps = plan.sequences
     .filter((sequence) => isGeoOlostepEngine(sequence.engine))
     .flatMap((sequence) =>
-      sequence.steps.slice(0, GEO_SEQUENCE_MAX_TURNS).map((step) => ({
-        engine: sequence.engine,
-        language: sequence.language ?? DEFAULT_LANGUAGE,
-        text: step,
-      }))
+      sequence.steps
+        .slice(0, GEO_SEQUENCE_MAX_TURNS)
+        .map((step, index, steps) => ({
+          engine: sequence.engine,
+          language: sequence.language ?? DEFAULT_LANGUAGE,
+          text: geoOlostepFollowUpQuery(steps.slice(0, index), step),
+        }))
     );
   const personaPrompts = plan.personas
     .filter((persona) => isGeoOlostepEngine(persona.engine))
     .flatMap((persona) =>
-      persona.prompts.map((prompt) => ({
+      persona.prompts.map((prompt, index, prompts) => ({
         engine: persona.engine,
         language: DEFAULT_LANGUAGE,
-        text: geoOlostepPersonaQuery(persona.snapshot, prompt),
+        text: geoOlostepPersonaQuery(
+          persona.snapshot,
+          geoOlostepFollowUpQuery(prompts.slice(0, index), prompt)
+        ),
       }))
     );
   return [...tasks, ...steps, ...personaPrompts];
