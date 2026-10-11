@@ -54,6 +54,7 @@ import { Route as ApiDemoSandboxCustomizeRouteImport } from './routes/api.demo.s
 import { Route as ApiDemoSandboxInfoRouteImport } from './routes/api.demo.sandbox.info'
 import { Route as ApiDemoSandboxResetRouteImport } from './routes/api.demo.sandbox.reset'
 import { Route as ApiDemoSandboxTimezoneRouteImport } from './routes/api.demo.sandbox.timezone'
+import { Route as ApiGeoDrainsProviderRouteImport } from './routes/api.geo.drains.$provider'
 import { Route as ApiIntegrationsGithubCallbackRouteImport } from './routes/api.integrations.github.callback'
 import { Route as ApiIntegrationsGoogleSearchConsoleAuthorizeRouteImport } from './routes/api.integrations.google-search-console.authorize'
 import { Route as ApiIntegrationsGoogleSearchConsoleCallbackRouteImport } from './routes/api.integrations.google-search-console.callback'
@@ -321,6 +322,11 @@ const ApiDemoSandboxTimezoneRoute = ApiDemoSandboxTimezoneRouteImport.update({
   path: '/timezone',
   getParentRoute: () => ApiDemoSandboxRoute,
 } as any)
+const ApiGeoDrainsProviderRoute = ApiGeoDrainsProviderRouteImport.update({
+  id: '/api/geo/drains/$provider',
+  path: '/api/geo/drains/$provider',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiIntegrationsGithubCallbackRoute =
   ApiIntegrationsGithubCallbackRouteImport.update({
     id: '/api/integrations/github/callback',
@@ -566,6 +572,7 @@ export interface FileRoutesByFullPath {
   '/api/demo/sandbox/info': typeof ApiDemoSandboxInfoRoute
   '/api/demo/sandbox/reset': typeof ApiDemoSandboxResetRoute
   '/api/demo/sandbox/timezone': typeof ApiDemoSandboxTimezoneRoute
+  '/api/geo/drains/$provider': typeof ApiGeoDrainsProviderRoute
   '/api/integrations/github/callback': typeof ApiIntegrationsGithubCallbackRoute
   '/api/integrations/google-search-console/authorize': typeof ApiIntegrationsGoogleSearchConsoleAuthorizeRoute
   '/api/integrations/google-search-console/callback': typeof ApiIntegrationsGoogleSearchConsoleCallbackRoute
@@ -646,6 +653,7 @@ export interface FileRoutesByTo {
   '/api/demo/sandbox/info': typeof ApiDemoSandboxInfoRoute
   '/api/demo/sandbox/reset': typeof ApiDemoSandboxResetRoute
   '/api/demo/sandbox/timezone': typeof ApiDemoSandboxTimezoneRoute
+  '/api/geo/drains/$provider': typeof ApiGeoDrainsProviderRoute
   '/api/integrations/github/callback': typeof ApiIntegrationsGithubCallbackRoute
   '/api/integrations/google-search-console/authorize': typeof ApiIntegrationsGoogleSearchConsoleAuthorizeRoute
   '/api/integrations/google-search-console/callback': typeof ApiIntegrationsGoogleSearchConsoleCallbackRoute
@@ -727,6 +735,7 @@ export interface FileRoutesById {
   '/api/demo/sandbox/info': typeof ApiDemoSandboxInfoRoute
   '/api/demo/sandbox/reset': typeof ApiDemoSandboxResetRoute
   '/api/demo/sandbox/timezone': typeof ApiDemoSandboxTimezoneRoute
+  '/api/geo/drains/$provider': typeof ApiGeoDrainsProviderRoute
   '/api/integrations/github/callback': typeof ApiIntegrationsGithubCallbackRoute
   '/api/integrations/google-search-console/authorize': typeof ApiIntegrationsGoogleSearchConsoleAuthorizeRoute
   '/api/integrations/google-search-console/callback': typeof ApiIntegrationsGoogleSearchConsoleCallbackRoute
@@ -809,6 +818,7 @@ export interface FileRouteTypes {
     | '/api/demo/sandbox/info'
     | '/api/demo/sandbox/reset'
     | '/api/demo/sandbox/timezone'
+    | '/api/geo/drains/$provider'
     | '/api/integrations/github/callback'
     | '/api/integrations/google-search-console/authorize'
     | '/api/integrations/google-search-console/callback'
@@ -889,6 +899,7 @@ export interface FileRouteTypes {
     | '/api/demo/sandbox/info'
     | '/api/demo/sandbox/reset'
     | '/api/demo/sandbox/timezone'
+    | '/api/geo/drains/$provider'
     | '/api/integrations/github/callback'
     | '/api/integrations/google-search-console/authorize'
     | '/api/integrations/google-search-console/callback'
@@ -969,6 +980,7 @@ export interface FileRouteTypes {
     | '/api/demo/sandbox/info'
     | '/api/demo/sandbox/reset'
     | '/api/demo/sandbox/timezone'
+    | '/api/geo/drains/$provider'
     | '/api/integrations/github/callback'
     | '/api/integrations/google-search-console/authorize'
     | '/api/integrations/google-search-console/callback'
@@ -1044,6 +1056,7 @@ export interface RootRouteChildren {
   ApiWorkflowsSocialAnalyticsSyncRoute: typeof ApiWorkflowsSocialAnalyticsSyncRoute
   AuthSocialCallbackRoute: typeof AuthSocialCallbackRoute
   SitesDomainConnectTokenRoute: typeof SitesDomainConnectTokenRoute
+  ApiGeoDrainsProviderRoute: typeof ApiGeoDrainsProviderRoute
   ApiIntegrationsGithubCallbackRoute: typeof ApiIntegrationsGithubCallbackRoute
   ApiIntegrationsGoogleSearchConsoleAuthorizeRoute: typeof ApiIntegrationsGoogleSearchConsoleAuthorizeRoute
   ApiIntegrationsGoogleSearchConsoleCallbackRoute: typeof ApiIntegrationsGoogleSearchConsoleCallbackRoute
@@ -1388,6 +1401,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/demo/sandbox/timezone'
       preLoaderRoute: typeof ApiDemoSandboxTimezoneRouteImport
       parentRoute: typeof ApiDemoSandboxRoute
+    }
+    '/api/geo/drains/$provider': {
+      id: '/api/geo/drains/$provider'
+      path: '/api/geo/drains/$provider'
+      fullPath: '/api/geo/drains/$provider'
+      preLoaderRoute: typeof ApiGeoDrainsProviderRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/integrations/github/callback': {
       id: '/api/integrations/github/callback'
@@ -1767,6 +1787,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiWorkflowsSocialAnalyticsSyncRoute: ApiWorkflowsSocialAnalyticsSyncRoute,
   AuthSocialCallbackRoute: AuthSocialCallbackRoute,
   SitesDomainConnectTokenRoute: SitesDomainConnectTokenRoute,
+  ApiGeoDrainsProviderRoute: ApiGeoDrainsProviderRoute,
   ApiIntegrationsGithubCallbackRoute: ApiIntegrationsGithubCallbackRoute,
   ApiIntegrationsGoogleSearchConsoleAuthorizeRoute:
     ApiIntegrationsGoogleSearchConsoleAuthorizeRoute,

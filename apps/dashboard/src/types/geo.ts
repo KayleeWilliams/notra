@@ -20,6 +20,7 @@ import type {
   GeoEngineFamily,
   GeoIngestFramework,
   GeoIngestPackageManager,
+  GeoDrainProvider,
   GeoIngestSetupResponse,
   GeoJourney,
   GeoJourneyDailyPoint,
@@ -634,6 +635,12 @@ export interface GeoPackageManagerIconProps {
 export interface GeoIngestSetupPanelProps {
   setup: GeoIngestSetupResponse | undefined;
   className?: string;
+}
+
+export interface GeoIngestDrainSetupProps {
+  provider: GeoDrainProvider;
+  setup: GeoIngestSetupResponse | undefined;
+  onCopy: () => void;
 }
 
 export interface TrafficEmptyProps {
