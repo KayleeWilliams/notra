@@ -430,7 +430,7 @@
         "@toolwind/corner-shape": "^0.0.8-3",
         "@upstash/ratelimit": "^2.1.0",
         "@upstash/redis": "^1.38.4",
-        "@usenotra/geo": "npm:@usenotra/geo@^0.5.0",
+        "@usenotra/geo": "npm:@usenotra/geo@^0.6.1",
         "@vercel/og": "0.11.1",
         "ai": "7.0.105",
         "c15t": "^2.0.4",
@@ -596,7 +596,7 @@
     },
     "packages/geo": {
       "name": "@usenotra/geo",
-      "version": "0.6.0",
+      "version": "0.6.1",
       "devDependencies": {
         "@notra/typescript-config": "workspace:*",
         "@tanstack/react-start": "1.168.60",
@@ -628,7 +628,7 @@
         "@notra/utils": "workspace:*",
         "@upstash/ratelimit": "^2.1.0",
         "@upstash/redis": "^1.38.4",
-        "@usenotra/geo": "npm:@usenotra/geo@^0.5.0",
+        "@usenotra/geo": "npm:@usenotra/geo@^0.6.1",
         "ai": "7.0.105",
         "drizzle-orm": "^0.45.2",
         "effect": "4.0.0",
@@ -6358,7 +6358,7 @@
 
     "@notra/geo-core/@types/node": ["@types/node@20.19.43", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-6oYBAi5ikg4Pl+kGsoYtawUMBT2zZMCvPNF7pVLnHZfd1zf38DRiWn/gT01RYCdUqkv7Fhr+C9ot4/tb+2sVvA=="],
 
-    "@notra/geo-core/@usenotra/geo": ["@usenotra/geo@0.5.0", "", { "peerDependencies": { "zod": "^4.0.0" }, "optionalPeers": ["zod"] }, "sha512-SUjbORLQ444fkvqRIMW9JeN2sC2wU6/iAzr3VtJet69ACnhlyprsmb35BjBPgqYDDEE4F4TVv0nqkJyyqGu3kA=="],
+    "@notra/geo-core/@usenotra/geo": ["@usenotra/geo@0.6.1", "", { "peerDependencies": { "zod": "^4.0.0" }, "optionalPeers": ["zod"] }, "sha512-IpQJJVYSYt0c40JBm8l34yxrZsoGP1r+DXAPjwUM+fm+oJquFBDzBD8fSwIiPDsGMsuiHFMxvbhgTgHXYbbA4A=="],
 
     "@notra/kiwi/@types/node": ["@types/node@22.20.4", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-zJRE40jpHtKqE/C4fgHrAKQLJuSpzEnP9ff9Y7YtoR3Wd2pwqzlekDeEuUQXjRd+QCYnVnNwuJYmhdk9XV8gvA=="],
 
@@ -7384,7 +7384,7 @@
 
     "web/@types/node": ["@types/node@20.19.43", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-6oYBAi5ikg4Pl+kGsoYtawUMBT2zZMCvPNF7pVLnHZfd1zf38DRiWn/gT01RYCdUqkv7Fhr+C9ot4/tb+2sVvA=="],
 
-    "web/@usenotra/geo": ["@usenotra/geo@0.5.0", "", { "peerDependencies": { "zod": "^4.0.0" }, "optionalPeers": ["zod"] }, "sha512-SUjbORLQ444fkvqRIMW9JeN2sC2wU6/iAzr3VtJet69ACnhlyprsmb35BjBPgqYDDEE4F4TVv0nqkJyyqGu3kA=="],
+    "web/@usenotra/geo": ["@usenotra/geo@0.6.1", "", { "peerDependencies": { "zod": "^4.0.0" }, "optionalPeers": ["zod"] }, "sha512-IpQJJVYSYt0c40JBm8l34yxrZsoGP1r+DXAPjwUM+fm+oJquFBDzBD8fSwIiPDsGMsuiHFMxvbhgTgHXYbbA4A=="],
 
     "web/tailwindcss": ["tailwindcss@4.3.1", "", {}, "sha512-hk+TB1m+K8CYNrP6rjQaq/Y+4Zylwpa87mLYBKCunwnnQ9p+fHb7kmSfGqyEJoxF/O6CDyABWVFEafNSYKll+Q=="],
 
