@@ -283,14 +283,17 @@ function hostingApexResponse(deps: SitesDeps, url: URL): Response {
   return html(hostingApexPage(deps.hostingDomain), 200);
 }
 
-function canonicalPageLink(
+function markdownPageHeaders(
   publicOrigin: string,
   twinPath: string
 ): Record<string, string> {
   const pagePath = twinPagePath(twinPath);
   return pagePath
-    ? { Link: `<${new URL(pagePath, publicOrigin).href}>; rel="canonical"` }
-    : {};
+    ? {
+        "X-Robots-Tag": "noindex",
+        Link: `<${new URL(pagePath, publicOrigin).href}>; rel="canonical"`,
+      }
+    : { "X-Robots-Tag": "noindex" };
 }
 
 async function serveFromManifest(
@@ -337,7 +340,7 @@ async function serveFromManifest(
     return await serveFile({
       ...fileParams,
       file: markdownFile,
-      extraHeaders: canonicalPageLink(publicOrigin, markdownFile.path),
+      extraHeaders: markdownPageHeaders(publicOrigin, markdownFile.path),
     });
   }
   const wantsMarkdown = prefersMarkdown(request.headers.get("accept"));
@@ -350,7 +353,7 @@ async function serveFromManifest(
       extraHeaders: {
         Vary: "Accept",
         "Content-Location": twin.path,
-        ...canonicalPageLink(publicOrigin, twin.path),
+        ...markdownPageHeaders(publicOrigin, twin.path),
       },
     });
   }

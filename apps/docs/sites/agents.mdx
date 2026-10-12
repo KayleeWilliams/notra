@@ -28,7 +28,7 @@ Each post, changelog entry and index page also exists as Markdown, with a short 
 curl -H "Accept: text/markdown" https://acme.com/blog/launch
 ```
 
-HTML pages point to their Markdown version with `<link rel="alternate" type="text/markdown">` and a `Link` response header, and responses carry `Vary: Accept`, so caches keep the two apart. The Markdown version names the HTML page as its canonical URL, so search engines never list it in place of the page.
+HTML pages point to their Markdown version with `<link rel="alternate" type="text/markdown">` and a `Link` response header, and responses carry `Vary: Accept`, so caches keep the two apart. The Markdown version names the HTML page as its canonical URL and sends `X-Robots-Tag: noindex`, so search engines never list it in place of the page.
 
 A page that doesn't exist answers with a real `404`, and agents that ask for Markdown or request a `.md` URL get the error as Markdown with links to the section index and `llms.txt`.
 

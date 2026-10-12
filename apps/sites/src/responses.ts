@@ -124,9 +124,6 @@ export async function serveFile(params: ServeFileParams): Promise<Response> {
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "strict-origin-when-cross-origin",
   });
-  if (isPreview) {
-    headers.set("X-Robots-Tag", "noindex, nofollow");
-  }
   if (
     params.contentSecurityPolicy &&
     file.contentType.startsWith("text/html")
@@ -135,6 +132,9 @@ export async function serveFile(params: ServeFileParams): Promise<Response> {
   }
   for (const [name, value] of Object.entries(params.extraHeaders ?? {})) {
     headers.set(name, value);
+  }
+  if (isPreview) {
+    headers.set("X-Robots-Tag", "noindex, nofollow");
   }
   if (status === 200 && request.headers.get("If-None-Match") === etag) {
     return new Response(null, { status: 304, headers });
