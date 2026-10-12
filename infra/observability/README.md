@@ -82,7 +82,8 @@ The `notra-overview` start page prioritizes AI spend, GEO and API latency: repor
 GEO scan usage value, separate live gateway/BYOK cards, customer cost rankings,
 API p95/errors, GEO cost trends and scan outcomes. Customer bars link back to the
 same dashboard with that opaque organization ID and the time/environment filters.
-Customer names are not collected. GEO history remains the frozen 3–10 October
+Organization names can be supplied separately for display (see below); they are
+not collected in cost telemetry. GEO history remains the frozen 3–10 October
 snapshot; live spend/latency still require telemetry activation. Historical scan
 costs are not combined with live call costs, avoiding double-counting.
 
@@ -100,6 +101,72 @@ top-ten customer cost/scan rankings and scan outcomes; live gateway/BYOK and API
 latency queries remain empty as expected before application telemetry activation.
 Only Grafana was deployed; no service settings, volumes or application releases
 were changed. Browser rendering remains unverified.
+
+### Organization display names
+
+Grafana accepts an optional `NOTRA_ORGANIZATION_NAMES` JSON object containing
+organization IDs and their display names, or the private file reference
+`@/var/lib/grafana/organization-names.json`. Its entrypoint adds exact-name field
+overrides to organization-series panels across the provisioned dashboards,
+including both customer cost rankings. Queries, cost grouping, organization
+filters and drill-down links still use IDs. Missing or blank names retain the ID;
+identical names do not merge organizations. Names never enter Loki or Prometheus.
+
+Export the mapping inside an existing trusted database environment using its
+existing `DATABASE_URL` (do not copy production credentials):
+
+```sh
+bun --no-env-file infra/observability/history/export-organization-names.ts /tmp/organization-names.json
+```
+
+The bounded read-only query reads only `organizations.id` and `organizations.name`.
+The exporter creates a new mode-0600 file and refuses to overwrite one. Keep that
+file outside source control. Railway limits a variable to 32,768 characters, so
+the full production mapping uses the private file reference: transfer the JSON
+over Railway SSH into `/var/lib/grafana/organization-names.json` on the existing
+Grafana volume, with mode 0600 and an atomic rename. Set the variable to
+`@/var/lib/grafana/organization-names.json`, then deploy only the Grafana Docker
+context. No new volume or volume configuration change is needed. Small mappings
+can instead use JSON directly, passed through stdin.
+Treat organization names as internal data; do not print or share the variable.
+The IaC definition preserves that variable; review a fresh plan before applying.
+Grafana gains no database credentials or database access.
+
+This is a display-name snapshot, not a background sync: export and update the
+mapping, then redeploy Grafana after additions or renames. Invalid mappings fail
+startup instead of silently applying a partial mapping. Display names are limited
+to 256 characters and cannot contain control characters or Grafana interpolation
+expressions. With no mapping, existing ID displays remain available.
+
+The Grafana-only deployment `d6db15f3-3a3f-49d5-9688-ff2974dcbfe1` reached
+`SUCCESS` on 2026-10-12. Its private mode-0600 mapping contains 1,798 organizations;
+the loaded dashboard API resolves all ten historical top-cost customers to their
+exact exported database names. All four live provisioned dashboards match the
+generated source, the proxied cost query succeeds unchanged, and drill-down links
+still use organization IDs. Other service deployment IDs and all four volume
+configurations/states remained unchanged. Both monitoring and ingest IaC plans
+report no changes. Production browser rendering was not checked; local Grafana
+rendering and the file-backed container startup were verified.
+
+### Private application telemetry
+
+Monitoring-to-monitoring connections already use the Railway private network.
+An application in **notra-prod / production** can send OTLP directly to
+`http://otel-collector.railway.internal:4318`; retain the existing
+`NOTRA_OTLP_TOKEN` bearer authentication. No new public domain or proxy is needed.
+Railway private DNS is scoped to the project/environment: the demo project and
+Vercel cannot use this address. Those deployments continue to use the authenticated
+`https://telemetry.usenotra.com` endpoint. Changing an endpoint does not by itself
+deploy or activate the staged application exporter.
+
+On 2026-10-12, the running production `ai-traffic-ingest` already had that private
+endpoint and a token configured. From that running service, private collector
+health and an authenticated empty OTLP logs request both returned HTTP 200; no
+application release or endpoint change was needed. The `ai-traffic` IaC declaration
+now preserves all three existing `NOTRA_OTLP_ENDPOINT`, `NOTRA_OTLP_TOKEN` and
+`NOTRA_TELEMETRY_SERVICE_NAME` variables. Before this correction, its live plan
+would have deleted them. Older rollout notes below describe the 2026-10-10 state,
+not the current runtime configuration.
 
 Numeric Loki queries retain only the event, filters, grouping and numeric fields
 they use. Cost/ranking and runtime queries use explicit JSON extraction. Queries
