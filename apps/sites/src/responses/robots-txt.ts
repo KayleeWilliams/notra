@@ -12,20 +12,24 @@ import { plainText } from "../utils/responses";
 
 export function robotsTxt(
   origin: string,
-  crawlable: SiteManifest | null
+  crawlable: SiteManifest | null,
+  mount = "/"
 ): Response {
   const lines = crawlable
     ? [
-        `# Markdown map of this site for language models: ${origin}/llms.txt`,
+        `# Markdown map of this site for language models: ${origin}${joinMountPath(mount, "llms.txt")}`,
         "User-agent: *",
         "Allow: /",
         "",
         ...AI_USER_AGENTS.map((agent) => `User-agent: ${agent}`),
         "Allow: /",
         "",
-        ...listMountedAreas(crawlable.target.mounts).map(
-          ({ mount }) =>
-            `Sitemap: ${origin}${joinMountPath(mount, "sitemap.xml")}`
+        ...(mount === "/"
+          ? listMountedAreas(crawlable.target.mounts).map((area) => area.mount)
+          : [mount]
+        ).map(
+          (sitemapMount) =>
+            `Sitemap: ${origin}${joinMountPath(sitemapMount, "sitemap.xml")}`
         ),
       ]
     : ["User-agent: *", "Disallow: /"];

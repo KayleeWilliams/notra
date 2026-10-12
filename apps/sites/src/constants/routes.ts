@@ -6,6 +6,7 @@ import { markdownFileRoute } from "../routes/markdown-file";
 import { markdownNotFoundRoute } from "../routes/markdown-not-found";
 import { markdownTwinRoute } from "../routes/markdown-twin";
 import { methodNotAllowedRoute } from "../routes/method-not-allowed";
+import { mountRobotsTxtRoute } from "../routes/mount-robots-txt";
 import { previewAccessGateRoute } from "../routes/preview-access-gate";
 import { previewAuthRoute } from "../routes/preview-auth";
 import { previewRobotsTxtRoute } from "../routes/preview-robots-txt";
@@ -42,6 +43,7 @@ export const DEPLOYMENT_ROUTES: readonly SiteRoute<DeploymentRouteContext>[] = [
 
 export const MANIFEST_ROUTES: readonly SiteRoute<ManifestRouteContext>[] = [
   robotsTxtRoute,
+  mountRobotsTxtRoute,
   manifestRedirectsRoute,
   sitemapIndexRoute,
   wellKnownLlmsTxtRoute,

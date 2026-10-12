@@ -46,6 +46,7 @@ If you forward paths from your own website, `/llms.txt` belongs to your website,
 ## Search engines and structured data
 
 - `robots.txt` allows search engines and AI crawlers (GPTBot, ClaudeBot, PerplexityBot and others) on your canonical address and links to `llms.txt` and the sitemaps. Once a custom domain is the primary address, `robots.txt` on your Notra address disallows all crawling, and every page names the canonical address, so the same post is never indexed twice.
+- Each section also has its own `robots.txt` under its path (`/blog/robots.txt`) that links that section's sitemap and `llms.txt`, so a website that forwards `/blog` to Notra can copy those links into the `robots.txt` at its root while keeping its own crawler rules.
 - Page URLs have no trailing slash, so `/blog/launch/` redirects to `/blog/launch` with a `308` and keeps the query string.
 - Notra marks previews, drafts, `noindex: true` posts and 404 pages `noindex`.
 - Each section has a sitemap (`/blog/sitemap.xml`) with the last change of every page and an RSS feed (`/blog/feed.xml`) with summaries, authors and tags, and every page links to the feeds of both sections. On your Notra address or a subdomain that serves the whole site, `/sitemap.xml` is a sitemap index that lists each section's sitemap.
