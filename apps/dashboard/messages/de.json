@@ -1114,6 +1114,13 @@
       "logoSourceNotAllowed": "Diese Logo-Quelle ist nicht erlaubt",
       "logoFetchFailed": "Das Logo konnte nicht abgerufen werden"
     },
+    "brandGuidelinePdf": {
+      "generateFirst": "Generiere zuerst deine Brand Guidelines, bevor du ein PDF hinzufügst",
+      "invalidFile": "Das ist kein gültiges Brand-Guideline-PDF",
+      "noText": "In diesem PDF wurde kein Text gefunden. Exportiere es als textbasiertes PDF und versuche es erneut.",
+      "readFailed": "Dieses PDF konnte nicht gelesen werden. Versuche es erneut oder exportiere es neu.",
+      "unavailable": "PDF-Upload ist gerade nicht verfügbar"
+    },
     "comments": {
       "replyNotAllowed": "Antworten sind auf fünf Ebenen begrenzt und können sich nicht auf gelöschte Kommentare beziehen",
       "notAuthor": "Du kannst nur deine eigenen Kommentare ändern",
@@ -1471,6 +1478,20 @@
         "updatedAt": "Aktualisiert {time}",
         "noAssetsTitle": "Richtlinien sind leer",
         "noAssetsDescription": "Für diese Identität wurden noch keine Marken-Assets gefunden. Aktualisiere, um die neuesten Logos, Farben und Screenshots zu übernehmen."
+      },
+      "pdf": {
+        "upload": "PDF hochladen",
+        "uploadedAt": "Hochgeladen {time}",
+        "uploadLabel": "Markenrichtlinien-PDF hochladen",
+        "notPdf": "Lade eine PDF-Datei hoch",
+        "tooLarge": "Das Richtlinien-PDF darf höchstens {maxMb}MB groß sein",
+        "badFilename": "Der PDF-Dateiname muss zwischen 1 und 200 Zeichen lang sein",
+        "saved": "Richtlinien-PDF gespeichert",
+        "saveFailed": "Das PDF konnte nicht gespeichert werden",
+        "removed": "Richtlinien-PDF entfernt",
+        "removeFailed": "Das PDF konnte nicht entfernt werden",
+        "replace": "Richtlinien-PDF ersetzen",
+        "remove": "{filename} entfernen"
       },
       "tokens": {
         "title": "UI-Tokens"
