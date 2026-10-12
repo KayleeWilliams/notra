@@ -311,6 +311,7 @@
       "version": "0.0.1",
       "dependencies": {
         "@notra/sites-core": "workspace:*",
+        "effect": "4.0.0",
       },
       "devDependencies": {
         "@cloudflare/workers-types": "^5.0.0",
