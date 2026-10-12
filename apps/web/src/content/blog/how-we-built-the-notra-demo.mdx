@@ -1,6 +1,6 @@
 ---
 title: "How we built demo.usenotra.com"
-description: "Every visitor to demo.usenotra.com gets their own Notra workspace in about 0.4 seconds, without signing up. This post covers the signed anonymous IDs, the sandbox pool on Neon Postgres, the clock that keeps seed data current and the fake model behind it."
+description: "How every visitor to demo.usenotra.com gets their own Notra workspace in 0.4 seconds without signing up: signed cookies, a Postgres sandbox pool and a fake model."
 date: "2026-10-12T00:00:00.000Z"
 updatedAt: "2026-10-12T00:00:00.000Z"
 author: "jan"
@@ -37,7 +37,7 @@ function createAnonymousId(): string {
 
 `randomToken` draws from `crypto.getRandomValues` over a 62-character alphabet and uses rejection sampling. The obvious `byte % 62` would be slightly biased, because 256 isn't a multiple of 62 and the first eight characters would come up more often.
 
-The ID goes into a cookie called `notra_demo`: the payload as base64url JSON, a dot, and an HMAC-SHA256 signature over it. The cookie is `httpOnly` and `secure` and expires after six hours. It is also partitioned with `sameSite=none`, because the demo runs inside iframes on other sites too, and browsers never store a `lax` cookie there.
+The ID goes into a cookie called `notra_demo`: the payload as base64url JSON, a dot, and an HMAC-SHA256 signature over it. The cookie is `httpOnly` and `secure` and expires after six hours. It is also partitioned with `sameSite=none`, because the demo runs inside an iframe on our landing page too, and browsers never store a `lax` cookie there.
 
 <DemoCookieDiagram />
 
@@ -82,7 +82,7 @@ Anyone with a browser can write to it, so we added three guards:
 
 1. The app connects as a data-only role with no DDL, a 20 s statement timeout and a connection limit. Migrations run as the owner role before each deploy and nowhere else.
 2. Both apps check that every organization in the database belongs to a sandbox. The demo API exits on boot if one doesn't, and the dashboard refuses to serve any demo request. If demo mode ever points at the production database, nothing runs against it.
-3. A sandbox takes about 5 MB. We cap them at 50, including the ready pool, and evict the least recently seen first, which keeps the database at around 250 MB.
+3. A sandbox takes about 5 MB. We cap how many can exist at once and evict idle ones first, which keeps the database at a few hundred megabytes.
 
 {/* TODO Jan: why Neon specifically. Branching for testing against real demo data? Scale-to-zero for a low-traffic demo? This is where the shoutout goes. */}
 
@@ -166,7 +166,7 @@ Fake answers are derived from a hash of their input, so everyone sees the same F
 
 ## The API is real too [#demo-api]
 
-Every sandbox gets a real [Unkey](https://unkey.com) key with the prefix `notra_demo_`, issued from a separate Unkey workspace. It expires with the sandbox and allows 60 requests per minute. [demo-api.usenotra.com](https://demo-api.usenotra.com) is our normal `apps/api`, pointed at the demo database.
+Every sandbox gets a real [Unkey](https://www.unkey.com) key with the prefix `notra_demo_`, issued from a separate Unkey workspace. It expires with the sandbox and allows 60 requests per minute. [demo-api.usenotra.com](https://demo-api.usenotra.com) is our normal `apps/api`, pointed at the demo database.
 
 ```sh
 curl https://demo-api.usenotra.com/v1/posts \
@@ -183,8 +183,30 @@ Clicks in the UI land in the same feed. The ones that have a public endpoint com
 
 ## Limits [#limits]
 
-A sandbox lives for six hours. Each network can create 30 sandboxes per hour. We started at 5 and locked out an entire office behind one IP. Reset gives you a fresh workspace under the same ID, and Customize rebuilds it around your own name and company. Login, billing, OAuth connections and real publishing are stubbed or blocked.
+A sandbox lives for six hours. Each network can only create a limited number of sandboxes per hour. Our first limit was too strict and locked out an entire office behind one IP. Reset gives you a fresh workspace under the same ID, and Customize rebuilds it around your own name and company. Login, billing, OAuth connections and real publishing are stubbed or blocked.
 
 {/* TODO: "Use it from your agent" once the MCP server can point at demo-api. The CLI already works: notra --base-url https://demo-api.usenotra.com --api-key notra_demo_… posts list */}
 
 Try it at [demo.usenotra.com](https://demo.usenotra.com) and break whatever you like, since it's deleted after six hours anyway lol.
+
+## FAQ [#faq]
+
+### Do I need an account to try Notra? [#do-i-need-an-account-to-try-notra]
+
+No. Open [demo.usenotra.com](https://demo.usenotra.com) and you land in your own workspace with sample data already set up. There's no signup form, email or credit card.
+
+### How long does a demo workspace last? [#how-long-does-a-demo-workspace-last]
+
+Six hours. After that, the workspace and everything in it is deleted. You can reset it at any time to start over with fresh sample data.
+
+### Can I use the Notra API from the demo? [#can-i-use-the-notra-api-from-the-demo]
+
+Yes. Every demo workspace comes with its own API key for demo-api.usenotra.com, which runs the same code as the production API. Requests from curl or the Notra CLI show up live in the dashboard.
+
+### Does the demo use real AI models? [#does-the-demo-use-real-ai-models]
+
+No. Every model call goes to a fake model that runs inside the app and returns realistic answers, so the demo never calls an AI provider and nothing you type is sent to one.
+
+### Is the demo the real product? [#is-the-demo-the-real-product]
+
+Yes. It runs the same dashboard and API code as production, deployed a second time against its own database. The services behind login, AI models, analytics and GitHub are swapped for stand-ins, and billing and publishing are switched off.
