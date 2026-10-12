@@ -31,6 +31,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@notra/ui/components/ui/dialog";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@notra/ui/components/ui/empty";
 import { Kbd } from "@notra/ui/components/ui/kbd";
 import { useIsApplePlatform } from "@notra/ui/hooks/use-is-apple-platform";
 import { cn } from "@notra/ui/lib/utils";
@@ -588,43 +596,39 @@ function CommandPaletteEmpty({
   const t = useTranslations("commandPalette");
   const { trimmedQuery, aiState, aiModifierLabel } = controller;
   return (
-    <CommandPrimitive.Empty className="px-3 py-10">
-      <div className="mx-auto flex max-w-sm flex-col items-center gap-4 text-center">
-        <div className="border-border bg-muted/40 flex size-10 items-center justify-center rounded-full border border-dashed">
-          <HugeiconsIcon
-            className="text-muted-foreground size-4"
-            icon={SparklesIcon}
-            strokeWidth={2}
-          />
-        </div>
-        <div className="space-y-1">
-          <p className="text-foreground text-sm font-medium wrap-anywhere">
+    <CommandPrimitive.Empty>
+      <Empty className="py-8 md:py-8">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <HugeiconsIcon icon={SparklesIcon} strokeWidth={2} />
+          </EmptyMedia>
+          <EmptyTitle className="text-base wrap-anywhere">
             {t("empty.title", { query: trimmedQuery })}
-          </p>
-          <p className="text-muted-foreground text-xs">
-            {t("empty.description")}
-          </p>
-        </div>
-        {/* A button too, so touch devices without ⌘↵ can still ask AI. */}
-        <Button
-          loading={aiState.status === "loading"}
-          onClick={() => {
-            controller.runAiSearch().catch(() => undefined);
-          }}
-          size="sm"
-          variant="secondary"
-        >
-          <HugeiconsIcon icon={SparklesIcon} strokeWidth={2} />
-          {t("ai.ask")}
-          <span className="hidden items-center gap-1 sm:flex">
-            <Kbd>{aiModifierLabel}</Kbd>
-            <Kbd>↵</Kbd>
-          </span>
-        </Button>
-        {aiState.status === "error" ? (
-          <p className="text-destructive text-xs">{t("ai.failed")}</p>
-        ) : null}
-      </div>
+          </EmptyTitle>
+          <EmptyDescription>{t("empty.description")}</EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
+          {/* A button too, so touch devices without ⌘↵ can still ask AI. */}
+          <Button
+            loading={aiState.status === "loading"}
+            onClick={() => {
+              controller.runAiSearch().catch(() => undefined);
+            }}
+            size="sm"
+            variant="secondary"
+          >
+            <HugeiconsIcon icon={SparklesIcon} strokeWidth={2} />
+            {t("ai.ask")}
+            <span className="hidden items-center gap-1 sm:flex">
+              <Kbd>{aiModifierLabel}</Kbd>
+              <Kbd>↵</Kbd>
+            </span>
+          </Button>
+          {aiState.status === "error" ? (
+            <p className="text-destructive text-xs">{t("ai.failed")}</p>
+          ) : null}
+        </EmptyContent>
+      </Empty>
     </CommandPrimitive.Empty>
   );
 }

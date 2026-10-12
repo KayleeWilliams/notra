@@ -6700,7 +6700,7 @@
     },
     "empty": {
       "title": "Keine Treffer für „{query}“",
-      "description": "Frag die KI. Sie öffnet die passende Seite oder antwortet im Chat."
+      "description": "Frag die KI, die passende Seite zu öffnen oder im Chat zu antworten."
     },
     "actions": {
       "newContent": "Neuer Content",

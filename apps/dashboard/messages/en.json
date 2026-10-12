@@ -6700,7 +6700,7 @@
     },
     "empty": {
       "title": "No matches for \"{query}\"",
-      "description": "Ask AI. It opens the right page or answers in chat."
+      "description": "Ask AI to open the right page or answer in chat."
     },
     "actions": {
       "newContent": "New content",
