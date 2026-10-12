@@ -10,7 +10,7 @@ import {
 } from "@notra/ui/components/shared/responsive-dialog";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useId, useState } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "use-intl";
@@ -34,6 +34,7 @@ export function SiteDeleteDialog({
   const tCommon = useTranslations("common");
   const id = useId();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const invalidateSites = useInvalidateSites();
   const [confirmation, setConfirmation] = useState("");
   const matches = confirmation.trim() === siteName;
@@ -44,7 +45,8 @@ export function SiteDeleteDialog({
     onSuccess: async () => {
       toast.success(t("done", { name: siteName }));
       onOpenChange(false);
-      router.push(`/${organizationSlug}/sites?view=all`);
+      queryClient.removeQueries({ queryKey: dashboardOrpc.sites.list.key() });
+      router.push(`/${organizationSlug}/sites`);
       await invalidateSites();
     },
     onError: (error) => {

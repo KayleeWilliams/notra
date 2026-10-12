@@ -27,10 +27,7 @@ import { resolvedSiteProjectId } from "@/utils/site-project";
 
 import { SitesPageSkeleton } from "./skeleton";
 
-export default function PageClient({
-  organizationSlug,
-  showAll = false,
-}: SitesPageClientProps) {
+export default function PageClient({ organizationSlug }: SitesPageClientProps) {
   const t = useTranslations("sites");
   const organizationId = useSitesOrganizationId(organizationSlug);
   const activeProject = useActiveProject();
@@ -60,7 +57,6 @@ export default function PageClient({
       organizationId={organizationId}
       organizationSlug={organizationSlug}
       projectId={projectId}
-      showAll={showAll}
     />
   );
 }
@@ -69,7 +65,6 @@ function ProjectSitesList({
   organizationId,
   organizationSlug,
   projectId,
-  showAll,
 }: ProjectSitesListProps) {
   const t = useTranslations("sites");
   const listQuery = useSitesList(organizationId, projectId);
@@ -92,16 +87,12 @@ function ProjectSitesList({
 
   const { configured, sites } = listQuery.data;
   const [onlySite, ...otherSites] = sites;
-  if (configured && !showAll && onlySite && otherSites.length === 0) {
+  if (configured && onlySite && otherSites.length === 0) {
     return (
       <Navigate
         replace
-        to={siteHref(
-          organizationSlug,
-          onlySite.id,
-          "overview",
-          onlySite.projectId
-        )}
+        search={{ project: onlySite.projectId }}
+        to={siteHref(organizationSlug, onlySite.id)}
       />
     );
   }

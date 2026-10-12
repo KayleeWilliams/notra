@@ -3,6 +3,7 @@
 import {
   ArrowRight01Icon,
   ArrowUpRight01Icon,
+  PlusSignIcon,
   RefreshIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -16,7 +17,6 @@ import { useSite } from "@/components/sites/site-context";
 import { SiteDeploymentsTable } from "@/components/sites/site-deployments-table";
 import { SiteOverviewHero } from "@/components/sites/site-overview-hero";
 import { SitePreviewsTable } from "@/components/sites/site-previews-table";
-import { SiteRelativeTime } from "@/components/sites/site-relative-time";
 import { SiteVisitorsCard } from "@/components/sites/site-visitors-card";
 import {
   SITE_OVERVIEW_PREVIEWS_LIMIT,
@@ -24,10 +24,7 @@ import {
   SITE_TABLE_COMPACT_EMPTY_HEIGHT,
 } from "@/constants/sites";
 import { useDeployLatest } from "@/lib/hooks/use-site-deployments";
-import type {
-  SiteUpdatedLineProps,
-  SiteViewAllLinkProps,
-} from "@/types/components/sites";
+import type { SiteViewAllLinkProps } from "@/types/components/sites";
 import { siteHref, sitePreviewDeploymentsHref } from "@/utils/site-links";
 import { sitePreviewRows } from "@/utils/site-previews";
 
@@ -48,24 +45,8 @@ function ViewAllLink({ href, label }: SiteViewAllLinkProps) {
   );
 }
 
-function UpdatedLine({ deployment }: SiteUpdatedLineProps) {
-  const t = useTranslations("sites.overviewPage");
-  const tTriggers = useTranslations("sites.triggers");
-  if (!deployment) {
-    return t("notLiveYet");
-  }
-  const time = () => (
-    <SiteRelativeTime
-      date={deployment.liveSince ?? deployment.createdAt}
-      inline
-    />
-  );
-  return deployment.commitAuthor
-    ? t.rich("updatedBy", { author: deployment.commitAuthor, time })
-    : t.rich("updatedVia", { trigger: tTriggers(deployment.trigger), time });
-}
-
 export function SiteOverviewPage() {
+  const tSites = useTranslations("sites");
   const t = useTranslations("sites.overviewPage");
   const tDetail = useTranslations("sites.detail");
   const tStatus = useTranslations("sites.status");
@@ -80,26 +61,37 @@ export function SiteOverviewPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeading
-        description={<UpdatedLine deployment={liveDeployment} />}
-        title={site.name}
-      >
-        {liveDeployment ? (
-          <a
-            className={buttonVariants({ variant: "outline" })}
-            href={site.liveUrl}
-            rel="noopener noreferrer"
-            target="_blank"
+      <PageHeading title={site.name}>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {liveDeployment ? (
+            <a
+              className={buttonVariants({ variant: "secondary" })}
+              href={site.liveUrl}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              {t("visitSite")}
+              <HugeiconsIcon
+                aria-hidden="true"
+                data-icon="inline-end"
+                icon={ArrowUpRight01Icon}
+                strokeWidth={1.5}
+              />
+            </a>
+          ) : null}
+          <Link
+            className={buttonVariants()}
+            href={`/${organizationSlug}/sites/new?project=${encodeURIComponent(site.projectId)}`}
           >
-            {t("visitSite")}
             <HugeiconsIcon
               aria-hidden="true"
-              data-icon="inline-end"
-              icon={ArrowUpRight01Icon}
+              data-icon="inline-start"
+              icon={PlusSignIcon}
               strokeWidth={1.5}
             />
-          </a>
-        ) : null}
+            {tSites("newSite")}
+          </Link>
+        </div>
       </PageHeading>
       <span aria-live="polite" className="sr-only">
         {latestProduction

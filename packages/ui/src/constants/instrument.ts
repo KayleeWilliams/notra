@@ -10,6 +10,11 @@ export const INSTRUMENT_SURFACE_CLASSES = {
     content:
       "border-border bg-card shadow-lift relative -mt-5 flex flex-1 flex-col rounded-[14px] border p-4",
   },
+  "table-compact": {
+    header: "min-h-14 content-center items-center rounded-t-[14px] pt-1.5 pb-6.5",
+    content:
+      "border-border bg-card shadow-lift relative -mt-5 flex flex-1 flex-col rounded-[14px] border p-4",
+  },
   bare: {
     header: "px-1",
     content: "flex flex-1 flex-col p-0",

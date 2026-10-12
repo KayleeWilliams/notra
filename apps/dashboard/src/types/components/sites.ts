@@ -45,7 +45,6 @@ export interface ProjectSitesListProps {
   organizationId: string;
   organizationSlug: string;
   projectId: string;
-  showAll: boolean;
 }
 
 export interface SiteCreateProjectProps {

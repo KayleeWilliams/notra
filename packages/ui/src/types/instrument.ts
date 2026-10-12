@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export type InstrumentModuleVariant = "flat" | "panel" | "table";
+export type InstrumentModuleVariant = "flat" | "panel" | "table" | "table-compact";
 
 export interface InstrumentGridProps {
   children: ReactNode;

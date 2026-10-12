@@ -85,7 +85,6 @@ export interface SiteProxyRecipe {
 
 export interface SitesPageClientProps {
   organizationSlug: string;
-  showAll?: boolean;
 }
 
 export interface SiteDomainConnectRouteContext {

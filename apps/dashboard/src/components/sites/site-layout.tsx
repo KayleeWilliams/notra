@@ -114,7 +114,7 @@ function SiteLoadError({ error, organizationSlug }: SiteLoadErrorProps) {
         action={
           <Link
             className={buttonVariants({ variant: "outline" })}
-            href={`/${organizationSlug}/sites?view=all`}
+            href={`/${organizationSlug}/sites`}
           >
             {t("backToSites")}
           </Link>
