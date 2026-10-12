@@ -312,6 +312,7 @@ Environment: `276f8b24-ccd7-4bf3-a6b6-1dbe9f7fe5c6`.
 | `loki` | `loki` | 3100 | `/loki` |
 | `collector` | `otel-collector` | 4318, 8888, 8889; health 13133 | `/var/lib/otelcol` |
 | `blackbox` | `blackbox` | 9115 | — |
+| `blackbox` | `blackbox-eu` (source-only) | 9115 | — |
 | `tunnel` | `monitoring-tunnel` | health/metrics 2000 | — |
 | `vercel` | `vercel-metrics` (undeployed pending token) | 9091 | — |
 
@@ -330,6 +331,78 @@ Railway mounts volumes as root: persistent services start with
 `RAILWAY_RUN_UID=0`, initialize ownership, then drop to UID 472 (Grafana),
 65534 (Prometheus), or 10001 (Loki/collector). Only the collector recursively fixes
 ownership, to handle its pre-existing queue files. No data is deleted.
+
+### Regional API probes (source-only)
+
+The existing US East exporter and a new private EU West/Amsterdam exporter each
+perform two public HTTPS checks every 30 seconds: `/ping` must return HTTP 200
+and exactly `pong`; `/v1/me/workspaces` must return HTTP 200, JSON content type,
+API-key authentication context and an active current-workspace membership.
+The second check exercises authentication and a database read without writing
+data, querying pending invitations or triggering billed generation.
+Redirects fail both API checks rather than hiding routing problems or forwarding
+credentials. Responses are capped at 128 KB and probes time out after 10 seconds.
+The other four existing public probes remain on US East.
+
+Prometheus scrapes the exporters through their distinct private DNS names,
+`blackbox.railway.internal:9115` and `blackbox-eu.railway.internal:9115`, retaining
+`probe_region="us-east"|"eu-west"` and
+`probe_check="api_ping"|"api_workspace"`. Regional measurement happens inside
+the exporter, not on the collector-to-exporter network path. No second
+Prometheus/Grafana installation or custom ingestion process is needed.
+
+Provision a dedicated organization-scoped key as sealed `NOTRA_PROBE_API_KEY` on
+both exporters before deploying. Workspace discovery requires authentication but
+no granular scope; avoid write permissions and customer/administrator keys. The
+entrypoint writes the key to a non-root-owned, owner-only ephemeral file and
+removes it from the exporter process environment; the image/configuration contains
+only the credential file path. A missing key fails startup rather than reporting
+a public reachability check as evidence of authenticated availability. Rotate the
+sealed key and redeploy both exporters to rotate the runtime files.
+
+Exporters must remain private. Their `/probe` API accepts caller-selected targets,
+including for the authenticated module, so all services able to reach them must
+remain trusted. Never expose `/probe`, configuration/history pages or debug output
+publicly, and do not attach untrusted workloads to this private environment.
+
+The API/MCP dashboard adds a regional response-time chart, API-check status and
+separate collection health above the pending real-traffic panels. Failed checks
+are excluded from the successful-response latency chart, not counted as fast
+responses. Missing samples are not zero or success. The operations infrastructure
+panels also identify each region/check. These are controlled synthetic samples,
+not customer-request p95 or browser performance; customer/user filters do not
+scope the probes. Alert notifications remain unconfigured.
+
+The EU service is declared in `.railway/observability-probes.ts` under its own
+`observability-probes` partial. Obtain approval of the exact fresh plans before
+any apply; no production rollout is implied by these files. Deploy the two
+exporters first, then Prometheus and Grafana. Verify the live service settings
+show one US East and one Amsterdam replica, both with no public domains/proxies.
+Through the trusted private network, verify:
+
+```promql
+probe_success{job="http-probes",probe_check=~"api_ping|api_workspace"}
+up{job="http-probes",probe_check=~"api_ping|api_workspace"}
+up{job="blackbox",probe_region=~"us-east|eu-west"}
+```
+
+The first two queries must each return four distinct `(probe_region,probe_check)`
+series equal to 1; the last must return two exporter series equal to 1. Check
+both latency lines per region in `notra-surfaces`, and distinguish a revoked key
+(`probe_success=0`, collection healthy) from an unreachable exporter (`up=0`).
+Do not call fixture values production measurements. Local regression checks:
+
+```sh
+bun --no-env-file test infra/observability/probes.test.ts
+bun --no-env-file run railway:check
+node --test infra/observability/*.test.mjs
+node infra/observability/validate-config.mjs
+docker run --rm --network none --read-only \
+  --mount "type=bind,source=$PWD/infra/observability/blackbox/blackbox.yml,target=/etc/blackbox_exporter/config.yml,readonly" \
+  --entrypoint /bin/blackbox_exporter \
+  prom/blackbox-exporter@sha256:c827aebdb688c29f3472bdfacff50c7c1e243ddfa3a7de76db41706d64646479 \
+  --config.file=/etc/blackbox_exporter/config.yml --config.check
+```
 
 ### Live deployment verification (2026-10-10)
 

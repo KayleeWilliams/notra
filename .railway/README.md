@@ -8,6 +8,7 @@ Always pass `--file`; there is no default `.railway/railway.ts`.
 | `demo.ts` | `notra-demo` / `production` | `demo-api`, `dashboard` | Whole demo environment |
 | `ai-traffic.ts` | `notra-prod` / `production` | `ai-traffic-ingest` | Named partial `ai-traffic` |
 | `observability.ts` | `notra-prod` / `production` | Seven monitoring services and four volumes | Named partial `observability` |
+| `observability-probes.ts` | `notra-prod` / `production` | EU Blackbox probe only | Named partial `observability-probes` |
 
 ## Monitoring infrastructure
 
@@ -87,6 +88,35 @@ uploading its Docker context; never deploy the user's CLI authentication token.
 Never apply from automation or an agent without approval of the exact reviewed
 plan. Plan artifacts may contain sensitive state: keep them outside `.railway/`
 and outside source control. No deployment or automatic apply workflow is added.
+
+## Regional API probes (source-only)
+
+`observability-probes.ts` adds the private, volume-free `blackbox-eu` service in
+Amsterdam (`europe-west4-drams3a`). Its separate partial leaves the adopted
+monitoring resource set unchanged; the existing `blackbox` stays in US East.
+Both use `infra/observability/blackbox` as their Docker upload context. No
+application deployment, volume migration, public origin or autodeploy is added.
+
+Before rollout, provision a dedicated organization-scoped API key as sealed
+`NOTRA_PROBE_API_KEY` on both exporters. Both definitions preserve the value;
+the entrypoint refuses to start without it. Workspace discovery is an authenticated,
+unscoped read, so do not grant write scopes or use a customer/administrator key.
+Keep the organization stable and its rate limits sufficient for two requests per
+minute from each region.
+
+Obtain approval of fresh plans for **both** `.railway/observability.ts` and
+`.railway/observability-probes.ts` against the production IDs above before applying.
+The EU plan must create only `blackbox-eu`; existing service regions, volumes and
+application settings must not change. Do not assume the pinned CLI's plan reports
+all replica-region settings: independently verify Amsterdam after creation, as
+required for the earlier US East migration.
+
+Deploy Blackbox separately to `blackbox` and `blackbox-eu`, then deploy Prometheus
+and Grafana using the existing explicit upload workflow. Roll out the key and
+exporters before the new scrape configuration. See
+[`regional probe verification`](../infra/observability/README.md#regional-api-probes-source-only)
+for the expected labels and success checks. These source changes do not establish
+a live deployment or real regional latency measurements.
 
 ## US East migration
 

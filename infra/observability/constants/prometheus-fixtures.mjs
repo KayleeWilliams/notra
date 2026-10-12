@@ -15,6 +15,8 @@ export const windowFixtureDimensions = {
   cacheResult: "HIT",
   runtime: "nodejs",
   functionStartType: "warm",
+  probeRegion: "us-east",
+  probeCheck: "api_workspace",
 };
 export const windowFixtures = [
   ["vercel.request.count", "count", "project", 230, "count"],

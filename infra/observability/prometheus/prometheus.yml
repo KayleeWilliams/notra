@@ -42,6 +42,11 @@ scrape_configs:
     label_value_length_limit: 2048
     static_configs:
       - targets: ["blackbox.railway.internal:9115"]
+        labels:
+          probe_region: us-east
+      - targets: ["blackbox-eu.railway.internal:9115"]
+        labels:
+          probe_region: eu-west
   - job_name: vercel
     sample_limit: 100000
     body_size_limit: 32MB
@@ -63,13 +68,45 @@ scrape_configs:
       - targets:
           - https://www.usenotra.com
           - https://app.usenotra.com
-          - https://api.usenotra.com/ping
           - https://ingest.usenotra.com/readyz
           - https://mcp.usenotra.com/.well-known/oauth-protected-resource
+        labels:
+          probe_region: us-east
+          probe_check: https_2xx
+          probe_exporter: blackbox.railway.internal:9115
+      - targets: ["https://api.usenotra.com/ping"]
+        labels:
+          probe_region: us-east
+          probe_check: api_ping
+          probe_exporter: blackbox.railway.internal:9115
+          probe_module: api_ping
+      - targets: ["https://api.usenotra.com/ping"]
+        labels:
+          probe_region: eu-west
+          probe_check: api_ping
+          probe_exporter: blackbox-eu.railway.internal:9115
+          probe_module: api_ping
+      - targets: ["https://api.usenotra.com/v1/me/workspaces"]
+        labels:
+          probe_region: us-east
+          probe_check: api_workspace
+          probe_exporter: blackbox.railway.internal:9115
+          probe_module: api_workspace
+      - targets: ["https://api.usenotra.com/v1/me/workspaces"]
+        labels:
+          probe_region: eu-west
+          probe_check: api_workspace
+          probe_exporter: blackbox-eu.railway.internal:9115
+          probe_module: api_workspace
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
       - source_labels: [__param_target]
         target_label: instance
-      - target_label: __address__
-        replacement: blackbox.railway.internal:9115
+      - source_labels: [probe_module]
+        regex: (.+)
+        target_label: __param_module
+      - source_labels: [probe_exporter]
+        target_label: __address__
+      - action: labeldrop
+        regex: probe_exporter|probe_module
