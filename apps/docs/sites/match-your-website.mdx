@@ -72,6 +72,8 @@ Slots add your own content at fixed places, and each one is a file in `slots/`:
 | `post` | `title`, `description`, `date` (formatted), `tags`, `authors` (each with `name`, `title`, `url`), `url` |
 | `entry` | `title`, `version`, `date` (formatted), `url` |
 
+The hero slots span the full content width, so wrap their content in `<div className="mx-auto max-w-(--layout-index)">` to line it up with the posts below.
+
 ```mdx slots/after-post.mdx
 <div className="mt-12 rounded-xl border border-border p-6">
   <p className="font-semibold">Enjoyed "{post.title}"?</p>
@@ -80,7 +82,7 @@ Slots add your own content at fixed places, and each one is a file in `slots/`:
 </div>
 ```
 
-A call to action under every post, a newsletter form or a product card in the sidebar each fit in a slot. A file in `slots/` with any other name stops the build with `Unknown slot` and the list of valid names.
+A call to action under every post, a newsletter form or a product card in the sidebar each fit in a slot. A file in `slots/` with any other name stops the build with `Unknown slot` and the list of valid names. Inline SVG in a slot, header or footer takes its attributes the HTML way, like `stroke-width`, because the React form `strokeWidth` is dropped.
 
 ## Your own CSS
 

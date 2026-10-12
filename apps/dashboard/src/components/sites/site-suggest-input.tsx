@@ -22,6 +22,7 @@ export function SiteSuggestInput({
   emptyLabel,
   invalid = false,
   describedBy,
+  disabled = false,
 }: SiteSuggestInputProps) {
   return (
     <Autocomplete
@@ -34,6 +35,7 @@ export function SiteSuggestInput({
         aria-describedby={describedBy}
         aria-invalid={invalid || undefined}
         autoComplete="off"
+        disabled={disabled}
         id={id}
         placeholder={placeholder}
         spellCheck={false}

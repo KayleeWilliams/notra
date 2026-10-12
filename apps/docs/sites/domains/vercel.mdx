@@ -57,3 +57,4 @@ This guide forwards `acme.com/blog` to Notra with rewrites in `vercel.json` at t
 - **Attack Challenge Mode** and bot-protection rules in the Vercel Firewall can block the check and AI crawlers, so allow your section paths, or at least the user agent `NotraSitesVerifier/1.0`.
 - **Headers you set for `/(.*)`** in `vercel.json`, such as a `Content-Security-Policy`, can apply to the forwarded pages too and block the site's own scripts, so exclude your section paths from those header rules.
 - Vercel keeps the `Accept` header and passes Notra's redirects back to the browser, so Markdown for AI agents and your `blog.json` redirects work without extra setup.
+- **Cookies.** A rewrite also forwards your visitors' cookies and `Authorization` header. Notra ignores them and doesn't store them, but if a session cookie must never leave your domain, scope it to your app's paths or use the [Cloudflare](/sites/domains/cloudflare) proxy, which removes them.

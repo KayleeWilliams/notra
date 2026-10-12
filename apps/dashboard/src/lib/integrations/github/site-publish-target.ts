@@ -12,8 +12,10 @@ import type {
   SiteGitHubPublishTarget,
   FindSiteGitHubPublishTargetParams,
   ReadSiteRepositoryTextFileParams,
-  ResolveSiteEntryAuthorParams,
+  ResolveSiteEntryContextParams,
+  SiteEntryContext,
 } from "@/types/integrations/site-github-publish";
+import { hasGitHubStatus } from "@/utils/github-publish-failure";
 import {
   normalizeSiteRootDirectory,
   parseSiteConfigAuthors,
@@ -69,9 +71,15 @@ export async function findSiteGitHubPublishTarget(
   };
 }
 
+/**
+ * Reads a text file, null when it does not exist. With `strict`, any other
+ * failure throws: callers that merge into the file must not mistake a GitHub
+ * hiccup for "no file" and drop what it contains.
+ */
 async function readRepositoryTextFile(
   token: string,
-  params: ReadSiteRepositoryTextFileParams
+  params: ReadSiteRepositoryTextFileParams,
+  options: { strict?: boolean } = {}
 ): Promise<string | null> {
   try {
     const { data } = await createOctokit(token, {
@@ -88,7 +96,10 @@ async function readRepositoryTextFile(
       return null;
     }
     return Buffer.from(data.content, "base64").toString("utf8");
-  } catch {
+  } catch (error) {
+    if (options.strict && !hasGitHubStatus(error, 404)) {
+      throw error;
+    }
     return null;
   }
 }
@@ -104,34 +115,65 @@ async function readPublisherName(userId: string | undefined) {
   return user?.name ?? null;
 }
 
-export async function resolveSiteEntryAuthor(
-  params: ResolveSiteEntryAuthorParams
-): Promise<string | null> {
-  const [existingMarkdown, publisherName, siteConfig] = await Promise.all([
-    params.existingEntry
-      ? readRepositoryTextFile(params.token, {
+/**
+ * Reads what the repository already has for this entry: the open pull
+ * request's version if there is one, otherwise the live file. Also resolves
+ * the legacy author fallback (the publisher, matched against notra.json).
+ */
+export async function resolveSiteEntryContext(
+  params: ResolveSiteEntryContextParams
+): Promise<SiteEntryContext> {
+  const productionPath = params.existingEntry?.path ?? params.path;
+  const [branchMarkdown, liveMarkdown, publisherName, siteConfig] =
+    await Promise.all([
+      params.existingEntry
+        ? readRepositoryTextFile(
+            params.token,
+            {
+              owner: params.owner,
+              repo: params.repo,
+              path: params.existingEntry.path,
+              ref: params.existingEntry.branchName,
+            },
+            { strict: true }
+          )
+        : null,
+      readRepositoryTextFile(
+        params.token,
+        {
           owner: params.owner,
           repo: params.repo,
-          path: params.existingEntry.path,
-          ref: params.existingEntry.branchName,
-        })
-      : null,
-    readPublisherName(params.publisherUserId),
-    readRepositoryTextFile(params.token, {
-      owner: params.owner,
-      repo: params.repo,
-      path: resolveSiteConfigPath(params.target.rootDirectory),
-      ref: params.target.productionBranch,
-    }),
-  ]);
+          path: productionPath,
+          ref: params.target.productionBranch,
+        },
+        { strict: true }
+      ),
+      params.contentType === "blog_post"
+        ? readPublisherName(params.publisherUserId)
+        : null,
+      params.contentType === "blog_post"
+        ? readRepositoryTextFile(params.token, {
+            owner: params.owner,
+            repo: params.repo,
+            path: resolveSiteConfigPath(params.target.rootDirectory),
+            ref: params.target.productionBranch,
+          })
+        : null,
+    ]);
+  const existingMarkdown = branchMarkdown ?? liveMarkdown;
   const existingAuthor = existingMarkdown
     ? readSiteEntryAuthor(existingMarkdown)
     : null;
-  if (existingAuthor) {
-    return existingAuthor;
-  }
-  return resolveSiteAuthor(
-    siteConfig ? parseSiteConfigAuthors(siteConfig) : {},
-    publisherName
-  );
+  return {
+    existingMarkdown,
+    isLive: liveMarkdown !== null,
+    author:
+      params.contentType === "blog_post"
+        ? (existingAuthor ??
+          resolveSiteAuthor(
+            siteConfig ? parseSiteConfigAuthors(siteConfig) : {},
+            publisherName
+          ))
+        : null,
+  };
 }

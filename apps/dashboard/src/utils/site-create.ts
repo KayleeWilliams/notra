@@ -38,13 +38,18 @@ export function siteCreateInput(
     },
     previewVisibility: form.previewVisibility,
     publishMode: form.publishMode,
-    projectId: projectId ?? undefined,
+    projectId,
   };
 }
 
+/** An empty slug is fine: the server derives one from the name. */
+export function isSiteSlugInvalid(slug: string): boolean {
+  const normalized = slug.trim().toLowerCase();
+  return normalized.length > 0 && !isValidSiteSlug(normalized);
+}
+
 export function isSiteCreateSlugInvalid(form: SiteCreateFormValues): boolean {
-  const slug = siteCreateSlug(form);
-  return slug.length > 0 && !isValidSiteSlug(slug);
+  return isSiteSlugInvalid(form.slug);
 }
 
 function isSiteCreateFormComplete(form: SiteCreateFormValues): boolean {

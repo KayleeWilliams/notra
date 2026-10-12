@@ -13,6 +13,7 @@ export interface OperationalLogEvent {
   method: string;
   routeId: string;
   organizationId?: string | null;
+  userId?: string | null;
   projectId?: string | null;
   provider?: string;
   errorName?: string;
@@ -23,11 +24,15 @@ export interface OperationalLogEvent {
 
 export interface OperationalContext {
   requestId: string;
+  userId?: string | null;
   organizationId?: string | null;
   projectId?: string | null;
   runId?: string;
   scanId?: string;
   promptId?: string;
+  sessionId?: string;
+  turnId?: string;
+  chatId?: string;
   turn?: number;
 }
 

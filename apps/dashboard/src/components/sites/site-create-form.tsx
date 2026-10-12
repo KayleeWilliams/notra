@@ -9,12 +9,16 @@ import {
   MotionConfig,
   useReducedMotion,
 } from "motion/react";
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "use-intl";
 
 import { Button } from "@/components/button";
+import { SiteCreateBulkFields } from "@/components/sites/site-create-bulk-fields";
+import { SiteCreateBulkResults } from "@/components/sites/site-create-bulk-results";
+import { SiteCreateBulkToggle } from "@/components/sites/site-create-bulk-toggle";
 import { SiteCreateDeploy } from "@/components/sites/site-create-deploy";
+import { SiteCreateProject } from "@/components/sites/site-create-project";
 import { SiteCreateSourceFields } from "@/components/sites/site-create-source-fields";
 import { SiteCreateStage } from "@/components/sites/site-create-stage";
 import { SiteCreateStep } from "@/components/sites/site-create-step";
@@ -30,16 +34,19 @@ import {
 } from "@/constants/site-create";
 import { useActiveProject } from "@/lib/hooks/use-active-project";
 import { useCreateSite } from "@/lib/hooks/use-create-site";
+import { useCreateSites } from "@/lib/hooks/use-create-sites";
 import {
   useConnectSiteRepository,
   useImportableRepositories,
 } from "@/lib/hooks/use-importable-repositories";
 import { useRepositorySuggestions } from "@/lib/hooks/use-repository-suggestions";
+import { useSiteBulkImport } from "@/lib/hooks/use-site-bulk-import";
 import type {
   SiteCreateFormProps,
   SiteCreateStepState,
 } from "@/types/components/sites";
 import type {
+  SiteBulkRow,
   SiteCreateFieldErrors,
   SiteCreateFormValues,
   SiteCreateStepId,
@@ -56,6 +63,8 @@ import {
   siteCreateSectionPlan,
   withSiteRepository,
 } from "@/utils/site-create";
+import { siteBulkCreateInput, siteBulkFieldId } from "@/utils/site-create-bulk";
+import { resolvedSiteProjectId } from "@/utils/site-project";
 
 export function SiteCreateForm({
   organizationId,
@@ -78,8 +87,23 @@ export function SiteCreateForm({
   const [starterPullRequestUrl, setStarterPullRequestUrl] = useState<
     string | null
   >(null);
+  const sourceRevision = useRef(0);
+  const resetStarterSource = () => {
+    sourceRevision.current += 1;
+    setStarterPullRequestUrl(null);
+  };
+  // Snapshot the source when the request starts, so a PR for an older
+  // repository, branch or folder never lands on the current one.
+  const startStarterRequest = () => {
+    const revision = sourceRevision.current;
+    return (url: string) => {
+      if (sourceRevision.current === revision) {
+        setStarterPullRequestUrl(url);
+      }
+    };
+  };
 
-  const { projectId } = useActiveProject();
+  const projectId = resolvedSiteProjectId(useActiveProject());
   const createMutation = useCreateSite();
   const isCreating = createMutation.isPending;
   const created = createMutation.data?.site ?? null;
@@ -89,10 +113,34 @@ export function SiteCreateForm({
     branch: form.branch.trim(),
   });
   const sections = siteCreateSectionPlan(form, suggestions.contentCounts);
+  const bulk = useSiteBulkImport({
+    repository,
+    branch: form.branch.trim(),
+    suggestions,
+  });
+  const createManyMutation = useCreateSites();
+  const isBulk = bulk.active;
+  // One creation at a time: neither mode can start while the other runs.
+  const isAnyCreating = isCreating || createManyMutation.isPending;
+  // While a bulk import runs or once it created sites, the repository and
+  // branch stay put, so results always land on the rows that were sent.
+  const bulkLocked = bulk.createdCount > 0 || isAnyCreating;
   const isReady =
-    isSiteCreateReady(form, repository) &&
-    hasSiteCreateSection(sections) &&
-    !suggestions.isLoading;
+    Boolean(projectId) &&
+    !suggestions.isLoading &&
+    (isBulk
+      ? repository !== null && bulk.isReady
+      : isSiteCreateReady(form, repository) && hasSiteCreateSection(sections));
+  const isSubmitting = isBulk ? createManyMutation.isPending : isCreating;
+  const firstPendingRow = bulk.pendingRows[0];
+  let configureFocusId = `${id}-name`;
+  if (isBulk) {
+    // The toggle is disabled once sites exist, so focus the first row instead.
+    configureFocusId =
+      bulkLocked && firstPendingRow
+        ? siteBulkFieldId(id, firstPendingRow.rootDirectory, "name")
+        : `${id}-bulk`;
+  }
 
   const activeIndex = SITE_CREATE_STEP_IDS.indexOf(activeStep);
   const stateOf = (step: SiteCreateStepId): SiteCreateStepState => {
@@ -119,6 +167,9 @@ export function SiteCreateForm({
     key: K,
     value: SiteCreateFormValues[K]
   ) => {
+    if (key === "repositoryId" || key === "branch" || key === "rootDirectory") {
+      resetStarterSource();
+    }
     setForm((current) => ({ ...current, [key]: value }));
     const field = SITE_CREATE_VALUE_FIELDS[key];
     if (field) {
@@ -129,7 +180,9 @@ export function SiteCreateForm({
   };
 
   const goTo = (step: SiteCreateStepId, focusId?: string) => {
-    if (createMutation.isSuccess && step !== "deploy") {
+    const bulkBlocks =
+      bulkLocked && (step === "repository" || bulk.pendingRows.length === 0);
+    if (step !== "deploy" && (createMutation.isSuccess || bulkBlocks)) {
       return;
     }
     setActiveStep(step);
@@ -154,7 +207,7 @@ export function SiteCreateForm({
           }
         : await connect.mutateAsync(candidate.githubRepositoryId);
       setRepository(picked);
-      setStarterPullRequestUrl(null);
+      resetStarterSource();
       setForm((current) =>
         withSiteRepository({ ...current, name: "", slug: "" }, picked)
       );
@@ -167,7 +220,13 @@ export function SiteCreateForm({
   };
 
   const create = () => {
-    if (!(repository && isReady) || isCreating) {
+    if (isBulk) {
+      if (isReady) {
+        createBulk(bulk.selectedRows);
+      }
+      return;
+    }
+    if (!(repository && isReady && projectId) || isAnyCreating) {
       return;
     }
     createMutation.mutate(
@@ -195,6 +254,30 @@ export function SiteCreateForm({
     );
   };
 
+  const createBulk = (rows: SiteBulkRow[]) => {
+    if (!(repository && projectId) || rows.length === 0 || isAnyCreating) {
+      return;
+    }
+    createManyMutation.mutate(
+      siteBulkCreateInput(
+        rows,
+        { organizationId, repositoryId: repository.id, projectId },
+        { branch: form.branch, previewsEnabled: bulk.previewsEnabled }
+      ),
+      {
+        onSuccess: ({ results }) => {
+          bulk.recordResults(rows, results);
+          goTo("deploy");
+        },
+      }
+    );
+  };
+
+  const retryFailedBulkRows = () =>
+    createBulk(
+      bulk.submittedRows.filter((row) => row.result && "error" in row.result)
+    );
+
   const steps = SITE_CREATE_STEP_IDS.map((step) => ({
     id: step,
     label: t(`stepLabels.${step}`),
@@ -220,9 +303,32 @@ export function SiteCreateForm({
     },
   }[activeStep];
 
+  let deployContent = <div className="h-80" />;
+  if (isBulk && bulk.submittedRows.length > 0) {
+    deployContent = (
+      <SiteCreateBulkResults
+        isRetrying={createManyMutation.isPending}
+        onEdit={() => goTo("configure", configureFocusId)}
+        onRetry={retryFailedBulkRows}
+        organizationSlug={organizationSlug}
+        rows={bulk.submittedRows}
+      />
+    );
+  } else if (created) {
+    deployContent = (
+      <SiteCreateDeploy
+        deploymentQueued={createMutation.data?.deploymentQueued ?? true}
+        organizationId={organizationId}
+        organizationSlug={organizationSlug}
+        site={created}
+      />
+    );
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-6" data-site-fill>
       <PageHeading description={t("description")} title={t("title")} />
+      <SiteCreateProject organizationId={organizationId} />
       <div className="flex min-h-[32rem] min-w-0 flex-1 flex-col">
         <SiteCreateStage
           activeIndex={activeIndex}
@@ -269,14 +375,16 @@ export function SiteCreateForm({
             footer={
               <Button
                 disabled={!isReady}
-                loading={isCreating}
+                loading={isSubmitting}
                 onClick={create}
                 type="button"
               >
-                {t("create")}
+                {isBulk
+                  ? t("bulk.create", { count: bulk.selectedRows.length })
+                  : t("create")}
               </Button>
             }
-            onActivate={() => goTo("configure", `${id}-name`)}
+            onActivate={() => goTo("configure", configureFocusId)}
             state={stateOf("configure")}
             title={t("stepConfigure")}
           >
@@ -289,37 +397,55 @@ export function SiteCreateForm({
                   key={repository?.id ?? "locked"}
                   variants={SITE_CREATE_CONFIG_VARIANTS}
                 >
-                  <SiteCreateSourceFields
-                    errors={errors}
-                    form={form}
-                    hostingDomain={hostingDomain}
-                    idPrefix={id}
-                    onChange={update}
-                    onStarterPullRequestOpened={setStarterPullRequestUrl}
-                    organizationId={organizationId}
-                    repository={repository}
-                    sections={sections}
-                    slugInvalid={isSiteCreateSlugInvalid(form)}
-                    starterPullRequestUrl={starterPullRequestUrl}
-                    suggestions={suggestions}
-                  />
+                  {bulk.available ? (
+                    <SiteCreateBulkToggle
+                      checked={isBulk}
+                      count={bulk.rows.length}
+                      disabled={bulkLocked}
+                      id={`${id}-bulk`}
+                      onCheckedChange={bulk.setEnabled}
+                    />
+                  ) : null}
+                  {isBulk ? (
+                    <SiteCreateBulkFields
+                      branch={form.branch}
+                      branchLocked={bulkLocked}
+                      hostingDomain={hostingDomain}
+                      idPrefix={id}
+                      issues={bulk.issues}
+                      onBranchChange={(value) => update("branch", value)}
+                      onPreviewsChange={bulk.setPreviewsEnabled}
+                      onRowChange={bulk.updateRow}
+                      onSelectAll={bulk.selectAll}
+                      disabled={createManyMutation.isPending}
+                      previewsEnabled={bulk.previewsEnabled}
+                      repository={repository}
+                      rows={bulk.pendingRows}
+                      suggestions={suggestions}
+                    />
+                  ) : (
+                    <SiteCreateSourceFields
+                      errors={errors}
+                      form={form}
+                      hostingDomain={hostingDomain}
+                      idPrefix={id}
+                      onChange={update}
+                      onStarterRequestStart={startStarterRequest}
+                      organizationId={organizationId}
+                      repository={repository}
+                      sections={sections}
+                      slugInvalid={isSiteCreateSlugInvalid(form)}
+                      starterPullRequestUrl={starterPullRequestUrl}
+                      suggestions={suggestions}
+                    />
+                  )}
                 </m.div>
               </LazyMotion>
             </MotionConfig>
           </SiteCreateStep>
 
           <SiteCreateStep state={stateOf("deploy")} title={t("stepDeploy")}>
-            {created ? (
-              <SiteCreateDeploy
-                deploymentQueued={createMutation.data?.deploymentQueued ?? true}
-                organizationId={organizationId}
-                organizationSlug={organizationSlug}
-                site={created}
-                starterPullRequestUrl={starterPullRequestUrl}
-              />
-            ) : (
-              <div className="h-80" />
-            )}
+            {deployContent}
           </SiteCreateStep>
         </SiteCreateStage>
       </div>

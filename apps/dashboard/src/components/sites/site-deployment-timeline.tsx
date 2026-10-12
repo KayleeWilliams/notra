@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  Cancel01Icon,
-  CheckmarkCircle02Icon,
-  Loading03Icon,
-} from "@hugeicons/core-free-icons";
+import { Cancel01Icon, Loading03Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { CSSProperties } from "react";
 import { useMemo } from "react";
@@ -57,11 +53,26 @@ export function SiteDeploymentTimeline({
     [deployment, log, now, locale, time]
   );
 
+  // A phase that ran without timing would make the sum a partial total.
+  const timed = phases.filter((phase) => phase.state !== "pending");
+  const totalMs =
+    timed.length > 0 && timed.every((phase) => phase.durationMs !== null)
+      ? timed.reduce((sum, phase) => sum + (phase.durationMs ?? 0), 0)
+      : null;
+  const total = formatDeploymentPhaseDuration(totalMs, locale);
+
   return (
     <section aria-label={t("title")} className="space-y-3">
-      <h2 className="text-sm font-medium">{t("title")}</h2>
+      <div className="flex min-h-7 items-center justify-between gap-3">
+        <h2 className="text-sm font-medium">{t("title")}</h2>
+        {total ? (
+          <span className="text-muted-foreground text-xs tabular-nums">
+            {t("total", { duration: total })}
+          </span>
+        ) : null}
+      </div>
       <div className="overflow-x-auto pb-1">
-        <ol className="flex min-w-xl gap-2">
+        <ol className="flex min-w-xl gap-1.5">
           {phases.map((phase) => {
             const duration = phase.duration;
             const label = t(`phases.${phase.id}`);
@@ -69,8 +80,6 @@ export function SiteDeploymentTimeline({
             let icon = null;
             if (phase.state === "active") {
               icon = Loading03Icon;
-            } else if (phase.state === "complete") {
-              icon = CheckmarkCircle02Icon;
             } else if (phase.state === "failed" || phase.state === "stopped") {
               icon = Cancel01Icon;
             }
@@ -94,40 +103,7 @@ export function SiteDeploymentTimeline({
                   } as CSSProperties
                 }
               >
-                <div
-                  className="text-muted-foreground truncate text-xs"
-                  title={label}
-                >
-                  {phase.id === "preparing" ? (
-                    <>
-                      <span className="@min-[8rem]/phase:hidden">
-                        {t("phases.preparingShort")}
-                      </span>
-                      <span className="hidden @min-[8rem]/phase:inline">
-                        {label}
-                      </span>
-                    </>
-                  ) : (
-                    label
-                  )}
-                </div>
-                <div
-                  className={cn(
-                    "bg-muted/40 text-muted-foreground relative isolate flex h-8 items-center justify-end gap-2 overflow-hidden rounded-md border px-2 inset-shadow-sm inset-shadow-white/15 before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:bg-[repeating-linear-gradient(135deg,currentColor_0px,currentColor_3px,transparent_3px,transparent_8px)] before:opacity-15",
-                    phase.state === "complete" &&
-                      "border-geo-up/30 bg-geo-up/5 text-geo-up",
-                    (phase.state === "active" || phase.state === "stopped") &&
-                      "border-warning/30 bg-warning/5 text-warning",
-                    phase.state === "failed" &&
-                      "border-destructive/40 bg-destructive/5 text-destructive"
-                  )}
-                >
-                  <span
-                    className="text-muted-foreground font-mono text-xs tabular-nums"
-                    title={duration ?? t("timingUnavailable")}
-                  >
-                    {duration ?? "–"}
-                  </span>
+                <div className="flex min-w-0 items-center gap-1.5 text-xs">
                   {icon ? (
                     <HugeiconsIcon
                       aria-hidden="true"
@@ -135,15 +111,53 @@ export function SiteDeploymentTimeline({
                         "size-3.5 shrink-0",
                         phase.state === "active" &&
                           "text-warning motion-safe:animate-spin",
-                        phase.state === "complete" && "text-geo-up",
                         phase.state === "failed" && "text-destructive",
                         phase.state === "stopped" && "text-warning"
                       )}
                       icon={icon}
+                      strokeWidth={1.75}
                     />
                   ) : null}
+                  <span
+                    className={cn(
+                      "min-w-0 truncate",
+                      phase.state === "pending" || phase.state === "unknown"
+                        ? "text-muted-foreground"
+                        : "text-foreground"
+                    )}
+                    title={label}
+                  >
+                    {phase.id === "preparing" ? (
+                      <>
+                        <span className="@min-[8rem]/phase:hidden">
+                          {t("phases.preparingShort")}
+                        </span>
+                        <span className="hidden @min-[8rem]/phase:inline">
+                          {label}
+                        </span>
+                      </>
+                    ) : (
+                      label
+                    )}
+                  </span>
                 </div>
-                <div className="text-muted-foreground min-h-4 font-mono text-xs tabular-nums">
+                <div
+                  className={cn(
+                    "text-muted-foreground relative isolate flex h-7 items-center justify-end overflow-hidden rounded-md border border-dashed px-2 font-mono text-xs tabular-nums",
+                    phase.state === "complete" &&
+                      "border-geo-up/25 bg-geo-up/10 text-geo-up border-solid",
+                    phase.state === "active" &&
+                      "border-warning/30 bg-warning/10 text-warning border-solid before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:bg-[repeating-linear-gradient(135deg,currentColor_0px,currentColor_3px,transparent_3px,transparent_8px)] before:opacity-15",
+                    phase.state === "stopped" &&
+                      "border-warning/25 bg-warning/5 text-warning border-solid",
+                    phase.state === "failed" &&
+                      "border-destructive/35 bg-destructive/10 text-destructive border-solid"
+                  )}
+                  title={duration ?? t("timingUnavailable")}
+                >
+                  {duration ?? "–"}
+                </div>
+                <div className="text-muted-foreground/70 min-h-4 font-mono text-xs tabular-nums">
                   {phase.startIso !== null ? (
                     // Local time: the server renders in its own zone first.
                     <time

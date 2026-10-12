@@ -2,8 +2,9 @@ import type { IconSvgElement } from "@hugeicons/react";
 import type { SITE_DEPLOYMENT_STATUSES } from "@notra/sites-core/constants/sites";
 import type { RepositoryContentCount } from "@notra/sites-server/types/github";
 import type { SiteInputField } from "@notra/sites-server/types/sites";
+import type { Badge } from "@notra/ui/components/ui/badge";
 import type { InferRouterInputs, InferRouterOutputs } from "@orpc/server";
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
 import type { SITE_CREATE_STEP_IDS } from "@/constants/site-create";
 import type {
@@ -18,6 +19,8 @@ type SitesOutputs = InferRouterOutputs<DashboardRouter>["sites"];
 type SitesInputs = InferRouterInputs<DashboardRouter>["sites"];
 
 export type SiteCreateInput = SitesInputs["create"];
+export type SiteCreateManyInput = SitesInputs["createMany"];
+export type SiteBulkResult = SitesOutputs["createMany"]["results"][number];
 
 export type SiteListResult = SitesOutputs["list"];
 export type SiteListItem = SiteListResult["sites"][number];
@@ -51,6 +54,12 @@ export interface SiteBuildAgentPromptInput {
 }
 
 export type SiteDeploymentStatus = (typeof SITE_DEPLOYMENT_STATUSES)[number];
+
+export interface SiteStatusBadgeConfig {
+  variant: NonNullable<ComponentProps<typeof Badge>["variant"]>;
+  icon?: IconSvgElement;
+  square?: boolean;
+}
 export type SiteSection = (typeof SITE_DETAIL_TABS)[number];
 
 export interface SiteSectionConfig {
@@ -78,6 +87,7 @@ export interface SiteProxyRecipe {
 
 export interface SitesPageClientProps {
   organizationSlug: string;
+  showAll?: boolean;
 }
 
 export interface SiteDomainConnectRouteContext {
@@ -150,7 +160,7 @@ export type SiteCreateFieldErrors = Partial<Record<SiteInputField, string>>;
 export interface SiteCreateTarget {
   organizationId: string;
   repositoryId: string;
-  projectId: string | null;
+  projectId: string;
 }
 
 export interface SiteSettingsPatch {
@@ -161,7 +171,22 @@ export interface SiteSettingsPatch {
   publishMode?: SitePublishMode;
   previewCommentsEnabled?: boolean;
   smartDeployments?: boolean;
+  showBranding?: boolean;
+  analyticsEnabled?: boolean;
 }
+
+export type SiteSettingsRowKey =
+  | "repository"
+  | "branch"
+  | "rootDirectory"
+  | "sections"
+  | "variables"
+  | "previewAccess";
+
+export type SiteSettingsToggleField =
+  | "previewCommentsEnabled"
+  | "smartDeployments"
+  | "showBranding";
 
 export type SiteDomainRecord = SiteDomain["records"][number];
 export type SiteDomainConnectOutcome =
@@ -241,12 +266,60 @@ export interface SiteCreateSectionPlan {
   counts: RepositoryContentCount | null;
 }
 
+/** What the user changed on one row of a bulk import; the rest is derived. */
+export interface SiteBulkRowEdit {
+  name?: string;
+  slug?: string;
+  selected?: boolean;
+}
+
+/** One folder with a blog.json, as a site the bulk import would create. */
+export interface SiteBulkRow {
+  rootDirectory: string;
+  name: string;
+  slug: string;
+  selected: boolean;
+  sections: SiteCreateSectionPlan;
+  /** Outcome of the last attempt, or null when it was never submitted. */
+  result: SiteBulkResult | null;
+}
+
+export interface SiteBulkSubmitOptions {
+  branch: string;
+  previewsEnabled: boolean;
+}
+
+export type SiteBulkSlugIssue = "invalid" | "reserved" | "duplicate";
+
+export interface SiteBulkRowsInput {
+  directories: string[];
+  contentCounts: Record<string, RepositoryContentCount> | undefined;
+  repositoryName: string;
+  edits: Record<string, SiteBulkRowEdit>;
+  results: Record<string, SiteBulkResult>;
+}
+
+export interface SiteBulkImportScope {
+  repository: SiteRepository | null;
+  branch: string;
+  suggestions: RepositorySuggestionsResult;
+}
+
+/** The folders of the last complete repository scan for one branch. */
+export interface SiteBulkScan {
+  scope: string;
+  directories: string[];
+  contentCounts: Record<string, RepositoryContentCount> | undefined;
+}
+
 export interface RepositorySuggestionsResult {
   branches: string[];
   defaultBranch: string | null;
   configDirectories: string[];
   contentCounts: Record<string, RepositoryContentCount> | undefined;
   isLoading: boolean;
+  isReady: boolean;
+  isComplete: boolean;
 }
 
 export type RepositorySuggestionsScope =

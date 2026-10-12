@@ -2,8 +2,6 @@
 
 import {
   Alert02Icon,
-  ArrowDown01Icon,
-  ArrowUp01Icon,
   LinkSquare02Icon,
   Refresh03Icon,
 } from "@hugeicons/core-free-icons";
@@ -16,6 +14,7 @@ import {
 } from "@notra/geo-core/utils/agent-readiness";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { InstrumentModule } from "@notra/ui/components/instrument/instrument-module";
+import { TrendBadge } from "@notra/ui/components/trend-badge";
 import type { CSSProperties, ReactNode } from "react";
 import { useFormatter, useNow, useTranslations } from "use-intl";
 
@@ -50,18 +49,9 @@ function ScoreDelta({ score, previousScore }: AgentReadinessScoreDeltaProps) {
   const improved = delta > 0;
 
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-0.5 text-xs font-medium tabular-nums",
-        improved ? "text-success" : "text-destructive"
-      )}
-    >
-      <HugeiconsIcon
-        icon={improved ? ArrowUp01Icon : ArrowDown01Icon}
-        size={12}
-      />
+    <TrendBadge tone={improved ? "up" : "down"}>
       {t("sinceLastScan", { delta: `${improved ? "+" : ""}${delta}` })}
-    </span>
+    </TrendBadge>
   );
 }
 

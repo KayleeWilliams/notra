@@ -79,6 +79,7 @@ import {
 import type { GeoContentBriefJson } from "./types/geo-writer";
 import type { GoogleSearchConsoleQuery } from "./types/google-search-console";
 import type { PostGitHubPublish } from "./types/post-github-publish";
+import type { PostCoverImage } from "./types/post-metadata";
 import type {
   ScheduledPublicationDestinationConfig,
   ScheduledPublicationResult,
@@ -1086,6 +1087,11 @@ export const brandGuidelines = pgTable(
     contextDevMeta: jsonb("context_dev_meta"),
     lastGeneratedAt: timestamp("last_generated_at"),
     lastGenerationError: text("last_generation_error"),
+    sourcePdfFilename: text("source_pdf_filename"),
+    sourcePdfStorageKey: text("source_pdf_storage_key"),
+    sourcePdfUrl: text("source_pdf_url"),
+    sourcePdfText: text("source_pdf_text"),
+    sourcePdfUploadedAt: timestamp("source_pdf_uploaded_at"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
@@ -2345,6 +2351,21 @@ export const posts = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
     sourceMetadata: jsonb("source_metadata"),
     githubPublish: jsonb("github_publish").$type<PostGitHubPublish | null>(),
+    // Site metadata for blog posts and changelog entries, written into the
+    // frontmatter on publish.
+    coverImage: jsonb("cover_image").$type<PostCoverImage | null>(),
+    tags: text("tags")
+      .array()
+      .default(sql`'{}'::text[]`)
+      .notNull(),
+    excerpt: text("excerpt"),
+    authorIds: text("author_ids")
+      .array()
+      .default(sql`'{}'::text[]`)
+      .notNull(),
+    featured: boolean("featured").default(false).notNull(),
+    noindex: boolean("noindex").default(false).notNull(),
+    displayDate: timestamp("display_date"),
     status: postStatusEnum("status").default("draft").notNull(),
     publishedAt: timestamp("published_at"),
     updatedAt: timestamp("updated_at")
@@ -2379,6 +2400,43 @@ export const posts = pgTable(
     index("posts_org_published_at_idx")
       .on(table.organizationId, table.publishedAt)
       .where(sql`${table.publishedAt} IS NOT NULL`),
+  ]
+);
+
+export const contentAuthors = pgTable(
+  "content_authors",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    // Stable id on hosted sites: the author page lives at /author/<slug>.
+    slug: text("slug").notNull(),
+    name: text("name").notNull(),
+    title: text("title"),
+    bio: text("bio"),
+    avatarUrl: text("avatar_url"),
+    url: text("url"),
+    x: text("x"),
+    linkedin: text("linkedin"),
+    github: text("github"),
+    userId: text("user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("content_authors_org_slug_uidx").on(
+      table.organizationId,
+      table.slug
+    ),
+    uniqueIndex("content_authors_org_user_uidx")
+      .on(table.organizationId, table.userId)
+      .where(sql`${table.userId} IS NOT NULL`),
   ]
 );
 
@@ -3737,6 +3795,13 @@ export const postCollectionsRelations = relations(
   })
 );
 
+export const contentAuthorsRelations = relations(contentAuthors, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [contentAuthors.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
 export const postsRelations = relations(posts, ({ many, one }) => ({
   organization: one(organizations, {
     fields: [posts.organizationId],
@@ -4220,9 +4285,9 @@ export const sites = pgTable(
     organizationId: text("organization_id")
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
-    projectId: text("project_id").references(() => projects.id, {
-      onDelete: "set null",
-    }),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "restrict" }),
     name: text("name").notNull(),
     slug: text("slug").notNull(),
     repositoryId: text("repository_id").references(
@@ -4274,6 +4339,7 @@ export const sites = pgTable(
   },
   (table): PgTableExtraConfigValue[] => [
     index("sites_organizationId_idx").on(table.organizationId),
+    index("sites_org_project_idx").on(table.organizationId, table.projectId),
     uniqueIndex("sites_slug_uidx").on(table.slug),
     index("sites_githubRepositoryId_idx").on(table.githubRepositoryId),
     uniqueIndex("sites_org_id_uidx").on(table.organizationId, table.id),

@@ -1,7 +1,16 @@
+import {
+  CheckmarkCircle02Icon,
+  Loading03Icon,
+  MultiplicationSignCircleIcon,
+} from "@hugeicons/core-free-icons";
 import type { SiteInputField } from "@notra/sites-server/types/sites";
 import { TRANSITION } from "@notra/ui/lib/motion";
 import type { Variants } from "motion/react";
 
+import type {
+  SiteCreateDeployHeadingProps,
+  SiteCreateDeployPhase,
+} from "@/types/components/sites";
 import type { SiteCreateFormValues } from "@/types/sites";
 
 export const SITE_CREATE_FORM_DEFAULTS: SiteCreateFormValues = {
@@ -78,3 +87,26 @@ export const SITE_CREATE_STARTER_DEBOUNCE_MS = 400;
 export const SITE_CONFIG_MISSING_DIAGNOSTIC = "config_missing";
 export const SITE_CONFIG_DOCS_URL =
   "https://www.usenotra.com/docs/sites/reference/blog-json";
+
+export const SITE_CREATE_DEPLOY_PHASE_TONES: Record<
+  SiteCreateDeployPhase,
+  SiteCreateDeployHeadingProps["tone"]
+> = {
+  pending: "pending",
+  ready: "success",
+  failed: "error",
+  lookupFailed: "error",
+};
+
+export const SITE_CREATE_DEPLOY_TONE_ICONS = {
+  pending: Loading03Icon,
+  success: CheckmarkCircle02Icon,
+  error: MultiplicationSignCircleIcon,
+} as const;
+
+/** Bulk import is offered once a repository holds this many sites. */
+export const SITE_BULK_IMPORT_MIN_DIRECTORIES = 2;
+/** Height of a bulk import row: an input plus the folder line under it. */
+export const SITE_BULK_ROW_HEIGHT = 84;
+
+export const SITE_BULK_FOLDER_WORD_SEPARATOR = /[-_.\s]+/;

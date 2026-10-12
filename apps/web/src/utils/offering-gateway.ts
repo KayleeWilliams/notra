@@ -5,9 +5,20 @@ import { OFFERING_CHECK_GATEWAY_TAG } from "@/constants/offering-check";
  * AI Gateway, split by step. Visitors type these prompts, so they are never
  * used for training.
  */
-export function offeringGatewayOptions(step: string) {
-  return {
-    tags: [OFFERING_CHECK_GATEWAY_TAG, `${OFFERING_CHECK_GATEWAY_TAG}-${step}`],
-    disallowPromptTraining: true,
-  };
+export function offeringGatewayOptions(step: string, runId?: string) {
+  return (
+    withUsageAttribution(
+      {
+        gateway: {
+          tags: [
+            OFFERING_CHECK_GATEWAY_TAG,
+            `${OFFERING_CHECK_GATEWAY_TAG}-${step}`,
+          ],
+          disallowPromptTraining: true,
+        },
+      },
+      { runId }
+    ).gateway ?? {}
+  );
 }
+import { withUsageAttribution } from "@notra/ai/utils/usage-attribution";

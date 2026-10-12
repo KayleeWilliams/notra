@@ -20,6 +20,8 @@ export const PREVIEW_COMMENT_TITLES = {
 
 export const BRANCH_SUGGESTION_LIMIT = 300;
 export const GITHUB_PAGE_SIZE = 100;
+/** The pull request files endpoint lists at most 3000 files. */
+export const GITHUB_PULL_REQUEST_MAX_FILES = 3000;
 export const CONTENT_FILE = /^(?:(.*)\/)?(blog|changelog)\/.+\.mdx?$/;
 
 export const CONFIG_SEARCH_SKIPPED_SEGMENTS: ReadonlySet<string> = new Set([
@@ -34,3 +36,6 @@ export const EMPTY_TREE_SCAN: RepositoryTreeScan = {
   truncated: false,
 };
 export const GITHUB_ARCHIVE_TIMEOUT_MS = 60_000;
+// The compare API lists at most 300 changed files for a whole comparison
+// (per_page only pages its commits), so 300 files may mean a cut-off list.
+export const GITHUB_COMPARE_MAX_FILES = 300;

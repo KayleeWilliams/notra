@@ -38,7 +38,8 @@ async function answerQuestion(
   input: OfferingCheckInput,
   question: OfferingQuestion,
   emit: OfferingStreamEmit,
-  abortSignal: AbortSignal
+  abortSignal: AbortSignal,
+  runId: string
 ): Promise<OfferingAnsweredQuestion> {
   const { kind } = question;
   const stream = streamText({
@@ -53,7 +54,7 @@ async function answerQuestion(
     reasoning: "low",
     providerOptions: {
       openai: { reasoningSummary: "auto" },
-      gateway: offeringGatewayOptions(`answer-${kind}`),
+      gateway: offeringGatewayOptions(`answer-${kind}`, runId),
     },
     maxOutputTokens: OFFERING_CHECK_MAX_OUTPUT_TOKENS,
     abortSignal,
@@ -125,11 +126,12 @@ export async function runOfferingCheck(
   abortSignal: AbortSignal
 ): Promise<OfferingCheckResult> {
   // One failed answer fails the check, so stop paying for the other one.
+  const runId = crypto.randomUUID();
   const answering = new AbortController();
   const signal = AbortSignal.any([abortSignal, answering.signal]);
   const answered = await Promise.all(
     buildOfferingQuestions(input).map((question) =>
-      answerQuestion(input, question, emit, signal)
+      answerQuestion(input, question, emit, signal, runId)
     )
   ).catch((error: unknown) => {
     answering.abort();
@@ -142,7 +144,7 @@ export async function runOfferingCheck(
     prompt: buildOfferingJudgePrompt(input, answered),
     output: Output.object({ schema: offeringJudgeSchema }),
     reasoning: "low",
-    providerOptions: { gateway: offeringGatewayOptions("judge") },
+    providerOptions: { gateway: offeringGatewayOptions("judge", runId) },
     abortSignal,
   });
 

@@ -17,9 +17,11 @@ import {
   addSiteDomainInputSchema,
   connectSiteRepositoryInputSchema,
   createSiteInputSchema,
+  createSitesInputSchema,
   repositorySuggestionsInputSchema,
   siteRepositorySuggestionsInputSchema,
   listSiteDeploymentsInputSchema,
+  listSitesInputSchema,
   publishSiteDraftsInputSchema,
   saveSiteDraftInputSchema,
   setSiteSuspendedInputSchema,
@@ -134,7 +136,11 @@ import {
 import { toGeoOrpcError } from "@/lib/orpc/utils/geo-errors";
 import { assertSitesAccess } from "@/lib/sites/access";
 import { dispatchSiteJobs } from "@/lib/sites/dispatch";
-import { toSitesOrpcError } from "@/lib/sites/orpc-errors";
+import { isSitesBulkImportEnabled } from "@/lib/sites/flag";
+import {
+  bulkImportErrorMessage,
+  toSitesOrpcError,
+} from "@/lib/sites/orpc-errors";
 import {
   liveDeploymentsFromState,
   serializeDeployment,
@@ -144,6 +150,7 @@ import {
 } from "@/lib/sites/serialize";
 import type { SiteScope } from "@/types/sites";
 import type {
+  CreateSitesResult,
   SiteAccess,
   SiteAccessOptions,
   SiteRequestContext,
@@ -231,15 +238,30 @@ export const sitesRouter = {
     }),
 
   list: sitesAccessProcedure
-    .input(organizationIdInputSchema)
+    .input(listSitesInputSchema)
     .handler(async ({ input }) => {
+      const project = await db.query.projects.findFirst({
+        columns: { id: true },
+        where: and(
+          eq(projects.id, input.projectId),
+          eq(projects.organizationId, input.organizationId)
+        ),
+      });
+      if (!project) {
+        throw notFound("Project not found");
+      }
       if (!isSitesConfigured()) {
         return { configured: false, sites: [] };
       }
       const rows = await db
         .select()
         .from(sites)
-        .where(eq(sites.organizationId, input.organizationId))
+        .where(
+          and(
+            eq(sites.organizationId, input.organizationId),
+            eq(sites.projectId, input.projectId)
+          )
+        )
         .orderBy(desc(sites.createdAt));
       const details = await Promise.all(
         rows.map(async (site) => {
@@ -422,7 +444,7 @@ export const sitesRouter = {
     .handler(async ({ context, input }) => {
       const { site } = await requireSite(context, input);
       return runOrpcEffect(
-        loadSiteAnalytics(site, geoWindow(input)).pipe(
+        loadSiteAnalytics(site, geoWindow(input), input.path).pipe(
           Effect.provide(geoCoreDashboardLayer)
         ),
         toGeoOrpcError
@@ -437,18 +459,9 @@ export const sitesRouter = {
         headers: context.headers,
         organizationId: input.organizationId,
       });
-      const project = input.projectId
-        ? await db.query.projects.findFirst({
-            columns: { id: true },
-            where: and(
-              eq(projects.id, input.projectId),
-              eq(projects.organizationId, input.organizationId)
-            ),
-          })
-        : undefined;
       const result = await createSite({
         organizationId: input.organizationId,
-        projectId: project?.id ?? null,
+        projectId: input.projectId,
         userId: access.user.id,
         name: input.name,
         slug: input.slug || undefined,
@@ -464,6 +477,52 @@ export const sitesRouter = {
         site: serializeSite(result.site, null),
         deploymentQueued: Boolean(result.jobId),
       };
+    }),
+
+  createMany: sitesProcedure
+    .input(createSitesInputSchema)
+    .handler(async ({ context, input }) => {
+      assertNotDemo();
+      const access = await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+      });
+      if (!(await isSitesBulkImportEnabled(input.organizationId))) {
+        throw forbidden("Bulk import is not enabled for this organization");
+      }
+      // One at a time, so each site claims its address before the next one
+      // picks a slug. A failed row doesn't stop the rest.
+      const results: CreateSitesResult[] = [];
+      const jobIds: Array<string | null> = [];
+      for (const entry of input.sites) {
+        try {
+          const result = await createSite({
+            organizationId: input.organizationId,
+            projectId: input.projectId,
+            userId: access.user.id,
+            repositoryId: input.repositoryId,
+            productionBranch: input.productionBranch,
+            previewsEnabled: input.previewsEnabled,
+            name: entry.name,
+            slug: entry.slug || undefined,
+            rootDirectory: entry.rootDirectory,
+            mounts: entry.mounts,
+          });
+          jobIds.push(result.jobId);
+          results.push({
+            rootDirectory: entry.rootDirectory ?? "",
+            site: serializeSite(result.site, null),
+            deploymentQueued: Boolean(result.jobId),
+          });
+        } catch (error) {
+          results.push({
+            rootDirectory: entry.rootDirectory ?? "",
+            error: bulkImportErrorMessage(error),
+          });
+        }
+      }
+      dispatchLater(jobIds);
+      return { results };
     }),
 
   update: sitesProcedure

@@ -1,4 +1,5 @@
 import { logWarn } from "@notra/ai/utils/server-log";
+import { ORPCError } from "@orpc/server";
 
 import { getTranslations } from "@/lib/i18n/server";
 import { recordGitHubPublishFailure } from "@/lib/integrations/github/github-publish-failure-state";
@@ -51,6 +52,11 @@ export async function toGitHubPublishOrpcError(
   error: unknown,
   context: GitHubPublishFailureContext
 ) {
+  // Errors thrown on purpose while preparing the content already carry the
+  // status and message the user should see.
+  if (error instanceof ORPCError) {
+    return error;
+  }
   if (error instanceof GitHubContentTargetExistsError) {
     return conflict(error.message);
   }

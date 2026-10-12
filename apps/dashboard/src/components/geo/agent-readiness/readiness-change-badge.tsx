@@ -1,9 +1,9 @@
 "use client";
 
+import { TrendBadge } from "@notra/ui/components/trend-badge";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { useTranslations } from "use-intl";
 
-import { AGENT_READINESS_CHANGE_BADGE_VARIANT } from "@/constants/agent-readiness";
 import type { AgentReadinessChangeBadgeProps } from "@/types/agent-readiness";
 
 export function AgentReadinessChangeBadge({
@@ -14,9 +14,16 @@ export function AgentReadinessChangeBadge({
   if (!change) {
     return null;
   }
+  if (change === "added") {
+    return (
+      <Badge shape="rounded" size="sm" variant="info">
+        {t(change)}
+      </Badge>
+    );
+  }
   return (
-    <Badge size="sm" variant={AGENT_READINESS_CHANGE_BADGE_VARIANT[change]}>
+    <TrendBadge size="sm" tone={change === "improved" ? "up" : "down"}>
       {t(change)}
-    </Badge>
+    </TrendBadge>
   );
 }

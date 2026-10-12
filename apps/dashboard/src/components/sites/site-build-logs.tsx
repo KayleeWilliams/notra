@@ -9,7 +9,7 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocale, useTranslations } from "use-intl";
+import { useTranslations } from "use-intl";
 
 import { Button } from "@/components/button";
 import { SiteBuildLogFilter } from "@/components/sites/site-build-log-filter";
@@ -19,44 +19,17 @@ import { cn } from "@/lib/utils";
 import type {
   SiteBuildLogCopyButtonProps,
   SiteBuildLogEmptyProps,
-  SiteBuildLogSummaryProps,
   SiteBuildLogsProps,
 } from "@/types/components/sites";
 import { toastCopyError } from "@/utils/copy-to-clipboard";
-import { formatCount } from "@/utils/format";
 import {
-  countLogLines,
   findMatches,
   groupBuildLog,
   logOffsets,
+  matchOffsets,
   parseBuildLog,
 } from "@/utils/site-build-log";
 import { stripAnsi } from "@/utils/site-deployments";
-
-function BuildLogSummary({ lines, inProgress }: SiteBuildLogSummaryProps) {
-  const t = useTranslations("sites.deploymentPage.log");
-  if (inProgress) {
-    return (
-      <span className="inline-flex items-center gap-1.5">
-        <span
-          aria-hidden="true"
-          className="bg-warning size-1.5 rounded-full motion-safe:animate-pulse"
-        />
-        {t("streaming")}
-      </span>
-    );
-  }
-  const errors = countLogLines(lines, "error");
-  const warnings = countLogLines(lines, "warning");
-  const parts = [t("lines", { count: lines.length })];
-  if (errors > 0) {
-    parts.push(t("errors", { count: errors }));
-  }
-  if (warnings > 0) {
-    parts.push(t("warnings", { count: warnings }));
-  }
-  return parts.join(" · ");
-}
 
 function BuildLogEmpty({
   inProgress,
@@ -116,7 +89,6 @@ export function SiteBuildLogs({
   startAtEnd = false,
 }: SiteBuildLogsProps) {
   const t = useTranslations("sites.deploymentPage.log");
-  const locale = useLocale();
   const scrollRef = useRef<HTMLDivElement>(null);
   const followRef = useRef(true);
   const followedLiveRef = useRef(inProgress || startAtEnd);
@@ -135,6 +107,10 @@ export function SiteBuildLogs({
           )
         : [],
     [lines, trimmedQuery]
+  );
+  const matchingOffsets = useMemo(
+    () => matchOffsets(lines, offsets, matchingLines),
+    [lines, offsets, matchingLines]
   );
 
   useEffect(() => {
@@ -192,6 +168,7 @@ export function SiteBuildLogs({
         >
           <SiteBuildLogRows
             entries={entries}
+            matchOffsets={matchingOffsets}
             matchingLines={matchingLines}
             offsets={offsets}
             query={trimmedQuery}
@@ -215,34 +192,46 @@ export function SiteBuildLogs({
       </div>
     );
 
+  const controls = (
+    <div className="flex shrink-0 items-center gap-1">
+      {lines.length > 0 ? (
+        <SiteBuildLogFilter onChange={setQuery} value={query} />
+      ) : null}
+      <BuildLogCopyButton log={log} />
+    </div>
+  );
+
+  if (heading) {
+    return (
+      <div
+        className="group/log min-w-0"
+        data-streaming={inProgress}
+        data-timestamps={offsets.size > 0}
+      >
+        <div className="flex min-h-11 min-w-0 flex-wrap items-center gap-2 border-b py-1.5 ps-4 pe-2">
+          <div className="min-w-0 flex-[1_1_12rem] text-sm tabular-nums">
+            {heading}
+          </div>
+          {controls}
+        </div>
+        <div className="bg-background relative min-w-0 overflow-hidden">
+          {body}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
-      className="group/log min-w-0"
+      className="group/log min-w-0 space-y-3"
       data-streaming={inProgress}
       data-timestamps={offsets.size > 0}
     >
-      <div className="border-border/60 bg-muted/40 overflow-hidden border-b">
-        <div className="flex min-h-9 min-w-0 flex-wrap items-center gap-2 py-1 ps-3 pe-1">
-          <div className="text-muted-foreground min-w-0 flex-[1_1_12rem] text-xs tabular-nums">
-            {heading ?? (
-              <BuildLogSummary inProgress={inProgress} lines={lines} />
-            )}
-          </div>
-          {lines.length > 0 ? (
-            <SiteBuildLogFilter onChange={setQuery} value={query} />
-          ) : null}
-          {trimmedQuery ? (
-            <span
-              aria-live="polite"
-              className="text-muted-foreground shrink-0 text-xs tabular-nums"
-            >
-              {formatCount(matchingLines.length, locale)}
-            </span>
-          ) : null}
-          <BuildLogCopyButton log={log} />
-        </div>
+      <div className="flex min-h-7 min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+        <h2 className="me-auto text-sm font-medium">{t("title")}</h2>
+        {controls}
       </div>
-      <div className="bg-background relative min-w-0 overflow-hidden">
+      <div className="bg-muted/20 relative min-w-0 overflow-hidden rounded-md border">
         {body}
       </div>
     </div>

@@ -7,7 +7,11 @@ import type {
   VercelAdapterConfig,
 } from "@notra/ai/types/router";
 
-import { isModelSupported, toVercelModelId } from "../model-ids";
+import {
+  isModelSupported,
+  fromVercelServedModelId,
+  toVercelModelId,
+} from "../model-ids";
 import { buildVercelProviderOptions } from "../provider-options";
 
 function parseBalance(value: unknown): number | null {
@@ -60,15 +64,19 @@ export function createVercelAdapter(
     },
     getBalance,
     extractRouteMetadata(
-      providerMetadata: SharedV4ProviderMetadata | undefined
+      providerMetadata: SharedV4ProviderMetadata | undefined,
+      servedModelId?: string
     ) {
       const gateway = providerMetadata?.gateway;
-      if (!gateway || typeof gateway !== "object") {
-        return {};
-      }
-      const record = gateway as Record<string, unknown>;
-      const generationId = readString(record.generationId);
-      return generationId ? { generationId } : {};
+      const generationId =
+        gateway && typeof gateway === "object"
+          ? readString(gateway.generationId)
+          : undefined;
+      const model = readString(servedModelId?.trim());
+      return {
+        ...(generationId ? { generationId } : {}),
+        ...(model ? { model: fromVercelServedModelId(model) } : {}),
+      };
     },
     async lookupRouteMetadata(generationId) {
       const generation = await createGateway({
@@ -84,19 +92,33 @@ export function createVercelAdapter(
             ]),
           }),
       }).getGenerationInfo({ id: generationId });
-      const costUsd =
-        generation.totalCost +
-        (generation.isByok ? generation.upstreamInferenceCost : 0);
+      const upstreamCost = generation.isByok
+        ? generation.upstreamInferenceCost
+        : 0;
+      const costUsd = generation.totalCost + upstreamCost;
+      const gatewayCostUsd =
+        Number.isFinite(generation.totalCost) && generation.totalCost >= 0
+          ? generation.totalCost
+          : undefined;
+      const upstreamInferenceCostUsd =
+        Number.isFinite(upstreamCost) && upstreamCost >= 0
+          ? upstreamCost
+          : undefined;
       return {
-        model: generation.model,
+        model: fromVercelServedModelId(generation.model),
         upstreamProvider: generation.providerName,
-        ...(Number.isFinite(generation.totalCost) &&
-        generation.totalCost >= 0 &&
-        (!generation.isByok ||
-          (Number.isFinite(generation.upstreamInferenceCost) &&
-            generation.upstreamInferenceCost >= 0)) &&
+        isByok: generation.isByok,
+        ...(gatewayCostUsd === undefined ? {} : { gatewayCostUsd }),
+        ...(upstreamInferenceCostUsd === undefined
+          ? {}
+          : {
+              upstreamInferenceCostUsd,
+              byokInferenceCostUsd: upstreamInferenceCostUsd,
+            }),
+        ...(gatewayCostUsd !== undefined &&
+        upstreamInferenceCostUsd !== undefined &&
         Number.isFinite(costUsd)
-          ? { costUsd }
+          ? { costUsd, costSource: "reported" as const }
           : {}),
       };
     },

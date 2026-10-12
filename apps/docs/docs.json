@@ -224,7 +224,7 @@
           {
             "group": "Get started",
             "icon": "rocket",
-            "pages": ["sites/overview", "sites/quickstart"]
+            "pages": ["sites/overview", "sites/quickstart", "sites/examples"]
           },
           {
             "group": "Domains",
@@ -239,6 +239,7 @@
                   "sites/domains/vercel",
                   "sites/domains/nextjs",
                   "sites/domains/tanstack-start",
+                  "sites/domains/astro",
                   "sites/domains/netlify",
                   "sites/domains/cloudflare",
                   "sites/domains/nginx"
@@ -335,7 +336,9 @@
               "ai-traffic/install/nuxt",
               "ai-traffic/install/astro",
               "ai-traffic/install/sveltekit",
-              "ai-traffic/install/netlify"
+              "ai-traffic/install/netlify",
+              "ai-traffic/install/vercel-log-drain",
+              "ai-traffic/install/cloudflare-logpush"
             ]
           },
           {
@@ -474,6 +477,7 @@
                   "GET /v1/posts/{postId}",
                   "PATCH /v1/posts/{postId}",
                   "DELETE /v1/posts/{postId}",
+                  "GET /v1/posts/authors",
                   {
                     "group": "Generation",
                     "expanded": true,

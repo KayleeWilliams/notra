@@ -3,6 +3,12 @@
 /* Blume inlines this file into .blume/src/generated/ and only rebases @source,
    so the import path is relative to that folder. */
 @import "../../../src/styles/blocks.css";
+@import "../../../../../packages/ui/src/styles/status.css";
+@source "../../../../packages/ui/src/components/badge-showcase.tsx";
+@source "../../../../packages/ui/src/components/status-badge.tsx";
+@source "../../../../packages/ui/src/components/trend-badge.tsx";
+@source "../../../../packages/ui/src/components/ui/badge.tsx";
+@source "../../../../packages/ui/src/constants/trend-badge.ts";
 
 /* Blume sizes each example frame to its content. When an example grows,
    the content is briefly taller than the frame, and a classic scrollbar

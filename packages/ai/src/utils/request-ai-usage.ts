@@ -1,51 +1,45 @@
 import type { SharedV4ProviderMetadata } from "@ai-sdk/provider";
 import { ROUTER_METADATA_KEY } from "@notra/ai/constants/router";
+import type {
+  ModelCallUsage,
+  RequestAIUsage,
+  RequestLogger,
+  RequestRouteCost,
+} from "@notra/ai/types/request-ai-usage";
 import { getOpenRequestLogger } from "@notra/ai/utils/evlog-request";
-
-type RequestLogger = NonNullable<ReturnType<typeof getOpenRequestLogger>>;
-
-interface RequestAIUsage {
-  calls: number;
-  inputTokens: number;
-  outputTokens: number;
-  totalTokens: number;
-  cacheReadTokens: number;
-  cacheWriteTokens: number;
-  reasoningTokens: number;
-  costUsd: number;
-  models: Set<string>;
-  /** Generations whose gateway-reported cost is already in `costUsd`. */
-  costedGenerations: Set<string>;
-}
-
-export interface ModelCallUsage {
-  model: string;
-  inputTokens?: number;
-  outputTokens?: number;
-  cacheReadTokens?: number;
-  cacheWriteTokens?: number;
-  reasoningTokens?: number;
-  providerMetadata?: SharedV4ProviderMetadata;
-}
+import { isRecord } from "@notra/ai/utils/unknown-record";
 
 const MICRO_USD = 1_000_000;
 
 const usageByRequest = new WeakMap<RequestLogger, RequestAIUsage>();
 
-function routeInfo(providerMetadata: SharedV4ProviderMetadata | undefined): {
-  costUsd: number;
-  generationId?: string;
-  model?: string;
-} {
+function routeInfo(
+  providerMetadata: SharedV4ProviderMetadata | undefined
+): RequestRouteCost {
   const route = providerMetadata?.[ROUTER_METADATA_KEY];
   const record =
     route && typeof route === "object" && !Array.isArray(route) ? route : {};
-  const { costUsd, generationId, model } = record;
+  const { costUsd, model } = record;
+  const generationId =
+    record.generationId ?? providerMetadata?.gateway?.generationId;
+  let gateway = typeof record.gateway === "string" ? record.gateway : undefined;
+  if (!gateway && typeof providerMetadata?.gateway?.generationId === "string") {
+    gateway = "vercel";
+  }
+  const completeCost =
+    record.gateway !== "openrouter" ||
+    (typeof record.byokInferenceCostUsd === "number" &&
+      Number.isFinite(record.byokInferenceCostUsd) &&
+      record.byokInferenceCostUsd >= 0);
   return {
     costUsd:
-      typeof costUsd === "number" && Number.isFinite(costUsd) && costUsd >= 0
+      completeCost &&
+      typeof costUsd === "number" &&
+      Number.isFinite(costUsd) &&
+      costUsd >= 0
         ? costUsd
-        : 0,
+        : undefined,
+    ...(gateway ? { gateway } : {}),
     ...(typeof generationId === "string" ? { generationId } : {}),
     ...(typeof model === "string" ? { model } : {}),
   };
@@ -65,17 +59,38 @@ function usageFor(logger: RequestLogger): RequestAIUsage {
     cacheWriteTokens: 0,
     reasoningTokens: 0,
     costUsd: 0,
+    unmeasuredCalls: 0,
     models: new Set<string>(),
     costedGenerations: new Set<string>(),
+    pendingGenerations: new Set<string>(),
   };
   usageByRequest.set(logger, usage);
+  const emit = logger.emit.bind(logger);
+  // set() cannot clear an earlier subtotal. The final emit replaces ai with
+  // its current rich fields and the complete total (or an explicit omission).
+  logger.emit = (overrides) => {
+    const ai = logger.getContext().ai;
+    return emit({
+      ...overrides,
+      ai: {
+        ...(isRecord(ai) ? ai : {}),
+        ...(isRecord(overrides?.ai) ? overrides.ai : {}),
+        ...roundedCost(usage),
+      },
+    });
+  };
   return usage;
 }
 
 function roundedCost(usage: RequestAIUsage) {
-  return usage.costUsd > 0
-    ? { costUsd: Math.round(usage.costUsd * MICRO_USD) / MICRO_USD }
-    : {};
+  return {
+    costUsd:
+      usage.calls > 0 &&
+      usage.unmeasuredCalls === 0 &&
+      usage.pendingGenerations.size === 0
+        ? Math.round(usage.costUsd * MICRO_USD) / MICRO_USD
+        : undefined,
+  };
 }
 
 /**
@@ -103,30 +118,46 @@ export function recordRequestAIUsage(call: ModelCallUsage): void {
   usage.cacheReadTokens += call.cacheReadTokens ?? 0;
   usage.cacheWriteTokens += call.cacheWriteTokens ?? 0;
   usage.reasoningTokens += call.reasoningTokens ?? 0;
-  if (route.costUsd > 0) {
-    usage.costUsd += route.costUsd;
+  if (route.costUsd !== undefined) {
+    if (
+      !route.generationId ||
+      !usage.costedGenerations.has(route.generationId)
+    ) {
+      usage.costUsd += route.costUsd;
+    }
     if (route.generationId) {
       usage.costedGenerations.add(route.generationId);
+      usage.pendingGenerations.delete(route.generationId);
     }
+  } else if (route.gateway === "vercel" && route.generationId) {
+    if (!usage.costedGenerations.has(route.generationId)) {
+      usage.pendingGenerations.add(route.generationId);
+    }
+  } else {
+    usage.unmeasuredCalls += 1;
   }
   // evlog concatenates arrays on set(), so only hand it models it hasn't seen.
   const newModel = !usage.models.has(model);
   usage.models.add(model);
 
-  logger.set({
-    ai: {
-      calls: usage.calls,
-      model,
-      inputTokens: usage.inputTokens,
-      outputTokens: usage.outputTokens,
-      totalTokens: usage.totalTokens,
-      cacheReadTokens: usage.cacheReadTokens,
-      cacheWriteTokens: usage.cacheWriteTokens,
-      reasoningTokens: usage.reasoningTokens,
-      ...roundedCost(usage),
-      ...(newModel ? { models: [model] } : {}),
-    },
-  });
+  try {
+    logger.set({
+      ai: {
+        calls: usage.calls,
+        model,
+        inputTokens: usage.inputTokens,
+        outputTokens: usage.outputTokens,
+        totalTokens: usage.totalTokens,
+        cacheReadTokens: usage.cacheReadTokens,
+        cacheWriteTokens: usage.cacheWriteTokens,
+        reasoningTokens: usage.reasoningTokens,
+        ...roundedCost(usage),
+        ...(newModel ? { models: [model] } : {}),
+      },
+    });
+  } catch {
+    // A logging sink failure must never retry an already completed model call.
+  }
 }
 
 /**
@@ -142,11 +173,15 @@ export function recordRequestAICost(
   if (!logger || !Number.isFinite(costUsd) || costUsd < 0) {
     return;
   }
-  const usage = usageFor(logger);
-  if (usage.costedGenerations.has(generationId)) {
+  const usage = usageByRequest.get(logger);
+  if (!usage || !usage.pendingGenerations.delete(generationId)) {
     return;
   }
   usage.costedGenerations.add(generationId);
   usage.costUsd += costUsd;
-  logger.set({ ai: roundedCost(usage) });
+  try {
+    logger.set({ ai: roundedCost(usage) });
+  } catch {
+    // Cost enrichment remains authoritative even when request logging fails.
+  }
 }

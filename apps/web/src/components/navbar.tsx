@@ -30,6 +30,9 @@ import { NavbarCompactPanel } from "@/components/navbar-compact-panel";
 import { NavbarChevron, NavbarMenuToggle } from "@/components/navbar-glyphs";
 import { NavbarHref } from "@/components/navbar-href";
 import { NavbarMobileMenu } from "@/components/navbar-mobile-menu";
+import { NavbarProductsPanel } from "@/components/navbar-products-panel";
+import { NavbarReportsPanel } from "@/components/navbar-reports-panel";
+import { NavbarResourcesPanel } from "@/components/navbar-resources-panel";
 import { NotraMark, notraMarkSvgString } from "@/components/notra-mark";
 import { SignedOutLandingRedirect } from "@/components/signed-out-landing-redirect";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -42,6 +45,7 @@ import {
 } from "@/constants/auth";
 import { NAVBAR_DESKTOP_SIGNUP_SOURCE } from "@/constants/navbar";
 import {
+  NAVBAR_CONTENT_TRANSITION,
   NAVBAR_CONTENT_VARIANTS,
   NAVBAR_ENTER_TRANSITION,
   NAVBAR_EXIT_TRANSITION,
@@ -67,7 +71,10 @@ import {
   handleNavbarMenuKeyDown,
   handleNavbarTriggerKeyDown,
 } from "@/utils/navbar-menu-keyboard";
-import { getNavbarPanelX } from "@/utils/navbar-panel-position";
+import {
+  getNavbarPanelX,
+  isCompactNavbarPanel,
+} from "@/utils/navbar-panel-position";
 import { getNavbarChromePresentation } from "@/utils/navbar-presentation";
 import {
   MARKETING_NAV,
@@ -149,6 +156,15 @@ function MegaPanel({
   group: MarketingNavGroup;
   onSelect: () => void;
 }) {
+  if (group.panel === "products") {
+    return <NavbarProductsPanel group={group} onSelect={onSelect} />;
+  }
+  if (group.panel === "resources") {
+    return <NavbarResourcesPanel group={group} onSelect={onSelect} />;
+  }
+  if (group.panel === "reports") {
+    return <NavbarReportsPanel group={group} onSelect={onSelect} />;
+  }
   if (group.layout === "compact") {
     return (
       <NavbarCompactPanel group={group} onSelect={onSelect} role="menuitem" />
@@ -199,7 +215,7 @@ function getNavbarMotion(reduceMotion: boolean, instantMenuMotion: boolean) {
   return {
     contentTransition: instantMenuMotion
       ? { duration: 0 }
-      : NAVBAR_MORPH_TRANSITION,
+      : NAVBAR_CONTENT_TRANSITION,
     enterExitTransition: instantMenuMotion
       ? { duration: 0 }
       : NAVBAR_ENTER_TRANSITION,
@@ -366,10 +382,8 @@ export function Navbar({ variant }: NavbarProps = {}) {
 
   const activeGroupData = groups.find((group) => group.label === activeGroup);
   const activeSize = activeGroup ? panelSizes.get(activeGroup) : undefined;
-  const panelX = getNavbarPanelX(
-    activeSize,
-    activeGroupData?.layout === "compact"
-  );
+  const compactPanel = isCompactNavbarPanel(activeGroupData);
+  const panelX = getNavbarPanelX(activeSize, compactPanel);
   const instantMenuMotion = Boolean(reduceMotion) || keyboardNavigation;
 
   const slideDirection = getSlideDirection(groups, activeGroup, previousGroup);
@@ -626,7 +640,7 @@ export function Navbar({ variant }: NavbarProps = {}) {
                           width: activeSize?.width,
                           height: activeSize?.height,
                         }}
-                        className="relative"
+                        className="relative max-h-[calc(100dvh-7.5rem)]"
                         initial={{
                           width: activeSize?.width,
                           height: activeSize?.height,
@@ -638,9 +652,8 @@ export function Navbar({ variant }: NavbarProps = {}) {
                       >
                         <div
                           className={cn(
-                            "relative h-full w-full overflow-hidden rounded-3xl bg-[linear-gradient(180deg,#FFFFFF_0%,#F3F3F3_100%)] shadow-[0_0.125rem_2.0625rem_#1E1E1E1A,0_0_0_0.0625rem_#ECECEC,0_0.0625rem_0.125rem_#28282814] ring-1 ring-[#1E1E1E0D] dark:bg-neutral-950 dark:bg-none dark:shadow-black/50 dark:ring-white/10",
-                            activeGroupData.layout === "compact" &&
-                              "bg-popover rounded-2xl bg-none"
+                            "relative h-full w-full overflow-x-hidden overflow-y-auto overscroll-contain rounded-[1.375rem] bg-[linear-gradient(180deg,#FFFFFF_0%,#F3F3F3_100%)] shadow-[0_0.125rem_2.0625rem_#1E1E1E1A,0_0_0_0.0625rem_#ECECEC,0_0.0625rem_0.125rem_#28282814] ring-1 ring-[#1E1E1E0D] dark:bg-neutral-950 dark:bg-none dark:shadow-black/50 dark:ring-white/10",
+                            compactPanel && "bg-popover rounded-2xl bg-none"
                           )}
                           ref={panelRef}
                         >

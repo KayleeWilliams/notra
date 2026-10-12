@@ -521,10 +521,14 @@
     "viewDocs": "API-Dokumentation ansehen",
     "columns": {
       "key": "Schlüssel",
-      "permission": "Berechtigung"
+      "permission": "Berechtigung",
+      "status": "Status"
     },
-    "expiry": {
-      "expired": "Abgelaufen"
+    "status": {
+      "active": "Aktiv",
+      "expiringSoon": "Läuft bald ab",
+      "expired": "Abgelaufen",
+      "disabled": "Deaktiviert"
     },
     "permissionSummary": "{permission, select, none {Kein Zugriff} read {Nur lesen} write {Lesen & schreiben} geo {GEO-Zugriff} other {Benutzerdefiniert}}",
     "expirationOption": "{value, select, never {Kein Ablauf} 7d {7 Tage} 30d {30 Tage} 60d {60 Tage} 90d {90 Tage} other {{value}}}",
@@ -650,6 +654,30 @@
     "shared": {
       "editApiKey": "API-Schlüssel bearbeiten",
       "deleteApiKey": "API-Schlüssel löschen"
+    },
+    "emptyState": {
+      "title": "Noch keine API-Schlüssel",
+      "description": "Erstelle einen Schlüssel, um die Inhalte dieser Organisation per Skript, SDK oder MCP-Client zu lesen und zu bearbeiten."
+    },
+    "account": {
+      "title": "Account-API-Schlüssel",
+      "description": "Persönliche Schlüssel, die in jeder Organisation funktionieren, in der du Mitglied bist. Wähle sie mit dem Header <code>X-Notra-Organization-Id</code> aus.",
+      "createKey": "Account-Schlüssel erstellen",
+      "emptyTitle": "Noch keine Account-API-Schlüssel",
+      "emptyDescription": "Nutze einen Account-Schlüssel für persönliche Automatisierung über mehrere Workspaces. Für geteilte Systeme sind Organisations-Schlüssel gedacht.",
+      "createTitle": "Account-API-Schlüssel erstellen",
+      "createDescription": "Dieser Schlüssel funktioniert in jeder Organisation, in der du Mitglied bist.",
+      "editTitle": "Account-API-Schlüssel bearbeiten",
+      "viewTitle": "Account-API-Schlüssel anzeigen",
+      "namePlaceholder": "z. B. Persönliche Automatisierung",
+      "deleteTitle": "Account-API-Schlüssel löschen?",
+      "toasts": {
+        "created": "Account-API-Schlüssel erstellt",
+        "updated": "Account-API-Schlüssel aktualisiert",
+        "deleted": "Account-API-Schlüssel gelöscht"
+      },
+      "loadFailedTitle": "Account-API-Schlüssel konnten nicht geladen werden",
+      "loadFailedDescription": "Deine Schlüssel sind weiterhin da. Versuche es noch einmal."
     }
   },
   "feedback": {
@@ -948,6 +976,7 @@
       "writerPlanFailed": "Der Inhaltsplan konnte nicht erstellt oder gespeichert werden. Bitte versuche es erneut.",
       "promptAlreadyTracked": "Dieser Prompt wird bereits getrackt",
       "lastProjectDelete": "Du kannst dein letztes Projekt nicht löschen. Erstelle zuerst ein weiteres.",
+      "projectHasSitesDelete": "Dieses Projekt hat gehostete Sites. Lösche seine Sites, bevor du das Projekt löschst.",
       "createBrandIdentityFirst": "Erstelle zuerst eine Markenidentität",
       "noGroundedEngines": "Mit deinen Datenschutzeinstellungen sind keine KI-Engines mit Websuche verfügbar",
       "createConversationFailed": "Konversation konnte nicht erstellt werden",
@@ -1089,6 +1118,13 @@
       "logoSourceNotAllowed": "Diese Logo-Quelle ist nicht erlaubt",
       "logoFetchFailed": "Das Logo konnte nicht abgerufen werden"
     },
+    "brandGuidelinePdf": {
+      "generateFirst": "Generiere zuerst deine Brand Guidelines, bevor du ein PDF hinzufügst",
+      "invalidFile": "Das ist kein gültiges Brand-Guideline-PDF",
+      "noText": "In diesem PDF wurde kein Text gefunden. Exportiere es als textbasiertes PDF und versuche es erneut.",
+      "readFailed": "Dieses PDF konnte nicht gelesen werden. Versuche es erneut oder exportiere es neu.",
+      "unavailable": "PDF-Upload ist gerade nicht verfügbar"
+    },
     "comments": {
       "replyNotAllowed": "Antworten sind auf fünf Ebenen begrenzt und können sich nicht auf gelöschte Kommentare beziehen",
       "notAuthor": "Du kannst nur deine eigenen Kommentare ändern",
@@ -1126,7 +1162,13 @@
       "filePathTooLong": "Das konfigurierte Verzeichnis und der Slug überschreiten die Dateipfad-Grenze von GitHub",
       "imagePathTooLong": "Der konfigurierte Bildpfad überschreitet die Pfad-Grenze von GitHub",
       "dataSourceRequired": "Mindestens eine Datenquelle muss aktiviert sein.",
-      "eventRequired": "Mindestens ein Ereignis muss ausgewählt sein."
+      "eventRequired": "Mindestens ein Ereignis muss ausgewählt sein.",
+      "metadataNotSupported": "Cover, Tags und Autoren gibt es nur für Blogposts und Changelogs",
+      "unknownAuthor": "Einen der ausgewählten Autoren gibt es nicht mehr",
+      "authorSlugTaken": "Diese ID verwendet bereits ein anderer Autor",
+      "assetsTooLarge": "Bilder, Cover und Autoren-Avatare des Posts sind zu groß für einen Pull Request",
+      "existingEntryUnreadable": "Die aktuelle Datei des Posts konnte nicht von GitHub gelesen werden. Versuch es gleich noch mal.",
+      "invalidFrontmatter": "Die Frontmatter oben im Post ist kein gültiges YAML. Korrigier oder entfern sie und veröffentliche erneut."
     },
     "iris": {
       "runInProgress": "Iris arbeitet bereits an einem Durchlauf"
@@ -1446,6 +1488,20 @@
         "updatedAt": "Aktualisiert {time}",
         "noAssetsTitle": "Richtlinien sind leer",
         "noAssetsDescription": "Für diese Identität wurden noch keine Marken-Assets gefunden. Aktualisiere, um die neuesten Logos, Farben und Screenshots zu übernehmen."
+      },
+      "pdf": {
+        "upload": "PDF hochladen",
+        "uploadedAt": "Hochgeladen {time}",
+        "uploadLabel": "Markenrichtlinien-PDF hochladen",
+        "notPdf": "Lade eine PDF-Datei hoch",
+        "tooLarge": "Das Richtlinien-PDF darf höchstens {maxMb}MB groß sein",
+        "badFilename": "Der PDF-Dateiname muss zwischen 1 und 200 Zeichen lang sein",
+        "saved": "Richtlinien-PDF gespeichert",
+        "saveFailed": "Das PDF konnte nicht gespeichert werden",
+        "removed": "Richtlinien-PDF entfernt",
+        "removeFailed": "Das PDF konnte nicht entfernt werden",
+        "replace": "Richtlinien-PDF ersetzen",
+        "remove": "{filename} entfernen"
       },
       "tokens": {
         "title": "UI-Tokens"
@@ -2861,7 +2917,39 @@
       "tokenTitle": "Token setzen",
       "tokenDescription": "Füge dies als {env} auf jeder Domain hinzu, die dieses Projekt trackt.",
       "proxyTitle": "Proxy hinzufügen",
-      "framework": "Framework"
+      "framework": "Framework",
+      "method": "Installationsart",
+      "methods": {
+        "sdk": "Paket",
+        "vercel": "Vercel Log Drain",
+        "cloudflare": "Cloudflare Logpush"
+      },
+      "drains": {
+        "stepsTitle": "Einrichten",
+        "docsLink": "Zur Anleitung",
+        "vercel": {
+          "requirements": "Ohne Codeänderungen. Vercel schickt deine Request-Logs an Notra und Notra behält nur den KI-Traffic. Drains brauchen ein Vercel Pro- oder Enterprise-Team.",
+          "endpointTitle": "Endpoint-URL",
+          "headerTitle": "Custom Header",
+          "headerDescription": "Füge diese Zeile unter Custom Headers hinzu, damit Notra weiß, zu welchem Projekt die Logs gehören.",
+          "stepOne": "Öffne in Vercel Team Settings, dann Drains, und klicke auf Add Drain. Wähle Logs.",
+          "stepTwo": "Wähle die Projekte hinter dieser Website, behalte die Quellen static, lambda und edge und wähle die Production-Umgebung.",
+          "stepThree": "Wähle Custom Endpoint, füge die Endpoint-URL ein, wähle JSON oder NDJSON, füge den Custom Header hinzu und lege den Drain an.",
+          "limitation": "Bekannte Einschränkung: Vercel Drains enthalten keine Request-Header wie Accept. Notra sieht deshalb keine Markdown-Anfragen und erkennt keine Agents, die sich als Browser ausgeben. Das Paket bleibt die genauere Option."
+        },
+        "cloudflare": {
+          "requirements": "Ohne Codeänderungen. Deine Website kann überall gehostet sein, ihr Traffic muss aber über Cloudflare laufen (die orange Wolke am DNS-Eintrag). Logpush gibt es in jedem Cloudflare-Plan.",
+          "destinationTitle": "Ziel-URL",
+          "destinationDescription": "Füge sie als HTTP-Ziel ein. Sie enthält deinen Token als Authorization-Header.",
+          "fieldsTitle": "Felder",
+          "stepOne": "Öffne in Cloudflare deine Domain, geh zu Analytics & Logs, dann Logpush, und lege einen Job mit HTTP-Ziel an.",
+          "stepTwo": "Füge die Ziel-URL ein, wähle das Dataset HTTP requests und die Felder oben. Stell das Zeitformat auf RFC 3339.",
+          "stepThree": "Optional: Logge die Request-Header accept, sec-fetch-mode und sec-ch-ua als Custom Fields und füge RequestHeaders hinzu, damit Notra Markdown-Anfragen und getarnte Agents erkennt.",
+          "apiTitle": "Oder lege den Job per API an",
+          "apiFilename": "Logpush-Job anlegen",
+          "limitation": "Logpush lädt in Batches hoch, neuer Traffic erscheint deshalb nach ein bis zwei Minuten statt sofort."
+        }
+      }
     },
     "promptTranslations": {
       "title": "Übersetzungen",
@@ -3919,7 +4007,11 @@
         "titleWithVisitors": "Traffic",
         "descriptionWithVisitors": "Menschen und AI-Agents auf deiner Website",
         "emptyRangeTitle": "Kein Traffic in diesem Zeitraum",
-        "emptyRangeDescription": "Wähle einen anderen Zeitraum oder eine andere Domain."
+        "emptyRangeDescription": "Wähle einen anderen Zeitraum oder eine andere Domain.",
+        "emptyPathTitle": "Keine Besuche auf {path}",
+        "emptyPathDescription": "Weder Menschen noch AI-Agents haben diese Seite im gewählten Zeitraum geöffnet.",
+        "emptyPathReset": "Alle Seiten anzeigen",
+        "emptyPathWiden": "Letzte 90 Tage anzeigen"
       },
       "write": {
         "metaTitle": "GEO Writer",
@@ -4093,6 +4185,15 @@
       "columnCountry": "Land",
       "columnDevice": "Gerät",
       "referrers": "Herkunft"
+    },
+    "trafficPathFilter": {
+      "label": "Filter",
+      "allPages": "Alle Seiten",
+      "search": "Pfade durchsuchen",
+      "noMatches": "Keine passenden Seiten"
+    },
+    "trafficExport": {
+      "label": "Als CSV exportieren"
     }
   },
   "integrations": {
@@ -6454,6 +6555,114 @@
         "open": "Alles am {date} anzeigen",
         "empty": "Für diesen Tag ist nichts geplant."
       }
+    },
+    "overview": {
+      "tabs": {
+        "overview": "Übersicht",
+        "agent": "Agent",
+        "label": "Panel"
+      },
+      "detailsButton": "Details",
+      "saveFailed": "Die Details konnten nicht gespeichert werden",
+      "status": {
+        "label": "Status",
+        "draft": "Entwurf",
+        "published": "Veröffentlicht"
+      },
+      "url": "URL",
+      "featured": {
+        "label": "Featured",
+        "hint": "Hebt den Post oben auf der Blog-Startseite hervor."
+      },
+      "indexed": {
+        "label": "In Suche sichtbar",
+        "hint": "Aus heißt: Der Post bleibt per Link erreichbar, taucht aber nicht in Suchmaschinen, der Sitemap und llms.txt auf."
+      },
+      "cover": {
+        "label": "Cover",
+        "hint": "Erscheint auf der Blog-Karte, oben im Post und als Vorschaubild beim Teilen. Ohne Cover erzeugt die Site eins.",
+        "upload": "Hochladen",
+        "link": "Link",
+        "fromPost": "Aus dem Post",
+        "dropTitle": "Cover hinzufügen",
+        "dropHint": "Ziehen, einfügen oder klicken · {width}×{height}",
+        "uploading": "Wird hochgeladen…",
+        "uploadFailed": "Das Bild konnte nicht hochgeladen werden",
+        "linkPlaceholder": "https://…/bild.png",
+        "linkApply": "Bild verwenden",
+        "linkInvalid": "Gib einen vollständigen https-Link zu einem Bild ein",
+        "noPostImages": "Dieser Post enthält noch keine Bilder.",
+        "pickImage": "Dieses Bild verwenden",
+        "replace": "Ersetzen",
+        "remove": "Cover entfernen",
+        "altLabel": "Alt-Text",
+        "altPlaceholder": "Beschreibe das Bild für Screenreader und Suche"
+      },
+      "description": {
+        "label": "Beschreibung",
+        "hint": "Kurzbeschreibung für Blog-Karte, Suchergebnisse und Link-Vorschauen. Leer lassen, dann nehmen wir den ersten Absatz.",
+        "auto": "Nimmt den ersten Absatz",
+        "count": "{count} / {max} Zeichen"
+      },
+      "authors": {
+        "label": "Autoren",
+        "hint": "Jeder Autor bekommt einen Avatar und eine eigene Seite auf der Site.",
+        "placeholder": "Autoren wählen",
+        "addMe": "Mich hinzufügen",
+        "manage": "Verwalten",
+        "fallback": "Leer: Es wird die Person genommen, die veröffentlicht"
+      },
+      "tags": {
+        "label": "Tags",
+        "hint": "Tags bekommen eigene Übersichtsseiten auf der Site und landen im RSS-Feed.",
+        "placeholder": "Tags hinzufügen",
+        "remove": "{tag} entfernen",
+        "add": "Tag hinzufügen"
+      },
+      "date": {
+        "label": "Veröffentlicht am",
+        "hint": "Datum, das auf der Site steht. Standard ist der Tag der ersten Veröffentlichung.",
+        "auto": "Veröffentlichung",
+        "reset": "Veröffentlichungsdatum verwenden"
+      },
+      "source": {
+        "label": "Entstehung"
+      },
+      "recommendations": "Empfehlungen",
+      "updatePr": {
+        "hint": "Änderungen landen beim nächsten Update im offenen Pull Request.",
+        "action": "Pull Request aktualisieren",
+        "done": "Pull Request aktualisiert",
+        "failed": "Der Pull Request konnte nicht aktualisiert werden"
+      },
+      "authorDialog": {
+        "title": "Autoren",
+        "description": "Autoren erscheinen an Posts und bekommen eine eigene Seite auf deiner Site.",
+        "new": "Neuer Autor",
+        "edit": "Bearbeiten",
+        "delete": "Löschen",
+        "deleteConfirm": "{name} löschen? Posts verlieren diesen Autor.",
+        "empty": "Noch keine Autoren.",
+        "back": "Zurück",
+        "name": "Name",
+        "slug": "ID",
+        "slugHint": "Steht in der URL der Autorenseite: /author/{slug}",
+        "bio": "Bio",
+        "avatar": "Avatar",
+        "uploadAvatar": "Hochladen",
+        "removeAvatar": "Entfernen",
+        "website": "Website",
+        "x": "X",
+        "linkedin": "LinkedIn",
+        "github": "GitHub",
+        "save": "Autor speichern",
+        "saved": "Autor gespeichert",
+        "deleted": "Autor gelöscht",
+        "saveFailed": "Der Autor konnte nicht gespeichert werden",
+        "you": "Du",
+        "role": "Rolle"
+      },
+      "hintLabel": "Info zu {field}"
     }
   },
   "charts": {
@@ -6470,10 +6679,13 @@
       "navigate": "Navigieren"
     },
     "sections": {
-      "ai": "KI"
+      "recent": "Zuletzt",
+      "suggested": "Vorgeschlagen"
     },
     "entitySections": {
-      "brandVoices": "Markenstimmen"
+      "brandVoices": "Markenstimmen",
+      "chats": "Chats",
+      "prompts": "Getrackte Prompts"
     },
     "entities": {
       "reference": "Referenz"
@@ -6483,15 +6695,32 @@
       "openingChat": "Chat wird geöffnet…",
       "almostThere": "Einen Moment, gleich geschafft.",
       "figuringOut": "Wir finden heraus, wohin es für „{query}“ gehen soll.",
-      "navigate": "Mit KI navigieren",
-      "askChat": "KI-Chat fragen",
-      "failed": "KI-Suche fehlgeschlagen. Versuch es stattdessen im Chat.",
-      "navigateQuery": "Mit KI navigieren: „{query}“",
-      "askChatAbout": "KI-Chat dazu fragen"
+      "failed": "KI-Suche fehlgeschlagen. Versuch es gleich noch mal.",
+      "ask": "KI fragen"
     },
     "empty": {
       "title": "Keine Treffer für „{query}“",
-      "description": "Lass die KI für dich navigieren oder öffne einen Chat mit deiner Frage."
+      "description": "Frag die KI, die passende Seite zu öffnen oder im Chat zu antworten."
+    },
+    "actions": {
+      "newContent": "Neuer Content",
+      "switchProject": "Projekt wechseln",
+      "switchWorkspace": "Workspace wechseln",
+      "inviteMembers": "Mitglieder einladen",
+      "darkMode": "Zum dunklen Modus wechseln",
+      "lightMode": "Zum hellen Modus wechseln"
+    },
+    "pages": {
+      "projects": {
+        "title": "Projekte",
+        "placeholder": "Projekte suchen…",
+        "count": "{count} Projekte"
+      },
+      "workspaces": {
+        "title": "Workspaces",
+        "placeholder": "Workspaces suchen…",
+        "count": "{count} Workspaces"
+      }
     }
   },
   "dashboard": {
@@ -6692,7 +6921,9 @@
         "readRepositoryFile": "{state, select, running {Lese Datei} done {Datei gelesen} approve {Genehmigen: Datei} other {Fehlgeschlagen: Datei}}",
         "repositoryHistory": "{state, select, running {Lese Historie} done {Historie gelesen} approve {Genehmigen: Historie} other {Fehlgeschlagen: Historie}}",
         "showRepositoryChange": "{state, select, running {Prüfe Änderung} done {Änderung geprüft} approve {Genehmigen: Änderung} other {Fehlgeschlagen: Änderung}}",
-        "createPost": "{state, select, running {Speichere Entwurf} done {Entwurf gespeichert} approve {Genehmigen: Entwurf} other {Fehlgeschlagen: Entwurf}}"
+        "createPost": "{state, select, running {Speichere Entwurf} done {Entwurf gespeichert} approve {Genehmigen: Entwurf} other {Fehlgeschlagen: Entwurf}}",
+        "getPostDetails": "{state, select, running {Liest Post-Details} done {Post-Details gelesen} approve {Post-Details freigeben} other {Post-Details konnten nicht gelesen werden}}",
+        "updatePostDetails": "{state, select, running {Aktualisiert Post-Details} done {Post-Details aktualisiert} approve {Post-Details freigeben} other {Post-Details konnten nicht aktualisiert werden}}"
       },
       "withSuffix": "{label} {suffix}",
       "memory": {
@@ -6987,6 +7218,14 @@
     "title": "Sites",
     "description": "Blogs und Changelogs, gebaut und gehostet aus deinem GitHub-Repository",
     "newSite": "Neue Site",
+    "projectRequired": {
+      "title": "Wähle ein Projekt",
+      "description": "Erstelle oder wähle ein Projekt in der Seitenleiste, um seine Sites zu verwalten."
+    },
+    "projectLoadFailed": {
+      "title": "Projekte konnten nicht geladen werden",
+      "description": "Lade die Seite neu, um es erneut zu versuchen."
+    },
     "empty": {
       "title": "Noch keine Sites",
       "description": "Hoste Blog und Changelog aus einem GitHub-Repo. Jeder Push geht live, jeder Pull Request bekommt eine Vorschau."
@@ -7000,19 +7239,23 @@
       "description": "Notra Sites ist in dieser Umgebung noch nicht eingerichtet."
     },
     "list": {
-      "columns": {
-        "site": "Site",
-        "visitors": "Besucher · 7 T",
-        "updated": "Aktualisiert"
-      },
-      "noDeployments": "Noch keine Deployments"
+      "visitors": "Besucher · 7 T",
+      "noDeployments": "Noch keine Deployments",
+      "viewDeployments": "Deployments ansehen",
+      "deploymentCreated": "Deployment erstellt <time></time>",
+      "actionsLabel": "Aktionen für {name}",
+      "actions": {
+        "openSite": "Site öffnen",
+        "visitSite": "Live-Site besuchen",
+        "copyLink": "Site-Link kopieren"
+      }
     },
     "status": {
       "queued": "In Warteschlange",
       "building": "Wird gebaut",
       "uploading": "Wird hochgeladen",
-      "ready": "Bereit",
-      "live": "Live",
+      "ready": "Erfolgreich",
+      "offline": "Offline",
       "superseded": "Ersetzt",
       "failed": "Fehlgeschlagen",
       "canceled": "Abgebrochen",
@@ -7066,6 +7309,10 @@
     },
     "new": {
       "title": "Neue Site",
+      "project": "Projekt: {name}",
+      "projectLoading": "Projekt wird geladen…",
+      "projectRequired": "Erstelle oder wähle ein Projekt in der Seitenleiste, bevor du eine Site erstellst.",
+      "projectLoadFailed": "Projekte konnten nicht geladen werden. Lade die Seite neu, um es erneut zu versuchen.",
       "description": "Importiere ein Repository. Jeder Push auf den Produktions-Branch geht live.",
       "private": "Privates Repository",
       "name": "Name der Site",
@@ -7104,7 +7351,7 @@
         "deploy": "Deploy"
       },
       "stepDeploy": "Deploy",
-      "stepDeployDescription": "Deine Site wird aus dem neuesten Commit gebaut. Sie geht live, sobald der Build fertig ist.",
+      "stepDeployDescription": "Build-Logs und Status.",
       "deploy": {
         "waiting": "Warte auf einen Builder…",
         "started": "Deployment vor {seconds} s gestartet…",
@@ -7114,10 +7361,22 @@
         "openSite": "Zur Site",
         "viewDeployment": "Deployment ansehen",
         "configMissingRetry": "Dieser Build hat eine fehlende blog.json gemeldet. Starte das Deployment auf der Site erneut, um das Standardlayout und die Standardkonfiguration zu verwenden. Der Starter-Pull-Request ist optional.",
+        "editConfiguration": "Konfiguration bearbeiten",
+        "retryDeployment": "Deployment erneut starten",
+        "retryFailed": "Das Deployment konnte nicht gestartet werden. Versuche es erneut.",
+        "retryStatus": "Status erneut laden",
+        "statusLoadFailed": "Der Deployment-Status konnte nicht geladen werden.",
+        "failureRecovery": "Das Deployment wurde nicht abgeschlossen. Prüfe die Konfiguration oder versuche es erneut.",
         "viewPullRequest": "Pull Request ansehen",
-        "notStarted": "Der erste Build konnte nicht starten. Öffne die Deployments, um es erneut zu versuchen."
+        "notStarted": "Der erste Build konnte nicht starten."
       },
       "starter": {
+        "existingTitle": "Bestehende Site-Konfiguration gefunden",
+        "existingDescription": "Wähle eine bestehende Konfiguration oder behalte den gewählten Pfad für eine neue Site bei.",
+        "useExisting": "Ordner verwenden: {path}",
+        "useFolder": "Ordner verwenden",
+        "selectedLocation": "Gewählte Konfiguration: {path} auf {branch}.",
+        "createAt": "Starter-PR öffnen",
         "missingTitle": "Noch keine blog.json",
         "missing": "Notra nutzt das Standardlayout. Mit einer blog.json kommen deine Marke, Header und Footer dazu.",
         "why": "Wozu eine blog.json?",
@@ -7130,7 +7389,32 @@
       "subdirectory": "Site liegt in einem Unterordner",
       "subdirectoryHint": "Einschalten, wenn die Seite in einem Ordner des Repositorys liegt.",
       "rootDirectoryPath": "Ordner der Site",
-      "rootDirectoryPathHint": "Ordner für die Site, relativ zum Repository-Root. Eine blog.json ist optional."
+      "rootDirectoryPathHint": "Ordner für die Site, relativ zum Repository-Root. Eine blog.json ist optional.",
+      "bulk": {
+        "toggle": "Alle {count} Sites importieren",
+        "toggleHint": "Jeder Ordner mit einer blog.json wird zu einer eigenen Site.",
+        "columns": {
+          "site": "Site",
+          "status": "Status"
+        },
+        "selectAll": "Alle Sites auswählen",
+        "select": "{folder} importieren",
+        "nameLabel": "Name für {folder}",
+        "addressLabel": "Adresse für {folder}",
+        "rootFolder": "Repository-Root",
+        "duplicate": "Eine andere Site in diesem Import nutzt diese Adresse schon.",
+        "previews": "Vorschauen",
+        "previewsHint": "Baut eine Vorschau für jeden Pull Request, der den Ordner einer Site ändert.",
+        "create": "{count, plural, one {# Site erstellen} other {# Sites erstellen}}",
+        "createFailed": "Sites konnten nicht erstellt werden",
+        "summary": "{created} von {total} Sites erstellt.",
+        "created": "Erstellt",
+        "open": "Öffnen",
+        "openSite": "{name} öffnen",
+        "edit": "Fehlgeschlagene Sites bearbeiten",
+        "retry": "{count, plural, one {Import für # Site wiederholen} other {Import für # Sites wiederholen}}",
+        "tooMany": "Wähle höchstens {max} Sites pro Import aus."
+      }
     },
     "detail": {
       "visit": "Öffnen",
@@ -7263,14 +7547,11 @@
       "failed": "Veröffentlichen fehlgeschlagen"
     },
     "settings": {
-      "general": "Allgemein",
-      "content": "Inhalte",
       "previews": "Vorschauen",
       "previewBuilds": "Preview-Builds",
       "previewsEnabledHint": "Eine Vorschau pro Pull Request.",
       "previewComments": "PR-Kommentare posten",
       "previewCommentsHint": "Build-Status und Vorschau-Link direkt im PR.",
-      "publishing": "Veröffentlichen",
       "saved": "Einstellungen gespeichert",
       "savedRebuilding": "Einstellungen gespeichert. Wird neu gebaut…",
       "saveFailed": "Einstellungen konnten nicht gespeichert werden",
@@ -7315,7 +7596,29 @@
       },
       "smartDeployments": "Smart deployments",
       "beta": "Beta",
-      "smartDeploymentsHint": "Automatische Deployments überspringen, wenn die Eingaben der veröffentlichten Site unverändert sind. Manuelle Redeploys werden immer gebaut."
+      "smartDeploymentsHint": "Automatische Deployments überspringen, wenn die Eingaben der veröffentlichten Site unverändert sind. Manuelle Redeploys werden immer gebaut.",
+      "contentGroup": "Inhalte und Veröffentlichen",
+      "visitors": "Analytics und Branding",
+      "nameHint": "Wird im Dashboard angezeigt.",
+      "repository": "Repository",
+      "repositoryHint": "Das GitHub-Repository, aus dem diese Site gebaut wird.",
+      "noRepository": "Nicht verbunden",
+      "rootDirectory": "Stammverzeichnis",
+      "rootDirectoryHint": "Wo die Site im Repository liegt.",
+      "publishModeHint": "Wie Änderungen aus dem Editor in dein Repository kommen.",
+      "variablesHint": "Wiederverwendbare Werte wie Namen und Links, nutzbar als Platzhalter.",
+      "variablesCount": "{count, plural, =0 {Noch keine} one {# Variable} other {# Variablen}}",
+      "analyticsLabel": "Analytics",
+      "analyticsHint": "Zählt Besucher, Verweildauer und KI-Agenten. Ohne Cookies.",
+      "openOnGitHub": "Auf GitHub öffnen",
+      "manageGitHub": "GitHub-Zugriff verwalten",
+      "manageGitHubFailed": "GitHub konnte nicht geöffnet werden",
+      "repositoryChangeHint": "Für ein anderes Repository legst du eine neue Site an. Verwalte den Zugriff, falls Notra keinen Zugriff mehr auf dieses hat.",
+      "rootDirectoryPlaceholder": "Repository-Stammverzeichnis",
+      "rootDirectoryFieldHint": "Relativ zum Repository. Leer lassen, wenn die Site im Stammverzeichnis liegt.",
+      "sectionsRowHint": "Wo Blog und Changelog auf deiner Site liegen.",
+      "branchFieldHint": "Jeder Push auf diesen Branch geht live. Änderungen gelten ab dem nächsten Deploy.",
+      "optional": "Optional"
     },
     "previewFrame": {
       "title": "Vorschau der Site",
@@ -7378,7 +7681,7 @@
         "allStatuses": "Alle Status"
       },
       "statusFilters": {
-        "ready": "Bereit",
+        "ready": "Erfolgreich",
         "building": "Wird gebaut",
         "queued": "In der Warteschlange",
         "failed": "Fehlgeschlagen",
@@ -7407,6 +7710,7 @@
     "deploymentPage": {
       "timeline": {
         "title": "Deployment-Zeitstrahl",
+        "total": "{duration} gesamt",
         "timingUnavailable": "Keine Zeitmessung verfügbar",
         "phases": {
           "queued": "Warteschlange",
@@ -7452,7 +7756,6 @@
       },
       "log": {
         "title": "Build-Logs",
-        "lines": "{count, plural, one {# Zeile} other {# Zeilen}}",
         "copy": "Log kopieren",
         "copied": "Log kopiert",
         "noMatches": "Keine Treffer",
@@ -7461,11 +7764,8 @@
         "waiting": "Warte auf den Start des Builds…",
         "empty": "Kein Build-Log für dieses Deployment.",
         "jumpToLatest": "Zum Ende springen",
-        "warnings": "{count, plural, one {# Warnung} other {# Warnungen}}",
-        "errors": "{count, plural, one {# Fehler} other {# Fehler}}",
         "label": "Ausgabe des Build-Logs",
         "starting": "Build-Sandbox startet…",
-        "streaming": "Live",
         "filter": "Log filtern",
         "clearFilter": "Filter löschen",
         "folded": "{count, plural, one {# weitere Zeile zeigen} other {# weitere Zeilen zeigen}}"
@@ -7690,36 +7990,30 @@
       "title": "Content-Variablen",
       "openEditor": "Editor öffnen",
       "reset": "Änderungen zurücksetzen",
-      "description": "Pflege Namen, Links und andere Werte an einem Ort. Verwende sie auf deiner Site mit Platzhaltern wie '{{product_name}}'.",
-      "publicWarning": "Die Werte sind öffentlich. Trage keine API-Keys, Passwörter oder andere Secrets ein.",
       "loading": "Variablen werden geladen…",
       "loadFailed": "Variablen konnten nicht geladen werden. Versuche es erneut.",
       "retry": "Erneut versuchen",
       "invalidConfig": "Korrigiere blog.json im Editor, um Variablen hier zu bearbeiten.",
-      "empty": "Füge deine erste Variable hinzu, um einen Wert auf deiner Site wiederzuverwenden.",
       "name": "Name",
       "value": "Wert",
       "add": "Variable hinzufügen",
-      "remove": "Entfernen",
       "removeLabel": "Variable {number} entfernen",
+      "nameLabel": "Name von Variable {number}",
+      "valueLabel": "Wert von Variable {number}",
       "duplicate": "Verwende für jede Variable einen eigenen Namen.",
       "invalid": "Beginne jeden Namen mit einem Buchstaben. Verwende bis zu 40 Buchstaben, Zahlen, Unterstriche oder Bindestriche und Werte mit bis zu 500 Zeichen.",
       "saveDraft": "Entwurf speichern",
       "saved": "Variablen als Entwurf gespeichert",
       "saveFailed": "Variablen konnten nicht gespeichert werden. Versuche es erneut.",
       "reviewAndPublish": "Prüfen und veröffentlichen",
-      "publishHint": "Entwürfe werden in blog.json gespeichert. Veröffentliche sie im Editor, um deine Site und bestehende Beiträge zu aktualisieren. Platzhalter in Codeblöcken und Inline-Code bleiben unverändert."
+      "hint": "Nutze eine Variable als '{{product_name}}'. Werte sind öffentlich und bleiben ein Entwurf, bis du veröffentlichst."
     },
     "settingsPage": {
       "title": "Einstellungen",
       "description": "Repository, Bereiche, Previews und Veröffentlichen für diese Site",
-      "unsaved": "Du hast ungespeicherte Änderungen",
       "brandingLabel": "Notra-Branding",
       "brandingHint": "Zeigt ein kleines „Powered by Notra“-Badge im Footer. Eine Änderung baut die Site neu.",
-      "sectionsHint": "Pfade auf deiner Site. Eine Änderung baut die Site neu; die aktuelle Version bleibt live, bis der Build fertig ist.",
-      "changeAccess": "Ändern",
-      "brandingRemove": "Branding entfernen",
-      "brandingShow": "Branding anzeigen"
+      "sectionsHint": "Pfade auf deiner Site. Eine Änderung baut die Site neu; die aktuelle Version bleibt live, bis der Build fertig ist."
     },
     "previewAccess": {
       "title": "Zugriff auf Vorschauen",

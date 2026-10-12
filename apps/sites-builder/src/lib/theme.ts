@@ -19,6 +19,8 @@ export function themeStyle(): string {
     `--primary-button: ${button}`,
     `--primary-foreground: ${readableOn(button)}`,
   ];
+  // Light-only values, so a light page color never leaks into dark mode.
+  const light: string[] = [];
   const dark: string[] = [];
   root.push(...layoutWidths());
   const image = background.image;
@@ -30,11 +32,24 @@ export function themeStyle(): string {
   if (darkImage && darkImage !== lightImage) {
     dark.push(`--page-image: url(${JSON.stringify(darkImage)})`);
   }
+  // Surfaces mix from --background, so it, --card and --muted follow the
+  // page color in both modes. They go through --notra-* so a site's own
+  // :root values for those tokens still win (see global.css).
   if (background.color?.light) {
-    root.push(`--page-background: ${background.color.light}`);
+    light.push(
+      `--page-background: ${background.color.light}`,
+      `--notra-background: ${background.color.light}`,
+      "--notra-card: color-mix(in oklab, white 60%, var(--background))",
+      "--notra-muted: color-mix(in oklab, var(--foreground) 5%, var(--background))"
+    );
   }
   if (background.color?.dark) {
-    dark.push(`--page-background: ${background.color.dark}`);
+    dark.push(
+      `--page-background: ${background.color.dark}`,
+      `--notra-background: ${background.color.dark}`,
+      "--notra-card: color-mix(in oklab, var(--foreground) 3%, var(--background))",
+      "--notra-muted: color-mix(in oklab, var(--foreground) 10%, var(--background))"
+    );
   }
   const body = fonts?.body?.family ?? fonts?.family;
   const heading = fonts?.heading?.family ?? fonts?.family;
@@ -46,7 +61,15 @@ export function themeStyle(): string {
   if (heading) {
     root.push(`--font-heading: ${fontStack(heading, "var(--font-body)")}`);
   }
-  const css = `html:root{${root.join(";")}}${dark.length ? `html.dark{${dark.join(";")}}` : ""}`;
+  const headingWeight = fonts?.heading?.weight;
+  if (headingWeight) {
+    root.push(`--font-heading-weight: ${headingWeight}`);
+  }
+  const bodyWeight = fonts?.body?.weight ?? fonts?.weight;
+  if (bodyWeight) {
+    root.push(`--font-body-weight: ${bodyWeight}`);
+  }
+  const css = `html:root{${root.join(";")}}${light.length ? `html:root:not(.dark){${light.join(";")}}` : ""}${dark.length ? `html.dark{${dark.join(";")}}` : ""}`;
   return css.replaceAll("<", "\\3c ");
 }
 

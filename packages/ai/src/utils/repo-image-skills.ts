@@ -38,6 +38,7 @@ import type { Box } from "@upstash/box";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { Data, Effect } from "effect";
 
+import { formatBrandGuidelineSourceInstructions } from "./brand-guideline-source";
 import { withBoxRetry } from "./repo-image-box";
 
 type RepoImageBox = Awaited<ReturnType<typeof Box.create>>;
@@ -442,6 +443,10 @@ function renderGuidelineSection(
       ),
       "No spacing, radius, shadow, or component tokens were detected."
     ),
+    "",
+    "### Uploaded Guideline Document",
+    formatBrandGuidelineSourceInstructions(guideline.sourcePdfText) ||
+      "No brand guideline PDF has been uploaded.",
     "",
     "### Downloaded Assets",
     renderList(

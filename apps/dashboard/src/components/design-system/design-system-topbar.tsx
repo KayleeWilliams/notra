@@ -95,7 +95,23 @@ export function DesignSystemTopbar({ activeId }: { activeId: string | null }) {
       <div className="flex">
         <DesignSystemSearch />
       </div>
-      <div className="hidden justify-end sm:flex">
+      <div className="hidden justify-end gap-1 sm:flex">
+        <Button
+          render={
+            <a
+              aria-label="Notra UI"
+              href="https://ui.usenotra.com"
+              rel="noreferrer"
+              target="_blank"
+            />
+          }
+          nativeButton={false}
+          size="sm"
+          variant="ghost"
+        >
+          Notra UI
+          <HugeiconsIcon icon={ArrowRight01Icon} />
+        </Button>
         <Button
           render={<Link href="/" />}
           nativeButton={false}

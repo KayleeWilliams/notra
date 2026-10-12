@@ -48,4 +48,9 @@ export interface SiteAnalyticsWindow {
   days?: number;
   from?: string;
   to?: string;
+  path?: string;
+}
+
+export interface UseUpdateSiteSettingsOptions {
+  onSaved?: () => void;
 }

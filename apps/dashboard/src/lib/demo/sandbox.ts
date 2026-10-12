@@ -35,6 +35,7 @@ import {
   DEMO_CLEANUP_BATCH_SIZE,
   DEMO_ANONYMOUS_ID_PREFIX,
   DEMO_COMPANY_NAME,
+  DEMO_EVICTION_IDLE_MS,
   DEMO_MAX_ACTIVE_SANDBOXES,
   DEMO_POOL_FRESH_MS,
   DEMO_POOL_ID_PREFIX,
@@ -43,6 +44,8 @@ import {
   DEMO_POOL_REFILL_RELEASE_SCRIPT,
   DEMO_ORG_SLUG_SUFFIX_LENGTH,
   DEMO_SANDBOX_MAX_AGE_MS,
+  DEMO_SANDBOX_RESET_LOCK_PREFIX,
+  DEMO_SANDBOX_RESET_LOCK_SECONDS,
   DEMO_SEED_ID_PREFIX,
   DEMO_STORAGE_LOCK_KEY,
   DEMO_TOUCH_INTERVAL_MS,
@@ -253,7 +256,9 @@ async function createDemoOrganization(input: DemoOrganizationInput) {
 
 /**
  * Bounds the demo database: at the cap, expired sandboxes go first, then the
- * least recently used ones, so a traffic spike can't fill the disk.
+ * least recently used idle ones, so a traffic spike can't fill the disk.
+ * Recently active visitors are never evicted; when only they are left, the
+ * reservation in createDemoOrganization turns new sandboxes away instead.
  */
 async function enforceDemoSandboxCap(reservedSlots = 1) {
   const cap = DEMO_MAX_ACTIVE_SANDBOXES - reservedSlots;
@@ -300,16 +305,34 @@ async function enforceDemoSandboxCap(reservedSlots = 1) {
     }
   }
   // Keep the configured reserve: it looks idle but prevents the next visitor
-  // from waiting for a seed. Only visitor workspaces are evicted from here.
-  const oldest = await db.query.demoSandboxes.findMany({
-    where: and(
-      notLike(demoSandboxes.anonymousId, POOLED_ID_PATTERN),
-      notLike(demoSandboxes.anonymousId, `${DEMO_SEED_ID_PREFIX}%`)
-    ),
-    orderBy: [asc(demoSandboxes.lastSeenAt)],
-    limit: overflow,
+  // from waiting for a seed. Only idle visitor workspaces are evicted from
+  // here; this may free fewer slots than the overflow.
+  // Select and delete under row locks: a visitor touching lastSeenAt in
+  // between waits for this transaction, so an active sandbox is never evicted.
+  const evicted = await db.transaction(async (tx) => {
+    const idle = await tx
+      .select()
+      .from(demoSandboxes)
+      .where(
+        and(
+          notLike(demoSandboxes.anonymousId, POOLED_ID_PATTERN),
+          notLike(demoSandboxes.anonymousId, `${DEMO_SEED_ID_PREFIX}%`),
+          lt(
+            demoSandboxes.lastSeenAt,
+            new Date(Date.now() - DEMO_EVICTION_IDLE_MS)
+          )
+        )
+      )
+      .orderBy(asc(demoSandboxes.lastSeenAt))
+      .limit(overflow)
+      .for("update", { of: demoSandboxes, skipLocked: true });
+    for (const sandbox of idle) {
+      await deleteDemoOrganization(sandbox.organizationId, tx);
+    }
+    return idle;
   });
-  await Promise.all(oldest.map((sandbox) => deleteDemoSandbox(sandbox)));
+  // Unkey is external: release database locks before touching any key.
+  await Promise.all(evicted.map(deleteDemoSandboxApiKey));
 }
 
 async function seedDemoSandbox(
@@ -474,26 +497,34 @@ export async function createDemoSandbox(
 async function refillDemoSandboxPool(): Promise<void> {
   // Refills run after every visit; serialize them so the pool doesn't
   // overshoot. Without Redis, concurrent refills only waste a seed or two.
-  // The token keeps a refill that outlived its lock from releasing the next
-  // holder's.
+  await withDemoLock(
+    DEMO_POOL_REFILL_LOCK_KEY,
+    DEMO_POOL_REFILL_LOCK_SECONDS,
+    refillPool
+  );
+}
+
+/**
+ * Runs `work` unless another holder has `key`; returns null then. Without
+ * Redis it always runs. The token keeps a holder that outlived its lock from
+ * releasing the next holder's.
+ */
+async function withDemoLock<T>(
+  key: string,
+  seconds: number,
+  work: () => Promise<T>
+): Promise<T | null> {
   const token = crypto.randomUUID();
   const locked = redis
-    ? await redis.set(DEMO_POOL_REFILL_LOCK_KEY, token, {
-        nx: true,
-        ex: DEMO_POOL_REFILL_LOCK_SECONDS,
-      })
+    ? await redis.set(key, token, { nx: true, ex: seconds })
     : "OK";
   if (!locked) {
-    return;
+    return null;
   }
   try {
-    await refillPool();
+    return await work();
   } finally {
-    await redis?.eval(
-      DEMO_POOL_REFILL_RELEASE_SCRIPT,
-      [DEMO_POOL_REFILL_LOCK_KEY],
-      [token]
-    );
+    await redis?.eval(DEMO_POOL_REFILL_RELEASE_SCRIPT, [key], [token]);
   }
 }
 
@@ -584,7 +615,7 @@ export async function touchDemoSandbox(
  * keeping the anonymousId and API key so snippets keep working. The
  * visitor's personalization (name, company) is reapplied unless replaced.
  */
-export async function resetDemoSandbox(
+async function resetDemoSandbox(
   sandbox: DemoSandbox,
   personalization: DemoPersonalization | null = sandbox.personalization
 ): Promise<{ slug: string }> {
@@ -613,6 +644,23 @@ export async function resetDemoSandbox(
   await deleteDemoOrganization(sandbox.organizationId);
 
   return { slug: next.slug };
+}
+
+/**
+ * `resetDemoSandbox`, but "busy" while another reset of the same sandbox is
+ * still running: each one seeds a whole workspace next to the old one, so
+ * parallel resets would multiply storage beyond what the cap accounts for.
+ */
+export async function resetDemoSandboxExclusive(
+  sandbox: DemoSandbox,
+  personalization?: DemoPersonalization | null
+): Promise<{ slug: string } | "busy"> {
+  const result = await withDemoLock(
+    `${DEMO_SANDBOX_RESET_LOCK_PREFIX}${sandbox.anonymousId}`,
+    DEMO_SANDBOX_RESET_LOCK_SECONDS,
+    () => resetDemoSandbox(sandbox, personalization)
+  );
+  return result ?? "busy";
 }
 
 /**
@@ -806,11 +854,6 @@ async function deleteDemoSandboxApiKey(sandbox: Pick<DemoSandbox, "apiKeyId">) {
       logError("[demo] Failed to delete sandbox API key", error);
     });
   }
-}
-
-async function deleteDemoSandbox(sandbox: DemoSandbox) {
-  await deleteDemoOrganization(sandbox.organizationId);
-  await deleteDemoSandboxApiKey(sandbox);
 }
 
 /**

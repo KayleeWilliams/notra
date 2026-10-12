@@ -451,8 +451,11 @@ export async function release({
             break;
           }
         } else if (!activeStates.has(status.readyState)) {
+          const reason = [status.errorCode, status.readyStateReason]
+            .filter(Boolean)
+            .join(": ");
           throw new Error(
-            `${project.name}: deployment ended ${status.readyState}`
+            `${project.name}: deployment ended ${status.readyState}${reason ? ` (${reason})` : ""}`
           );
         }
         const remaining = deadline - Date.now();

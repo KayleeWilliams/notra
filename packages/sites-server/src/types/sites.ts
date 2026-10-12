@@ -28,7 +28,7 @@ export type SiteUpdateValues = Partial<typeof sites.$inferInsert>;
 export interface CreateSiteInput {
   organizationId: string;
   userId: string;
-  projectId?: string | null;
+  projectId: string;
   name: string;
   slug?: string;
   repositoryId: string;
@@ -37,6 +37,7 @@ export interface CreateSiteInput {
   mounts?: SiteMounts;
   previewVisibility?: Site["previewVisibility"];
   publishMode?: Site["publishMode"];
+  previewsEnabled?: boolean;
 }
 
 export interface RepositorySuggestionsParams {

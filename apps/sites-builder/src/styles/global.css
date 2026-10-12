@@ -24,10 +24,12 @@
   --primary-button: var(--primary);
   --primary-foreground: oklch(0.997 0 0);
 
-  --background: hsl(0 0% 100%);
+  /* background.color fills the --notra-* values; reading them here, at the
+     same specificity as a site's own :root, lets that CSS still win. */
+  --background: var(--notra-background, hsl(0 0% 100%));
   --foreground: hsl(0 0% 9%);
-  --card: hsl(0 0% 100%);
-  --muted: hsl(0 0% 96.1%);
+  --card: var(--notra-card, hsl(0 0% 100%));
+  --muted: var(--notra-muted, hsl(0 0% 96.1%));
   --muted-foreground: hsl(240 4% 40%);
   --border: hsl(0 0% 89.8%);
   --success: oklch(0.55 0.109 155);
@@ -40,6 +42,7 @@
     "Inter Variable", "Inter", "Inter Fallback", ui-sans-serif, system-ui,
     -apple-system, "Segoe UI", sans-serif;
   --font-heading: var(--font-body);
+  --font-heading-weight: 600;
   --font-code: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --layout-index: 64rem;
   --layout-post: 64rem;
@@ -49,10 +52,10 @@
 
 .dark {
   --accent: var(--primary-dark-mode);
-  --background: hsl(233 7% 8%);
+  --background: var(--notra-background, hsl(233 7% 8%));
   --foreground: hsl(0 0% 98%);
-  --card: hsl(240 6% 10%);
-  --muted: hsl(0 0% 14.9%);
+  --card: var(--notra-card, hsl(240 6% 10%));
+  --muted: var(--notra-muted, hsl(0 0% 14.9%));
   --muted-foreground: hsl(0 0% 63.9%);
   --border: hsl(0 1% 17%);
   --success: oklch(0.7 0.125 155);
@@ -94,12 +97,39 @@
   html {
     background: var(--page-background);
     color: var(--foreground);
+    font-weight: var(--font-body-weight, 400);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     /* The only anchor offset: clears the sticky header. Element-level
        scroll-margin would add on top of it. */
     scroll-padding-top: 5rem;
+  }
+
+  /* Tailwind v4 dropped the pointer cursor on buttons; restore it for every
+     clickable control, including ones created by client scripts. */
+  button,
+  summary,
+  select,
+  label[for],
+  label:has(input, select),
+  [role="button"],
+  [role="tab"],
+  [role="radio"],
+  [role="checkbox"],
+  [role="switch"],
+  [role="menuitem"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  input[type="checkbox"],
+  input[type="radio"] {
+    cursor: pointer;
+  }
+
+  :is(button, select, input):disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
   }
 
   ::selection {
@@ -386,7 +416,8 @@ body {
     }
   }
 
-  .changelog-version {
+  .changelog-version,
+  .post-tag {
     border-radius: 0.375rem;
     background: var(--muted);
     padding: 0.125rem 0.4375rem;
@@ -394,6 +425,13 @@ body {
     font-size: 0.75rem;
     font-weight: 500;
     line-height: 1.25rem;
+  }
+
+  .post-tag {
+    transition: color 150ms ease-out;
+  }
+  .post-tag:hover {
+    color: var(--foreground);
   }
 
   .post-placeholder {
@@ -506,6 +544,8 @@ body {
   position: fixed;
   inset: 3.5rem 0 auto;
   width: 100%;
+  max-height: calc(100dvh - 3.5rem);
+  overflow-y: auto;
   max-width: none;
   margin: 0;
   border: 0;
@@ -521,6 +561,59 @@ body {
     transform 150ms ease-out,
     overlay 150ms allow-discrete,
     display 150ms allow-discrete;
+}
+
+.site-nav-link[aria-current],
+.site-nav-link[data-active] {
+  color: var(--foreground);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+.site-nav-dropdown {
+  position: relative;
+}
+
+.site-nav-dropdown > summary {
+  list-style: none;
+}
+
+.site-nav-dropdown > summary::-webkit-details-marker {
+  display: none;
+}
+
+.site-nav-dropdown[open] > summary > svg:last-child {
+  transform: rotate(180deg);
+}
+
+.site-nav-dropdown-links {
+  position: absolute;
+  inset: 100% 0 auto auto;
+  width: max-content;
+  min-width: 12rem;
+  max-width: min(20rem, calc(100vw - 2rem));
+  padding: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--page-background);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.12);
+}
+
+.site-nav-dropdown-links > a:hover {
+  background: var(--muted);
+}
+
+.site-nav-dropdown-mobile .site-nav-dropdown-links {
+  position: static;
+  display: flex;
+  flex-direction: column;
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  padding: 0 0 0.25rem 1rem;
+  border: 0;
+  box-shadow: none;
 }
 
 .site-menu:not(:popover-open) {
@@ -575,7 +668,7 @@ body {
 
 .prose-notra :where(h1, h2, h3, h4) {
   font-family: var(--font-heading);
-  font-weight: 600;
+  font-weight: var(--font-heading-weight);
   letter-spacing: -0.02em;
   text-wrap: balance;
 }
@@ -619,12 +712,46 @@ body {
   text-decoration-color: var(--foreground);
 }
 
-.prose-notra :where(code):not(:where(pre code, .not-prose *)) {
+@utility inline-code {
   border-radius: 0.25rem;
   background: var(--muted);
   padding: 0.125em 0.3em;
   font-size: 0.875em;
   font-weight: 400;
+}
+
+@utility code-frame {
+  position: relative;
+  margin: 1.5em 0;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: color-mix(
+    in oklab,
+    var(--muted) 50%,
+    var(--background)
+  ) !important;
+  padding: 1rem 1.125rem;
+  font-family: var(--font-code);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+}
+
+.prose-notra :where(code):not(:where(pre code, .not-prose *)) {
+  @apply inline-code;
+}
+
+/* Builtins opt out of prose for their own chrome and mark themselves with
+   data-notra-markdown, so the Markdown inside still gets the post's code
+   styling. The nearest not-prose decides: an unmarked one (your own
+   component) ends the scope, a marked builtin inside it starts a new one. */
+@scope (.prose-notra [data-notra-markdown]) to (.not-prose:not([data-notra-markdown])) {
+  :scope :where(code):not(:where(pre code)) {
+    @apply inline-code;
+  }
+
+  :scope pre {
+    @apply code-frame;
+  }
 }
 
 .prose-notra :where(code):not(:where(pre code))::before,
@@ -661,20 +788,17 @@ body {
   content: none;
 }
 
-.prose-notra :where(pre):not(:where(.not-prose *)) {
-  position: relative;
-  margin: 1.5em 0;
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  background: color-mix(
-    in oklab,
-    var(--muted) 50%,
-    var(--background)
-  ) !important;
-  padding: 1rem 1.125rem;
-  font-family: var(--font-code);
-  font-size: 0.8125rem;
-  line-height: 1.7;
+/* pre, not :where(pre), so the fill outranks .astro-code's transparent reset. */
+.prose-notra pre:not(:where(.not-prose *)) {
+  @apply code-frame;
+}
+
+.prose-notra [data-notra-markdown]:where(.tabs, .code-group) :where(pre) {
+  margin: 0;
+}
+
+.prose-notra [data-notra-markdown]:where(.callout) :where(pre) {
+  margin: 0.75rem 0 0;
 }
 
 .prose-notra :where(pre) code {

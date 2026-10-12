@@ -36,7 +36,7 @@ export function SiteCreateSourceFields({
   slugInvalid,
   errors,
   starterPullRequestUrl,
-  onStarterPullRequestOpened,
+  onStarterRequestStart,
   suggestions,
   sections,
 }: SiteCreateSourceFieldsProps) {
@@ -148,12 +148,16 @@ export function SiteCreateSourceFields({
       </m.div>
       {form.repositoryId ? (
         <SiteCreateStarter
-          branch={form.branch}
-          onPullRequestOpened={onStarterPullRequestOpened}
+          branch={form.branch.trim() || repository?.defaultBranch || ""}
+          configDirectories={suggestions.configDirectories}
+          onRequestStart={onStarterRequestStart}
+          onRootDirectoryChange={(value) => update("rootDirectory", value)}
           organizationId={organizationId}
           pullRequestUrl={starterPullRequestUrl}
           repositoryId={form.repositoryId}
           rootDirectory={form.rootDirectory}
+          suggestionsComplete={suggestions.isComplete}
+          suggestionsReady={suggestions.isReady}
         />
       ) : null}
       <m.div variants={SITE_CREATE_ROW_VARIANTS}>

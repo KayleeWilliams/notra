@@ -295,6 +295,31 @@ test("failed agent deployment prevents Railway builds", async () => {
   );
 });
 
+test("Vercel failures include the provider's error code and reason without retrying", async () => {
+  const { run, calls } = fixture({
+    override: ({ url }) =>
+      url.pathname === "/v13/deployments/new-notra-agent"
+        ? {
+            readyState: "ERROR",
+            errorCode: "git_info_fail",
+            readyStateReason:
+              "Git information retrieval failed for this deployment.",
+          }
+        : undefined,
+  });
+  await assert.rejects(
+    run(),
+    /git_info_fail: Git information retrieval failed/
+  );
+  assert.equal(
+    builds(calls).filter(({ body }) => body.project === "notra-agent").length,
+    1
+  );
+  assert.ok(
+    builds(calls).every(({ url }) => url.hostname === "api.vercel.com")
+  );
+});
+
 test("Unkey is opt-in and does not call its API without a deployment key", async () => {
   const { run, calls } = fixture();
   await run();

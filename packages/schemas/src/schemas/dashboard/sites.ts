@@ -5,6 +5,8 @@ import {
 import { siteIntegrationUpdateSchema } from "@notra/sites-core/schemas/site-integrations";
 import z from "zod";
 
+import { SITE_BULK_IMPORT_MAX_SITES } from "../../constants/dashboard/sites";
+
 const organizationId = z.string().min(1);
 const siteId = z.string().startsWith("site_");
 const deploymentId = z.string().startsWith("dep_");
@@ -26,12 +28,18 @@ const siteMountsInputSchema = z
 
 export const siteScopeInputSchema = z.object({ organizationId, siteId });
 
+export const listSitesInputSchema = z.object({
+  organizationId,
+  projectId: z.string().min(1),
+});
+
 const analyticsDay = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 export const siteAnalyticsInputSchema = siteScopeInputSchema.extend({
   days: z.number().int().min(1).max(365).optional(),
   from: analyticsDay.optional(),
   to: analyticsDay.optional(),
+  path: z.string().trim().max(2048).optional(),
 });
 
 const suggestionRef = z.string().trim().max(250).optional();
@@ -56,7 +64,26 @@ export const createSiteInputSchema = z.object({
   mounts: siteMountsInputSchema,
   previewVisibility: z.enum(["public", "protected"]).default("protected"),
   publishMode: z.enum(["pull_request", "direct"]).default("pull_request"),
-  projectId: z.string().min(1).optional(),
+  projectId: z.string().min(1),
+});
+
+export const createSitesInputSchema = z.object({
+  organizationId,
+  projectId: z.string().min(1),
+  repositoryId: z.string().min(1),
+  productionBranch: z.string().trim().min(1).max(250).optional(),
+  previewsEnabled: z.boolean().default(false),
+  sites: z
+    .array(
+      createSiteInputSchema.pick({
+        name: true,
+        slug: true,
+        rootDirectory: true,
+        mounts: true,
+      })
+    )
+    .min(1)
+    .max(SITE_BULK_IMPORT_MAX_SITES),
 });
 
 export const updateSiteInputSchema = siteScopeInputSchema.extend({

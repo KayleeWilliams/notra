@@ -12,6 +12,7 @@ import type {
 } from "../src/types/deployments";
 import type { R2PutOptions } from "../src/types/r2";
 import type { Site } from "../src/types/sites";
+import { seedSiteProject } from "./utils/site-project";
 
 const databaseUrl = process.env.SITES_TEST_DATABASE_URL;
 if (!databaseUrl) {
@@ -62,6 +63,7 @@ if (!databaseUrl) {
   let reportHook = async () => {};
   let stateWriteHook = async () => {};
   let beforeStateWriteHook = async () => {};
+  let comparePaths: string[] | null = null;
   let buildCalls = 0;
   let buildHook = async () => {};
   let buildSucceeds = true;
@@ -160,6 +162,7 @@ if (!databaseUrl) {
       token: "synthetic",
     }),
     getBranchHead: async () => ({ sha: branchHead }),
+    changedPathsBetween: async () => comparePaths,
     downloadRepositoryTarballEffect: () =>
       Effect.sync(() => {
         downloadCalls++;
@@ -292,6 +295,7 @@ if (!databaseUrl) {
       .values({
         id: crypto.randomUUID(),
         organizationId,
+        projectId: await seedSiteProject(organizationId),
         name: "Synthetic",
         slug: crypto.randomUUID(),
         publicOrigin: "https://synthetic.notra.site",
@@ -316,6 +320,7 @@ if (!databaseUrl) {
     treeFails = false;
     treeCalls = 0;
     branchHead = "a".repeat(40);
+    comparePaths = null;
     modelFails = false;
     modelProbability = 0.05;
     modelCalls = 0;
@@ -383,6 +388,29 @@ if (!databaseUrl) {
       expect(buildCalls).toBe(1);
     }
   );
+  test.each([
+    ["outside the folder", ["apps/web/page.tsx"], false],
+    ["inside the folder", ["docs/blog/page.mdx"], true],
+    ["an unknown comparison", null, false],
+  ] as const)("a head moved by commits %s", async (_, paths, superseded) => {
+    const [updated] = await db
+      .update(sites)
+      .set({ rootDirectory: "docs" })
+      .where(eq(sites.id, site.id))
+      .returning();
+    if (!updated) {
+      throw new Error("Synthetic site was not updated");
+    }
+    site = updated;
+    await publish();
+    const candidate = await queue();
+    branchHead = "c".repeat(40);
+    comparePaths = paths ? [...paths] : null;
+    await runDeploymentPipeline(site, candidate);
+    expect((await getDeployment(candidate.id))?.status === "superseded").toBe(
+      superseded
+    );
+  });
   test("a head change during comparison is rechecked before skipping", async () => {
     await publish();
     const candidate = await queue();
@@ -897,6 +925,7 @@ if (!databaseUrl) {
     await db.insert(sites).values({
       id: secondSiteId,
       organizationId,
+      projectId: site.projectId,
       name: "Second synthetic",
       slug: crypto.randomUUID(),
       publicOrigin: "https://second.notra.site",

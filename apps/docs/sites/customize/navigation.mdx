@@ -1,7 +1,7 @@
 ---
 title: "Logo, navigation and banner"
 sidebarTitle: "Navigation"
-description: "Set your logo and favicon, the links in the navbar and footer, an announcement banner and the actions on every post."
+description: "Set your logo and favicon, navbar and footer links, an announcement banner and reader actions on blog posts and changelog entries."
 authors:
   - handle: jan
 
@@ -15,7 +15,7 @@ docolin:
   status: stable
 ---
 
-`blog.json` sets your logo and favicon, the links in the navbar and footer, an announcement banner and the actions next to every post. To replace the header or footer with your own markup instead, see [Match your website](/sites/match-your-website).
+`blog.json` sets your logo and favicon, the links in the navbar and footer, an announcement banner and reader actions on blog posts and changelog entries. To replace the header or footer with your own markup instead, see [Match your website](/sites/match-your-website).
 
 ## Logo and favicon
 
@@ -46,13 +46,55 @@ docolin:
 
 | Setting | What it does |
 | --- | --- |
-| `links` | Up to 8 links, each with a `label` of up to 60 characters and an `href` that is a path, `https://` or `mailto:` URL |
+| `links` | Up to 8 links or dropdowns; link labels hold up to 60 characters and `href` accepts a path, `https://` or `mailto:` URL |
 | `links[].icon` | Any [Lucide](https://lucide.dev/icons) icon name, like `book-open` |
 | `links[].type` | `github`, `discord`, `x`, `linkedin`, `youtube` or `slack`, which shows the platform's icon, and `label` adds text next to it |
 | `primary` | A secondary button with a platform icon and name, like "GitHub", that takes `type` and `href` |
 | `cta` | The main button on the right, which takes `label` and `href` |
 
 On phones, the links move into a menu.
+
+### Blog and changelog links
+
+By default, the header shows **Blog** and **Changelog** when both mounted areas have content (the current area also counts when empty). Set `navbar.areas` to choose their labels and order, even before you publish any entries:
+
+```json blog.json
+"navbar": {
+  "areas": [
+    { "area": "changelog", "label": "What's new" },
+    { "area": "blog", "label": "Journal" }
+  ]
+}
+```
+
+Each area can appear once, with an optional label of up to 60 characters. Omit an area from the list to hide its link, or use `"areas": []` to hide both. An area without a configured mount never gets a link. Hiding a link does not unpublish the area or remove its feed. Remove `areas` to restore automatic navigation. `<SiteAreas />` in a custom header uses the same settings.
+
+### Dropdowns
+
+Give a navbar entry `items` instead of `href` to make it a dropdown:
+
+```json blog.json
+"navbar": {
+  "links": [
+    { "label": "Journal", "href": "/blog" },
+    {
+      "label": "Resources",
+      "icon": "book-open",
+      "items": [
+        { "label": "Docs", "href": "https://acme.com/docs" },
+        { "label": "Support", "href": "mailto:help@acme.com" },
+        { "type": "discord", "href": "https://discord.gg/acme", "label": "Community" }
+      ]
+    }
+  ]
+}
+```
+
+A dropdown has 1 to 8 links, including the same platform links and icons as the navbar. Platform links and the `primary` button require an `http://` or `https://` URL. Dropdowns cannot contain other dropdowns. They open on click or with Enter/Space, support Tab between links, and close with Escape, when focus leaves, or when you click outside. On phones, they expand inside the navigation menu.
+
+### Active links
+
+Internal navbar links are underlined and bold on their destination and child pages: `/blog` stays active on `/blog/2026/launch`, but not `/blogger`. The root `/` is active only on the homepage. Absolute URLs on the site's public origin also count as internal; external, email and fragment links are not marked active. A dropdown label is highlighted when one of its links is active. Links expose `aria-current="page"` for an exact match and `aria-current="location"` for a parent section.
 
 ## Footer
 
@@ -87,9 +129,9 @@ The banner is one line of Markdown (links, bold, italic, code) of up to 300 char
 | `color` | Your own background as one hex color or `{ "light": ..., "dark": ... }`, and the text turns white | none |
 | `dismissible` | Shows a close button, and a closed banner stays hidden until you change its text | `false` |
 
-## Post actions
+## Page actions
 
-Every blog post has a **Copy page** button with a dropdown next to its authors, so readers can copy the post as Markdown or ask an AI assistant about it. `contextual` sets what the menu offers:
+Blog posts show a **Copy page** button with a dropdown below the title and description by default. Changelog entries hide these actions by default. Readers can copy the page as Markdown, view its Markdown version or open an AI assistant with a question about the page. The menu does not appear on index pages. `contextual` in `blog.json` configures the actions:
 
 ```json blog.json
 "contextual": {
@@ -100,6 +142,28 @@ Every blog post has a **Copy page** button with a dropdown next to its authors, 
 }
 ```
 
+To show the same actions on individual changelog entries, opt in with:
+
+```json blog.json
+"changelog": {
+  "pageActions": true
+}
+```
+
+`changelog.pageActions` defaults to `false`. When enabled, it uses the same `contextual` options as blog posts; `"display": "none"` or `"options": []` still hides the actions in both areas.
+
 - The built-in options are `copy`, `view` (the Markdown version), `chatgpt`, `claude`, `t3chat`, `perplexity` and `grok`. All of them except `t3chat` show by default.
-- Your own options take a `title` and an `href`, plus an optional `description` and Lucide `icon`. Notra replaces `{url}` and `{markdownUrl}` in the `href` with the post's address.
-- The menu holds up to 12 options, and `"display": "none"` hides the actions.
+- **Copy page** copies the generated Markdown, not the rendered HTML or raw MDX. Copying requires HTTPS (or localhost) and clipboard permission. If it fails, a message includes a **View as Markdown** link so you can copy manually, even when `view` is not in your configured options. The button keeps keyboard focus during copying so you can retry without finding it again.
+- AI links open a new tab with a prefilled prompt containing the page title and canonical Markdown URL, not the full article. The provider must be able to fetch the URL; protected previews and local sites are not publicly accessible. You may need to sign in or submit the prompt. No AI request is sent just by viewing the Notra page.
+- Your own options take a `title` and an `href`, plus an optional `description` and Lucide `icon`. Notra replaces `{url}` and `{markdownUrl}` in the `href` with the page's canonical HTML and Markdown addresses, URL-encoding them when used inside a link.
+- The menu holds up to 12 options. **Copy page** stays in the main button; the other options appear in their configured order in the dropdown. `"options": []` or `"display": "none"` hides all actions.
+
+To keep only the Markdown actions, use:
+
+```json blog.json
+"contextual": {
+  "options": ["copy", "view"]
+}
+```
+
+Unlike Mintlify's contextual menu, Notra Sites currently uses `"display": "meta"` (the default) or `"none"`, not `"header"` or `"toc"`. It does not support page-level overrides, a built-in assistant, MCP installation or PDF export.

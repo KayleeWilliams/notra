@@ -344,6 +344,125 @@
       },
       "type": "object",
       "properties": {
+        "areas": {
+          "anyOf": [
+            {
+              "type": "array",
+              "prefixItems": [],
+              "items": false,
+              "maxItems": 0
+            },
+            {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "area": {
+                      "type": "string",
+                      "enum": ["blog", "changelog"]
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 60,
+                      "pattern": "\\S"
+                    }
+                  },
+                  "required": ["area"],
+                  "additionalProperties": false
+                }
+              ],
+              "items": false,
+              "minItems": 1,
+              "maxItems": 1
+            },
+            {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "area": {
+                      "type": "string",
+                      "const": "blog"
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 60,
+                      "pattern": "\\S"
+                    }
+                  },
+                  "required": ["area"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "area": {
+                      "type": "string",
+                      "const": "changelog"
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 60,
+                      "pattern": "\\S"
+                    }
+                  },
+                  "required": ["area"],
+                  "additionalProperties": false
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            },
+            {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "area": {
+                      "type": "string",
+                      "const": "changelog"
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 60,
+                      "pattern": "\\S"
+                    }
+                  },
+                  "required": ["area"],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "area": {
+                      "type": "string",
+                      "const": "blog"
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 60,
+                      "pattern": "\\S"
+                    }
+                  },
+                  "required": ["area"],
+                  "additionalProperties": false
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            }
+          ]
+        },
         "links": {
           "default": [],
           "maxItems": 8,
@@ -351,49 +470,127 @@
           "items": {
             "anyOf": [
               {
-                "type": "object",
-                "properties": {
-                  "label": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 60
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "label": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 60
+                      },
+                      "href": {
+                        "type": "string",
+                        "pattern": "^(?:\\/(?!\\/)|https?:\\/\\/|mailto:)"
+                      },
+                      "icon": {
+                        "type": "string",
+                        "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                      }
+                    },
+                    "required": ["label", "href"],
+                    "additionalProperties": false
                   },
-                  "href": {
-                    "type": "string",
-                    "pattern": "^(?:\\/(?!\\/)|https?:\\/\\/|mailto:)"
-                  },
-                  "icon": {
-                    "type": "string",
-                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                  {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "github",
+                          "discord",
+                          "x",
+                          "linkedin",
+                          "youtube",
+                          "slack"
+                        ]
+                      },
+                      "href": {
+                        "type": "string",
+                        "pattern": "^https?:\\/\\/"
+                      },
+                      "label": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 60
+                      }
+                    },
+                    "required": ["type", "href"],
+                    "additionalProperties": false
                   }
-                },
-                "required": ["label", "href"]
+                ]
               },
               {
                 "type": "object",
                 "properties": {
-                  "type": {
-                    "type": "string",
-                    "enum": [
-                      "github",
-                      "discord",
-                      "x",
-                      "linkedin",
-                      "youtube",
-                      "slack"
-                    ]
-                  },
-                  "href": {
-                    "type": "string",
-                    "format": "uri"
-                  },
                   "label": {
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 60
+                  },
+                  "icon": {
+                    "type": "string",
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                  },
+                  "items": {
+                    "minItems": 1,
+                    "maxItems": 8,
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "label": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 60
+                            },
+                            "href": {
+                              "type": "string",
+                              "pattern": "^(?:\\/(?!\\/)|https?:\\/\\/|mailto:)"
+                            },
+                            "icon": {
+                              "type": "string",
+                              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                            }
+                          },
+                          "required": ["label", "href"],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "github",
+                                "discord",
+                                "x",
+                                "linkedin",
+                                "youtube",
+                                "slack"
+                              ]
+                            },
+                            "href": {
+                              "type": "string",
+                              "pattern": "^https?:\\/\\/"
+                            },
+                            "label": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 60
+                            }
+                          },
+                          "required": ["type", "href"],
+                          "additionalProperties": false
+                        }
+                      ]
+                    }
                   }
                 },
-                "required": ["type", "href"]
+                "required": ["label", "items"],
+                "additionalProperties": false
               }
             ]
           }
@@ -426,7 +623,7 @@
             },
             "href": {
               "type": "string",
-              "format": "uri"
+              "pattern": "^https?:\\/\\/"
             }
           },
           "required": ["type", "href"]
@@ -643,7 +840,7 @@
         },
         "card": {
           "default": {
-            "image": false,
+            "image": "auto",
             "excerpt": true,
             "author": true,
             "date": true,
@@ -652,8 +849,16 @@
           "type": "object",
           "properties": {
             "image": {
-              "default": false,
-              "type": "boolean"
+              "default": "auto",
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "const": "auto"
+                }
+              ]
             },
             "excerpt": {
               "default": true,
@@ -746,6 +951,10 @@
               "maxLength": 300
             }
           }
+        },
+        "pageActions": {
+          "default": false,
+          "type": "boolean"
         }
       }
     },

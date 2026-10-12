@@ -13,45 +13,90 @@ import type {
   SiteBuildLogHighlightProps,
   SiteBuildLogLineProps,
   SiteBuildLogLineTextProps,
+  SiteBuildLogPlainProps,
   SiteBuildLogRowsProps,
 } from "@/types/components/sites";
 import { findMatches, splitLogTag } from "@/utils/site-build-log";
 
-function Highlighted({ text, query }: SiteBuildLogHighlightProps) {
-  const ranges = findMatches(text, query);
-  if (ranges.length === 0) {
+function Plain({ text, offset, muted }: SiteBuildLogPlainProps) {
+  if (!muted) {
     return text;
   }
+  const from = Math.max(0, muted[0] - offset);
+  const to = Math.min(text.length, muted[1] - offset);
+  if (from >= to) {
+    return text;
+  }
+  return (
+    <>
+      {text.slice(0, from)}
+      <span className="text-muted-foreground">{text.slice(from, to)}</span>
+      {text.slice(to)}
+    </>
+  );
+}
+
+function Highlighted({ text, query, muted }: SiteBuildLogHighlightProps) {
+  const ranges = findMatches(text, query);
+  if (ranges.length === 0 && !muted) {
+    return text;
+  }
+  // A match wins over the dimmed tag color, so it may run across the tag.
   const parts: ReactNode[] = [];
   let cursor = 0;
   for (const [start, end] of ranges) {
     if (start > cursor) {
-      parts.push(text.slice(cursor, start));
+      parts.push(
+        <Plain
+          key={`text-${cursor}`}
+          muted={muted}
+          offset={cursor}
+          text={text.slice(cursor, start)}
+        />
+      );
     }
     parts.push(
-      <mark className="bg-primary/15 text-foreground rounded-xs" key={start}>
+      <mark className="bg-warning/25 text-foreground rounded-xs" key={start}>
         {text.slice(start, end)}
       </mark>
     );
     cursor = end;
   }
-  parts.push(text.slice(cursor));
+  parts.push(
+    <Plain
+      key={`text-${cursor}`}
+      muted={muted}
+      offset={cursor}
+      text={text.slice(cursor)}
+    />
+  );
   return parts;
 }
 
 function LineText({ line, query }: SiteBuildLogLineTextProps) {
-  if (line.continued || query) {
+  if (line.continued) {
     return <Highlighted query={query} text={line.text} />;
+  }
+  if (query) {
+    // Search the raw text so matches can include the status prefix.
+    const prefix = LOG_STATUS_PREFIX.exec(line.text)?.[0].length ?? 0;
+    const { tag } = splitLogTag(line.text.slice(prefix));
+    return (
+      <Highlighted
+        muted={tag ? [prefix, prefix + tag.length] : undefined}
+        query={query}
+        text={line.text}
+      />
+    );
   }
   const text = line.text.replace(LOG_STATUS_PREFIX, "");
   const { tag, rest } = splitLogTag(text);
   if (!tag) {
-    return <Highlighted query={query} text={text} />;
+    return text;
   }
   return (
     <>
-      <span className="text-muted-foreground">{tag}</span>{" "}
-      <Highlighted query={query} text={rest} />
+      <span className="text-muted-foreground">{tag}</span> {rest}
     </>
   );
 }
@@ -135,6 +180,7 @@ function FoldRow({ entry, offsets }: SiteBuildLogFoldRowProps) {
 export function SiteBuildLogRows({
   entries,
   matchingLines,
+  matchOffsets,
   offsets,
   query,
 }: SiteBuildLogRowsProps) {
@@ -164,7 +210,7 @@ export function SiteBuildLogRows({
     <LogLine
       key={line.number}
       line={line}
-      offset={offsets.get(line.number)}
+      offset={matchOffsets.get(line.number)}
       query={query}
     />
   ));

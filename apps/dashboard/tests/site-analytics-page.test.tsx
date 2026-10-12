@@ -48,6 +48,13 @@ if (!process.env.NOTRA_SITE_ANALYTICS_TEST_WORKER) {
       query: { from: "2026-09-10", to: "2026-10-09" },
     }),
   }));
+  mock.module("../src/lib/hooks/use-traffic-path", () => ({
+    useTrafficPathQuery: () => [
+      "",
+      () => Promise.resolve(new URLSearchParams()),
+    ],
+    useKnownTrafficPaths: (paths: readonly string[]) => [...paths],
+  }));
   mock.module("../src/components/framework/link", () => ({ default: "a" }));
   const chartModule =
     await import("../src/components/evilcharts/charts/echarts-area-chart");

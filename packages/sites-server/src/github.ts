@@ -19,8 +19,10 @@ import {
   CONTENT_FILE,
   EMPTY_TREE_SCAN,
   GITHUB_API_VERSION_HEADER,
+  GITHUB_COMPARE_MAX_FILES,
   GITHUB_ARCHIVE_TIMEOUT_MS,
   GITHUB_PAGE_SIZE,
+  GITHUB_PULL_REQUEST_MAX_FILES,
   MAX_TARBALL_BYTES,
 } from "./constants/github";
 import { SitePermanentBuildError } from "./errors";
@@ -262,6 +264,74 @@ export async function getBranchHead(
     author:
       data.commit.commit.author?.name ?? data.commit.author?.login ?? null,
   };
+}
+
+/**
+ * Files changed from `base` to `head`, or null when GitHub can't give the
+ * full list: a diverged history (force push) or a truncated comparison.
+ */
+export async function changedPathsBetween(
+  repository: SiteRepository,
+  token: string,
+  base: string,
+  head: string
+): Promise<string[] | null> {
+  const octokit = createOctokit(token);
+  const { data } = await octokit.request(
+    "GET /repos/{owner}/{repo}/compare/{basehead}",
+    {
+      owner: repository.owner,
+      repo: repository.repo,
+      basehead: `${base}...${head}`,
+      headers: GITHUB_API_VERSION_HEADER,
+    }
+  );
+  const files = data.files ?? [];
+  if (data.status !== "ahead" || files.length >= GITHUB_COMPARE_MAX_FILES) {
+    return null;
+  }
+  return files.flatMap((file) =>
+    file.previous_filename
+      ? [file.filename, file.previous_filename]
+      : [file.filename]
+  );
+}
+
+export async function pullRequestChangedPaths(
+  repository: SiteRepository,
+  token: string,
+  pullNumber: number
+): Promise<string[] | null> {
+  const octokit = createOctokit(token);
+  const paths: string[] = [];
+  for (
+    let page = 1;
+    page <= GITHUB_PULL_REQUEST_MAX_FILES / GITHUB_PAGE_SIZE;
+    page += 1
+  ) {
+    const { data } = await octokit.request(
+      "GET /repos/{owner}/{repo}/pulls/{pull_number}/files",
+      {
+        owner: repository.owner,
+        repo: repository.repo,
+        pull_number: pullNumber,
+        per_page: GITHUB_PAGE_SIZE,
+        page,
+        headers: GITHUB_API_VERSION_HEADER,
+      }
+    );
+    for (const file of data) {
+      paths.push(file.filename);
+      if (file.previous_filename) {
+        paths.push(file.previous_filename);
+      }
+    }
+    if (data.length < GITHUB_PAGE_SIZE) {
+      return paths;
+    }
+  }
+  // Beyond the endpoint's limit the list may be incomplete.
+  return null;
 }
 
 export async function createCheckRun(
@@ -538,7 +608,7 @@ export async function getRepositorySuggestions(
       repository,
       token,
       ref || defaultBranch
-    ).catch(() => EMPTY_TREE_SCAN);
+    ).catch(() => ({ ...EMPTY_TREE_SCAN, truncated: true }));
     return { defaultBranch, config };
   };
   const [branches, { defaultBranch, config }] = await Promise.all([

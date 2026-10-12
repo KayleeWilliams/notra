@@ -77,10 +77,10 @@ See [Design and CSS](/sites/customize/design).
 | `colors.dark` | Color | `primary` | Button color |
 | `appearance` | `"light" \| "dark" \| "system"` or `{ default, strict }` | `"system"` | Starting mode, and `strict: true` hides the toggle |
 | `fonts.family` | string | Inter | A Google Font, or the name of your own font with `source` |
-| `fonts.weight` | 100 to 900 | | Font weight |
+| `fonts.weight` | 100 to 900 | `400` | Body text weight |
 | `fonts.source` | Path | | Your own font file |
 | `fonts.format` | `"woff2" \| "woff"` | `"woff2"` | Format of `source` |
-| `fonts.heading`, `fonts.body` | `{ family, weight?, source?, format? }` | | A separate font for headings or body text |
+| `fonts.heading`, `fonts.body` | `{ family, weight?, source?, format? }` | | A separate font for headings or body text, where `heading.weight` sets heading weight (default `600`) |
 | `background.decoration` | `"none" \| "grid" \| "dots" \| "gradient"` | `"none"` | Page decoration |
 | `background.color` | `{ light?, dark? }` Colors | | Page color per mode |
 | `background.image` | Path, or `{ light, dark }` | | Page background image |
@@ -93,7 +93,8 @@ See [Logo, navigation and banner](/sites/customize/navigation).
 
 | Setting | Type | Default | Description |
 | --- | --- | --- | --- |
-| `navbar.links` | Up to 8 of `{ label, href, icon? }` or `{ type, href, label? }` | `[]` | Header links, where `type` is `github`, `discord`, `x`, `linkedin`, `youtube` or `slack` |
+| `navbar.areas` | Up to 2 of `{ area: "blog" \| "changelog", label? }`, each area once | Automatic | Choose area link order and labels; omitted areas are hidden, `[]` hides both, and unmounted areas are skipped |
+| `navbar.links` | Up to 8 of `{ label, href, icon? }`, `{ type, href, label? }` or `{ label, icon?, items }` | `[]` | Header links or dropdowns with 1–8 non-nested links; `type` is `github`, `discord`, `x`, `linkedin`, `youtube` or `slack`; internal links show their active state |
 | `navbar.primary` | `{ type, href }` | | Secondary button with a platform icon |
 | `navbar.cta` | `{ label, href }` | | Main call to action |
 | `footer.links` | Up to 16 links, or up to 6 `{ header?, items }` columns with 1 to 12 links | `[]` | Footer links |
@@ -102,8 +103,8 @@ See [Logo, navigation and banner](/sites/customize/navigation).
 | `banner.type` | `"info" \| "warning" \| "critical"` | `"info"` | Banner color |
 | `banner.color` | Color, or `{ light, dark }` | | Your own banner color |
 | `banner.dismissible` | boolean | `false` | Show a close button |
-| `contextual.options` | Up to 12 of `copy`, `view`, `chatgpt`, `claude`, `t3chat`, `perplexity`, `grok` or `{ title, href, description?, icon? }` | All built-ins except `t3chat` | The post actions menu |
-| `contextual.display` | `"meta" \| "none"` | `"meta"` | `none` hides the post actions |
+| `contextual.options` | Up to 12 of `copy`, `view`, `chatgpt`, `claude`, `t3chat`, `perplexity`, `grok` or `{ title, href, description?, icon? }` | All built-ins except `t3chat` | [Page actions](/sites/customize/navigation#page-actions) on blog posts and opted-in changelog entries; `[]` hides all actions |
+| `contextual.display` | `"meta" \| "none"` | `"meta"` | `meta` shows actions below the page heading; `none` hides them in both areas |
 
 Link labels are up to 60 characters.
 
@@ -119,8 +120,8 @@ See [Layouts](/sites/customize/layouts#blog).
 | `blog.hero.style` | `"wash" \| "plain" \| "image" \| "none"` | `"plain"` | Index hero |
 | `blog.hero.eyebrow` | string, up to 60 characters | | Line above the heading |
 | `blog.hero.image` | Path | | Image for the `image` style |
-| `blog.featured` | `"latest" \| "none"` or up to 6 post paths | `"none"` | Posts pinned on top |
-| `blog.card.image` | boolean | `false` | Cover image on cards |
+| `blog.featured` | `"latest" \| "none"` or up to 6 post paths | `"none"` | Posts pinned on top. With `"none"`, posts with `featured: true` |
+| `blog.card.image` | `boolean \| "auto"` | `"auto"` | Cover image on cards. `"auto"` shows covers when a post on the page has one |
 | `blog.card.excerpt` | boolean | `true` | Summary on cards |
 | `blog.card.author` | boolean | `true` | First author on cards |
 | `blog.card.date` | boolean | `true` | Date on cards |
@@ -139,10 +140,11 @@ See [Layouts](/sites/customize/layouts#blog).
 | `changelog.description` | string, up to 400 characters | Site `description` | Line under the heading |
 | `changelog.layout` | `"timeline" \| "cards" \| "compact"` | `"timeline"` | Index layout |
 | `changelog.hero` | Same as `blog.hero` | `"plain"` | Index hero |
+| `changelog.pageActions` | boolean | `false` | Show the shared page-actions menu on individual changelog entries; uses `contextual` options |
 
 ## Authors
 
-`authors` is an object that maps each author id to an author. See [Authors](/sites/posts#authors).
+`authors` is an object that maps each author id to an author. Posts can also describe authors in their frontmatter. See [Authors](/sites/posts#authors).
 
 | Setting | Type | Description |
 | --- | --- | --- |
@@ -160,7 +162,7 @@ See [SEO, share images and redirects](/sites/customize/seo).
 | Setting | Type | Default | Description |
 | --- | --- | --- | --- |
 | `seo.metatags` | Object of name → value, with values up to 500 characters | `{}` | Extra `<meta>` tags |
-| `seo.indexing` | `"navigable" \| "all"` | `"navigable"` | `all` also indexes author pages |
+| `seo.indexing` | `"navigable" \| "all"` | `"navigable"` | `all` also indexes author and tag pages |
 | `seo.organization` | `{ name, legalName?, url?, logo?, sameAs? }` | From `name`, `logo` and `footer.socials` | The publisher for structured data, with up to 12 `sameAs` URLs |
 | `thumbnails.enabled` | boolean | `true` | Generated share images |
 | `thumbnails.appearance` | `"light" \| "dark"` | `"light"` | Share image colors |
@@ -185,7 +187,7 @@ See [SEO, share images and redirects](/sites/customize/seo).
 
 `variables` is an object that maps names to values, which you use as `{{ name }}` in posts. See [Variables](/sites/posts#variables).
 
-Names start with a letter and use letters, digits, `_` and `-`, up to 40 characters, and values are up to 500 characters. Variables also work in `description`, `banner.content` and the `title` and `description` of `blog` and `changelog`.
+Names start with a letter and use letters, digits, `_` and `-`, up to 40 characters, and values are up to 500 characters. Variables also work in `description`, `banner.content`, `markdown.instructions` and the `title` and `description` of `blog` and `changelog`.
 
 ## Integrations
 

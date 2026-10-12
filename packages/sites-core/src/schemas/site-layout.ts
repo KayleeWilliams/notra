@@ -34,21 +34,56 @@ const siteLinkSchema = z.object({
   icon: icon.optional(),
 });
 
+const platformHref = z
+  .url()
+  .regex(/^https?:\/\//, "Use an http:// or https:// URL");
+
 const siteNavbarLinkSchema = z.union([
-  siteLinkSchema,
-  z.object({
+  siteLinkSchema.strict(),
+  z.strictObject({
     type: z.enum(SITE_NAVBAR_LINK_TYPES),
-    href: z.url(),
+    href: platformHref,
     label: z.string().trim().min(1).max(60).optional(),
   }),
 ]);
 
+const siteNavbarAreaSchema = z.strictObject({
+  area: z.enum(["blog", "changelog"]),
+  label: z.string().trim().min(1).max(60).regex(/\S/).optional(),
+});
+const blogNavbarAreaSchema = siteNavbarAreaSchema.extend({
+  area: z.literal("blog"),
+});
+const changelogNavbarAreaSchema = siteNavbarAreaSchema.extend({
+  area: z.literal("changelog"),
+});
+
 export const siteNavbarSchema = z
   .object({
-    links: z.array(siteNavbarLinkSchema).max(8).default([]),
+    areas: z
+      .union([
+        z.tuple([]),
+        z.tuple([siteNavbarAreaSchema]),
+        z.tuple([blogNavbarAreaSchema, changelogNavbarAreaSchema]),
+        z.tuple([changelogNavbarAreaSchema, blogNavbarAreaSchema]),
+      ])
+      .optional(),
+    links: z
+      .array(
+        z.union([
+          siteNavbarLinkSchema,
+          z.strictObject({
+            label: z.string().trim().min(1).max(60),
+            icon: icon.optional(),
+            items: z.array(siteNavbarLinkSchema).min(1).max(8),
+          }),
+        ])
+      )
+      .max(8)
+      .default([]),
     cta: siteLinkSchema.optional(),
     primary: z
-      .object({ type: z.enum(SITE_NAVBAR_LINK_TYPES), href: z.url() })
+      .object({ type: z.enum(SITE_NAVBAR_LINK_TYPES), href: platformHref })
       .optional(),
   })
   .default({ links: [] });
@@ -195,14 +230,14 @@ export const siteBlogSchema = z.object({
     .default("none"),
   card: z
     .object({
-      image: z.boolean().default(false),
+      image: z.union([z.boolean(), z.literal("auto")]).default("auto"),
       excerpt: z.boolean().default(true),
       author: z.boolean().default(true),
       date: z.boolean().default(true),
       readingTime: z.boolean().default(false),
     })
     .default({
-      image: false,
+      image: "auto",
       excerpt: true,
       author: true,
       date: true,
@@ -230,6 +265,7 @@ export const siteChangelogSchema = z.object({
   description: z.string().trim().max(400).optional(),
   layout: z.enum(["timeline", "cards", "compact"]).default("timeline"),
   hero: blogHeroSchema,
+  pageActions: z.boolean().default(false),
 });
 
 export const siteMetadataSchema = z

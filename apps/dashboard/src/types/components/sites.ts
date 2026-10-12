@@ -8,6 +8,9 @@ import type {
 import type {
   RepositorySuggestionsResult,
   SiteBuildAgentPromptInput,
+  SiteBulkRow,
+  SiteBulkRowEdit,
+  SiteBulkSlugIssue,
   SiteBuildLogEntry,
   SiteBuildLogFold,
   SiteBuildLogLine,
@@ -41,6 +44,22 @@ export interface SitesPageShellProps {
   children: ReactNode;
 }
 
+export interface ProjectSitesListProps {
+  organizationId: string;
+  organizationSlug: string;
+  projectId: string;
+  showAll: boolean;
+}
+
+export interface SiteCreateProjectProps {
+  organizationId: string;
+}
+
+export interface SiteLoadErrorProps {
+  organizationSlug: string;
+  error: unknown;
+}
+
 export interface SiteDeploymentTimelineProps {
   deployment: SiteDeploymentRecord;
   log: string | null;
@@ -52,10 +71,29 @@ export interface SiteLayoutProps {
   children: ReactNode;
 }
 
-export interface SitesTableProps {
+export interface SitesListProps {
   organizationId: string;
   organizationSlug: string;
   sites: SiteListItem[];
+}
+
+export interface SiteListCardProps {
+  organizationId: string;
+  organizationSlug: string;
+  site: SiteListItem;
+}
+
+export type SiteVisitorsSummaryProps = Pick<
+  SiteListCardProps,
+  "organizationId" | "site"
+>;
+
+export interface SiteListMenuItemsProps extends Pick<
+  SiteListCardProps,
+  "organizationSlug" | "site"
+> {
+  onDelete: () => void;
+  variant: "context" | "dropdown";
 }
 
 export interface SiteCreateFormProps {
@@ -77,9 +115,43 @@ export interface SiteCreateSourceFieldsProps {
   slugInvalid: boolean;
   errors: SiteCreateFieldErrors;
   starterPullRequestUrl: string | null;
-  onStarterPullRequestOpened: (url: string) => void;
+  onStarterRequestStart: () => (url: string) => void;
   suggestions: RepositorySuggestionsResult;
   sections: SiteCreateSectionPlan;
+}
+
+export interface SiteCreateBulkToggleProps {
+  id: string;
+  count: number;
+  checked: boolean;
+  disabled: boolean;
+  onCheckedChange: (checked: boolean) => void;
+}
+
+export interface SiteCreateBulkFieldsProps {
+  idPrefix: string;
+  hostingDomain: string | null;
+  branch: string;
+  onBranchChange: (value: string) => void;
+  branchLocked: boolean;
+  repository: SiteRepository | null;
+  suggestions: RepositorySuggestionsResult;
+  rows: SiteBulkRow[];
+  issues: Record<string, SiteBulkSlugIssue>;
+  onRowChange: (rootDirectory: string, edit: SiteBulkRowEdit) => void;
+  onSelectAll: (selected: boolean) => void;
+  previewsEnabled: boolean;
+  onPreviewsChange: (enabled: boolean) => void;
+  /** Locks every control while a bulk import is running. */
+  disabled: boolean;
+}
+
+export interface SiteCreateBulkResultsProps {
+  organizationSlug: string;
+  rows: SiteBulkRow[];
+  isRetrying: boolean;
+  onRetry: () => void;
+  onEdit: () => void;
 }
 
 export interface SiteCreateSectionFieldsProps {
@@ -98,28 +170,7 @@ export interface SiteAddressInputProps {
   placeholder: string;
   hostingDomain: string | null;
   describedBy?: string;
-}
-
-export interface SiteSectionsFieldsProps {
-  idPrefix: string;
-  blogEnabled: boolean;
-  changelogEnabled: boolean;
-  blogPath: string;
-  changelogPath: string;
-  onBlogEnabledChange: (value: boolean) => void;
-  onChangelogEnabledChange: (value: boolean) => void;
-  onBlogPathChange: (value: string) => void;
-  onChangelogPathChange: (value: string) => void;
-}
-
-export interface SiteSectionRowProps {
-  id: string;
-  title: string;
-  description: string;
-  enabled: boolean;
-  path: string;
-  onEnabledChange: (value: boolean) => void;
-  onPathChange: (value: string) => void;
+  disabled?: boolean;
 }
 
 export interface SiteChoiceGroupProps<T extends string> {
@@ -129,13 +180,6 @@ export interface SiteChoiceGroupProps<T extends string> {
   onValueChange: (value: T) => void;
   disabled?: boolean;
   hideLabel?: boolean;
-}
-
-export interface SiteSettingsRowProps {
-  label: ReactNode;
-  htmlFor?: string;
-  description?: ReactNode;
-  children: ReactNode;
 }
 
 export interface SiteDeleteDialogProps extends SiteScope {
@@ -158,9 +202,8 @@ export interface SiteRelativeTimeProps {
   inline?: boolean;
 }
 
-export interface SiteStatusDotProps {
+export interface SiteStatusBadgeProps {
   status: SiteDeploymentStatus;
-  live?: boolean;
   duration?: string | null;
   className?: string;
 }
@@ -198,14 +241,14 @@ export interface SiteOverviewExternalLinkProps {
   muted?: boolean;
 }
 
-export interface SitePendingProductionProps {
+export interface SiteProductionBuildProps {
   deployment: SiteDeployment;
 }
 
 export interface SiteOverviewStatusProps {
-  pendingProduction: SiteDeployment | null;
+  /** The newest unpublished production build, else the live one. */
+  deployment: SiteDeployment | null;
   suspended: boolean;
-  live: boolean;
 }
 
 export interface SiteOverviewPreviewProps {
@@ -232,6 +275,15 @@ export interface SiteUpdatedLineProps {
 export interface SiteBuildLogHighlightProps {
   text: string;
   query: string;
+  /** `[start, end)` range rendered in the muted tag color. */
+  muted?: readonly [start: number, end: number];
+}
+
+export interface SiteBuildLogPlainProps {
+  text: string;
+  /** Where `text` starts within the full line, to place the muted range. */
+  offset: number;
+  muted?: readonly [start: number, end: number];
 }
 
 export interface SiteBuildLogLineTextProps {
@@ -253,6 +305,7 @@ export interface SiteBuildLogFoldRowProps {
 export interface SiteBuildLogRowsProps {
   entries: SiteBuildLogEntry[];
   matchingLines: SiteBuildLogLine[];
+  matchOffsets: Map<number, string>;
   offsets: Map<number, string>;
   query: string;
 }
@@ -260,11 +313,6 @@ export interface SiteBuildLogRowsProps {
 export interface SiteBuildLogFilterProps {
   value: string;
   onChange: (value: string) => void;
-}
-
-export interface SiteBuildLogSummaryProps {
-  lines: SiteBuildLogLine[];
-  inProgress: boolean;
 }
 
 export interface SiteBuildLogEmptyProps {
@@ -335,7 +383,6 @@ export interface SiteDeploymentActionsProps extends SiteScope {
 export interface SiteEnvironmentBadgeProps {
   kind: SiteDeployment["kind"];
   previewKey: string | null;
-  live: boolean;
   className?: string;
 }
 
@@ -404,20 +451,9 @@ export interface SitePreviewBranchDialogProps extends SiteScope {
   onOpenChange: (open: boolean) => void;
 }
 
-export interface SiteSettingsFormProps extends SiteScope {
-  organizationSlug: string;
-  detail: SiteDetail;
-}
-
 export interface SiteSettingsDangerZoneProps extends SiteScope {
   organizationSlug: string;
   site: SiteRecord;
-}
-
-export interface SiteSettingsSaveBarProps {
-  canSave: boolean;
-  isSaving: boolean;
-  onReset: () => void;
 }
 
 export interface SitePublishDialogProps extends SiteScope {
@@ -540,6 +576,7 @@ export interface SiteSuggestInputProps {
   emptyLabel: string;
   invalid?: boolean;
   describedBy?: string;
+  disabled?: boolean;
 }
 
 export interface SiteIntegrationLogoProps {
@@ -605,12 +642,35 @@ export interface SiteCreateStageProps {
   children: ReactNode;
 }
 
+export type SiteCreateDeployPhase =
+  | "pending"
+  | "ready"
+  | "failed"
+  | "lookupFailed";
+
+export interface SiteCreateDeployHeadingProps {
+  headline: string;
+  tone: "pending" | "success" | "error";
+}
+
+export interface SiteCreateDeployActionsProps {
+  phase: SiteCreateDeployPhase;
+  settingsHref: string;
+  overviewHref: string;
+  liveUrl: string;
+  isReloadingStatus: boolean;
+  onReloadStatus: () => void;
+  isRetrying: boolean;
+  onRetry: () => void;
+}
+
 export interface SiteCreateDeployProps {
   organizationId: string;
   organizationSlug: string;
   site: Pick<
     SiteRecord,
     | "id"
+    | "projectId"
     | "name"
     | "liveUrl"
     | "repository"
@@ -618,7 +678,6 @@ export interface SiteCreateDeployProps {
     | "rootDirectory"
   >;
   deploymentQueued: boolean;
-  starterPullRequestUrl?: string | null;
 }
 
 export interface SiteCreateStarterProps {
@@ -627,7 +686,11 @@ export interface SiteCreateStarterProps {
   branch: string;
   rootDirectory: string;
   pullRequestUrl: string | null;
-  onPullRequestOpened: (url: string) => void;
+  onRequestStart: () => (url: string) => void;
+  configDirectories: string[];
+  suggestionsReady: boolean;
+  suggestionsComplete: boolean;
+  onRootDirectoryChange: (value: string) => void;
 }
 
 export interface SiteRootDirectoryToggleProps {
