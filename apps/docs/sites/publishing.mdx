@@ -29,6 +29,10 @@ Notra deploys a site when you push, merge or publish from the editor, and keeps 
 
 The live version stays online until the new build is ready and then everything switches at once, so a failed build never touches the live site.
 
+If the site is in a subdirectory, a push that changes nothing in its folder doesn't deploy and gets no check run, so other work in a monorepo doesn't rebuild the site. Notra still deploys when it can't tell which files changed, for example after a force push or on a new branch.
+
+Notra updates the theme from time to time, and a site picks up the new theme with its next deploy. Use **Manual update** to pick it up right away.
+
 ## Following a deploy
 
 Open **Deployments** to see production and preview builds, newest first, and filter by environment and status or search by branch and commit.
@@ -38,7 +42,7 @@ A deployment moves through **Queued**, **Building**, **Uploading** and **Ready**
 | Status | Meaning |
 | --- | --- |
 | **Failed** | The build stopped, and the log and **Diagnostics** list each problem with its file and line |
-| **Superseded** | A newer commit replaced this build before it started |
+| **Superseded** | A newer commit replaced this build before it started. For a site in a subdirectory, only commits that change its folder replace a build |
 | **Canceled** | The build was stopped |
 | **Expired** | Notra removed the files of this old deployment, so you can't restore it |
 
@@ -46,7 +50,7 @@ Open a deployment for its timeline, the live build log, diagnostics and the numb
 
 ### GitHub checks
 
-Every commit gets a check run, **Notra Sites** for production and **Notra Sites preview** for previews. It links to the live site or preview when the build succeeds and to the deployment in Notra otherwise, while failed builds add their errors and warnings as annotations on the lines in the pull request. **Re-run** on GitHub redeploys the commit.
+Every commit that deploys gets a check run, **Notra Sites** for production and **Notra Sites preview** for previews. It links to the live site or preview when the build succeeds and to the deployment in Notra otherwise, while failed builds add their errors and warnings as annotations on the lines in the pull request. **Re-run** on GitHub redeploys the commit.
 
 ## The editor
 

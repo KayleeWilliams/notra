@@ -14,7 +14,7 @@ docolin:
   status: stable
 ---
 
-A site lives on the **Production branch** you select, at the repository root or in a folder you choose with **Site is in a subdirectory**. An empty root directory means the repository root. Every path on this page is relative to that selected site root.
+A site lives on the **Production branch** you select, at the repository root or in a folder you choose with **Site is in a subdirectory**. An empty root directory means the repository root. Every path on this page is relative to that selected site root. Pushes that don't change anything in the folder [don't deploy](/sites/publishing#what-triggers-a-deploy), so several sites can live in one repository.
 
 For an existing `hosted-site/blog.json`, choose root directory `hosted-site`, not `hosted-site/blog` or the config file itself. Notra reads `blog.json`, `blog/`, `changelog/` and the other files below from that folder on the selected branch. If there are several configs, choose the one you want to publish; you don't need a starter PR for an existing site.
 

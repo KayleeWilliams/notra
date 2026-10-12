@@ -37,6 +37,7 @@ import type {
   SitesWebhookResult,
 } from "./types/webhooks";
 import { redeploymentInput } from "./utils/deployments";
+import { pushTouchesRootDirectory } from "./utils/push-paths";
 
 async function enqueueOrSkip(
   input: EnqueueDeploymentInput
@@ -152,6 +153,9 @@ async function handlePush(payload: PushPayload): Promise<string[]> {
       previewKey &&
       !(site.previewsEnabled && (await isPreviewOpen(site.id, previewKey)))
     ) {
+      continue;
+    }
+    if (!pushTouchesRootDirectory(payload, site.rootDirectory)) {
       continue;
     }
     const jobId = await enqueueOrSkip({

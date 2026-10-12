@@ -63,6 +63,7 @@ if (!databaseUrl) {
   let reportHook = async () => {};
   let stateWriteHook = async () => {};
   let beforeStateWriteHook = async () => {};
+  let comparePaths: string[] | null = null;
   let buildCalls = 0;
   let buildHook = async () => {};
   let buildSucceeds = true;
@@ -161,6 +162,7 @@ if (!databaseUrl) {
       token: "synthetic",
     }),
     getBranchHead: async () => ({ sha: branchHead }),
+    changedPathsBetween: async () => comparePaths,
     downloadRepositoryTarballEffect: () =>
       Effect.sync(() => {
         downloadCalls++;
@@ -318,6 +320,7 @@ if (!databaseUrl) {
     treeFails = false;
     treeCalls = 0;
     branchHead = "a".repeat(40);
+    comparePaths = null;
     modelFails = false;
     modelProbability = 0.05;
     modelCalls = 0;
@@ -385,6 +388,29 @@ if (!databaseUrl) {
       expect(buildCalls).toBe(1);
     }
   );
+  test.each([
+    ["outside the folder", ["apps/web/page.tsx"], false],
+    ["inside the folder", ["docs/blog/page.mdx"], true],
+    ["an unknown comparison", null, false],
+  ] as const)("a head moved by commits %s", async (_, paths, superseded) => {
+    const [updated] = await db
+      .update(sites)
+      .set({ rootDirectory: "docs" })
+      .where(eq(sites.id, site.id))
+      .returning();
+    if (!updated) {
+      throw new Error("Synthetic site was not updated");
+    }
+    site = updated;
+    await publish();
+    const candidate = await queue();
+    branchHead = "c".repeat(40);
+    comparePaths = paths ? [...paths] : null;
+    await runDeploymentPipeline(site, candidate);
+    expect((await getDeployment(candidate.id))?.status === "superseded").toBe(
+      superseded
+    );
+  });
   test("a head change during comparison is rechecked before skipping", async () => {
     await publish();
     const candidate = await queue();
