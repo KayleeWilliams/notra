@@ -28,6 +28,10 @@ import {
 } from "@/utils/metadata";
 import { SITE_URL } from "@/utils/urls";
 
+function getPostImageUrl(image: string | null, url: string) {
+  return image ? `${SITE_URL}${image}` : `${url}/opengraph-image`;
+}
+
 const blogContent = browserCollections.blog.createClientLoader({
   component: ({ default: MDX, toc }, data: BlogEntryData) => {
     const {
@@ -38,7 +42,7 @@ const blogContent = browserCollections.blog.createClientLoader({
     const slug = post.slug;
     const url = `${SITE_URL}/blog/${slug}`;
     const markdownUrl = `${SITE_URL}/blog/${slug}.md`;
-    const imageUrl = `${SITE_URL}${DEFAULT_SOCIAL_IMAGE.url}`;
+    const imageUrl = `${SITE_URL}${post.image ?? DEFAULT_SOCIAL_IMAGE.url}`;
     const articleJsonLd = buildBlogArticleJsonLd({ post, url, imageUrl });
     const faqJsonLd = buildBlogFaqJsonLd(post);
     const breadcrumbJsonLd = buildBreadcrumbJsonLd([
@@ -152,7 +156,7 @@ export const Route = createFileRoute("/_site/_blog/blog/$slug/")({
         siteName: "Notra",
         images: [
           {
-            url: `${url}/opengraph-image`,
+            url: getPostImageUrl(post.image, url),
             width: 1200,
             height: 630,
             alt: "Notra blog post",
