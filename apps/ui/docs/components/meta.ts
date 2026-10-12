@@ -5,6 +5,7 @@ export default defineMeta({
   order: 1,
   pages: [
     "button",
+    "badges",
     "dropdown-menu",
     "select",
     "marketing-button",

@@ -1,13 +1,9 @@
 import {
   AlertCircleIcon,
-  ArrowDown01Icon,
-  ArrowUp01Icon,
   CheckmarkCircle01Icon,
 } from "@hugeicons/core-free-icons";
-import type {
-  AgentReadinessIssueChange,
-  AgentReadinessScoreBandKey,
-} from "@notra/geo-core/types/agent-readiness";
+import type { AgentReadinessScoreBandKey } from "@notra/geo-core/types/agent-readiness";
+import { TREND_BADGE_APPEARANCES } from "@notra/ui/constants/trend-badge";
 
 /** Worst news first in the "Since last scan" card. */
 export const AGENT_READINESS_CHANGE_ROW_ORDER = [
@@ -18,30 +14,24 @@ export const AGENT_READINESS_CHANGE_ROW_ORDER = [
 ] as const;
 
 export const AGENT_READINESS_CHANGE_ICONS = {
-  worsened: ArrowDown01Icon,
+  worsened: TREND_BADGE_APPEARANCES.down.icon,
   added: AlertCircleIcon,
-  improved: ArrowUp01Icon,
+  improved: TREND_BADGE_APPEARANCES.up.icon,
   resolved: CheckmarkCircle01Icon,
 } as const;
 
 /** Same tones as the GEO "What changed" table. */
 export const AGENT_READINESS_CHANGE_TONE_CLASSES = {
-  worsened: "text-red-500 dark:text-red-300",
-  added: "text-red-500 dark:text-red-300",
-  improved: "text-emerald-500 dark:text-emerald-300",
-  resolved: "text-emerald-500 dark:text-emerald-300",
+  worsened: TREND_BADGE_APPEARANCES.down.foreground,
+  added: TREND_BADGE_APPEARANCES.down.foreground,
+  improved: TREND_BADGE_APPEARANCES.up.foreground,
+  resolved: TREND_BADGE_APPEARANCES.up.foreground,
 } as const;
 
 export const AGENT_READINESS_CHANGES_DEFAULT_SORT = {
   key: "change",
   direction: "asc",
 } as const;
-
-export const AGENT_READINESS_CHANGE_BADGE_VARIANT = {
-  added: "info",
-  improved: "success",
-  worsened: "destructive",
-} as const satisfies Record<AgentReadinessIssueChange, string>;
 
 /** Literal class names live here so Tailwind's dashboard source scan sees them. */
 export const AGENT_READINESS_BAND_TEXT_CLASS = {

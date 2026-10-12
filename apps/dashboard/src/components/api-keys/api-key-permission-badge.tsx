@@ -1,8 +1,8 @@
 "use client";
 
+import { StatusBadge } from "@notra/ui/components/status-badge";
 import { useTranslations } from "use-intl";
 
-import { StatusBadge } from "@/components/status-badge";
 import { API_KEY_PERMISSION_BADGES } from "@/constants/api-keys";
 import type { ApiKeyPermissionBadgeProps } from "@/types/api-keys";
 

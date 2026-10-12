@@ -1,4 +1,4 @@
-import { Badge } from "@notra/ui/components/ui/badge";
+import { StatusBadge } from "@notra/ui/components/status-badge";
 import { useTranslations } from "use-intl";
 
 import type { IrisRunStatusBadgeProps } from "@/types/iris";
@@ -6,9 +6,9 @@ import { humanizeIrisRunStatus } from "@/utils/iris-copy";
 
 const RUN_STATUS_VARIANTS: Record<
   string,
-  "default" | "secondary" | "destructive" | "outline"
+  "success" | "secondary" | "destructive" | "outline"
 > = {
-  completed: "default",
+  completed: "success",
   failed: "destructive",
   canceled: "outline",
   planning: "secondary",
@@ -19,8 +19,9 @@ export function IrisRunStatusBadge({ status }: IrisRunStatusBadgeProps) {
   const t = useTranslations("iris");
   const tLabels = useTranslations("common.labels");
   return (
-    <Badge variant={RUN_STATUS_VARIANTS[status] ?? "secondary"}>
-      {humanizeIrisRunStatus(t, tLabels, status)}
-    </Badge>
+    <StatusBadge
+      appearance={{ variant: RUN_STATUS_VARIANTS[status] ?? "secondary" }}
+      label={humanizeIrisRunStatus(t, tLabels, status)}
+    />
   );
 }

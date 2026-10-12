@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  ArrowDown01Icon,
-  ArrowRight01Icon,
-  ArrowUp01Icon,
-} from "@hugeicons/core-free-icons";
+import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   GEO_CHANGE_KIND_ORDER,
@@ -30,6 +26,7 @@ import {
   InstrumentSection,
 } from "@notra/ui/components/instrument/instrument-module";
 import { TruncateWithTooltip } from "@notra/ui/components/shared/truncate-with-tooltip";
+import { TrendBadge } from "@notra/ui/components/trend-badge";
 import {
   DataTable,
   type TableColumn,
@@ -77,19 +74,7 @@ import { withGeoProject } from "@/utils/geo-paths";
 import { promptTableRowForId } from "@/utils/geo-prompts";
 import { tableHeightFor } from "@/utils/table";
 
-const STAT_ICON_SIZE = 10;
-const STAT_ICON_STROKE = 2.5;
 const POSITION_ARROW_SIZE = 12;
-
-const STAT_TONE_CLASS = {
-  up: "bg-geo-up/10 text-geo-up",
-  down: "bg-geo-down/10 text-geo-down",
-} as const;
-
-const STAT_ICON = {
-  up: ArrowUp01Icon,
-  down: ArrowDown01Icon,
-} as const;
 
 const CHANGES_DEFAULT_SORT = { key: "change", direction: "asc" } as const;
 
@@ -100,27 +85,11 @@ function SummaryStat({
   value,
 }: GeoChangeSummaryStatProps) {
   const locale = useLocale();
-  const isZero = value === 0;
   return (
     <Tooltip>
       <TooltipTrigger
-        render={
-          <span
-            className={cn(
-              "inline-flex cursor-default items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[0.6875rem] leading-none font-medium tabular-nums",
-              isZero
-                ? "bg-muted text-muted-foreground"
-                : STAT_TONE_CLASS[direction]
-            )}
-          />
-        }
+        render={<TrendBadge tone={value === 0 ? "flat" : direction} />}
       >
-        <HugeiconsIcon
-          aria-hidden="true"
-          icon={STAT_ICON[direction]}
-          size={STAT_ICON_SIZE}
-          strokeWidth={STAT_ICON_STROKE}
-        />
         <span className="sr-only">{label} </span>
         {value.toLocaleString(locale)}
       </TooltipTrigger>

@@ -6,6 +6,7 @@ import {
   UserIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { BadgeShowcase } from "@notra/ui/components/badge-showcase";
 import { BrailleLoader } from "@notra/ui/components/shared/braille-loader";
 import {
   ResponsiveAlertDialog,
@@ -688,6 +689,20 @@ export default function DesignSystemClientPage() {
                   Small outline
                 </Badge>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Status & Trend Badges</CardTitle>
+              <CardDescription>
+                Shared with Notra UI. Rounded status labels, filled-square
+                result icons, and semantic trend colors use the same badge
+                primitive.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <BadgeShowcase />
             </CardContent>
           </Card>
 

@@ -14,7 +14,6 @@ import type {
   GeoDirectionPromptEngine,
   GeoDirectionSourceRow,
   GeoDirectionTab,
-  GeoDirectionTone,
 } from "@/types/geo-directions";
 import { seriesColors } from "@/utils/chart-colors";
 import { chartKey } from "@/utils/chart-keys";
@@ -44,18 +43,6 @@ export const GEO_DIRECTIONS_CHECK_COUNT = 312;
 export const GEO_DIRECTIONS_ENGINE_COUNT = 8;
 export const GEO_DIRECTIONS_LAST_SCAN = "2026-08-04T09:41:00Z";
 export const GEO_DIRECTIONS_NEXT_SCAN_HOURS = 14;
-
-export const GEO_DIRECTIONS_DELTA_GLYPH: Record<GeoDirectionTone, string> = {
-  up: "▲",
-  flat: "▬",
-  down: "▼",
-};
-
-export const GEO_DIRECTIONS_DELTA_CLASS: Record<GeoDirectionTone, string> = {
-  up: "text-geo-up",
-  flat: "text-muted-foreground",
-  down: "text-geo-down",
-};
 
 export const GEO_DIRECTIONS_POSITION_CLASS: Record<string, string> = {
   top: "border-geo-up/40 bg-geo-up/10 text-geo-up",

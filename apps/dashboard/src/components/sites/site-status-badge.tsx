@@ -1,9 +1,9 @@
 "use client";
 
+import { StatusBadge } from "@notra/ui/components/status-badge";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { useTranslations } from "use-intl";
 
-import { StatusBadge } from "@/components/status-badge";
 import { SITE_STATUS_BADGES } from "@/constants/sites";
 import { cn } from "@/lib/utils";
 import type { SiteStatusBadgeProps } from "@/types/components/sites";

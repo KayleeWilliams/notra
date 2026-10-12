@@ -3,7 +3,7 @@
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@notra/ui/components/ui/badge";
 
-import type { StatusBadgeProps } from "@/types/components/status-badge";
+import type { StatusBadgeProps } from "@notra/ui/types/status-badge";
 
 export function StatusBadge({ label, appearance }: StatusBadgeProps) {
   return (
