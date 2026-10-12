@@ -41,6 +41,8 @@ A page that doesn't exist answers with a real `404`, and agents that ask for Mar
 | `/blog/llms.txt`, `/changelog/llms.txt` | One section |
 | `/llms.txt` | Blog and changelog, on your Notra address or subdomain |
 
+When a section has these files, its pages and Markdown responses, including Markdown `404`s, also point agents to them with a `Link` header, such as `</blog/llms.txt>; rel="llms-txt", </blog/llms-full.txt>; rel="llms-full-txt"`, next to the page's Markdown or canonical link.
+
 If you forward paths from your own website, `/llms.txt` belongs to your website, so link the section files from your own `llms.txt` or forward `/llms.txt` to Notra too. Notra leaves out drafts and posts with `noindex: true`. A `public/llms.txt` in your repository replaces each section's generated `llms.txt`, and the root one when a section lives at `/`.
 
 ## Search engines and structured data

@@ -11,13 +11,14 @@ export function markdownNotFound(params: MarkdownNotFoundParams): Response {
     lines.push(`- [Index](${params.indexPath}): every entry, newest first`);
   }
   lines.push(`- [llms.txt](${params.llmsPath}): a Markdown map of this site`);
-  return new Response(`${lines.join("\n")}\n`, {
-    status: 404,
-    headers: {
-      "Content-Type": "text/markdown; charset=utf-8",
-      "Cache-Control": "no-store",
-      "X-Robots-Tag": "noindex",
-      Vary: "Accept",
-    },
+  const headers = new Headers({
+    "Content-Type": "text/markdown; charset=utf-8",
+    "Cache-Control": "no-store",
+    "X-Robots-Tag": "noindex",
+    Vary: "Accept",
   });
+  if (params.llmsLink) {
+    headers.set("Link", params.llmsLink);
+  }
+  return new Response(`${lines.join("\n")}\n`, { status: 404, headers });
 }

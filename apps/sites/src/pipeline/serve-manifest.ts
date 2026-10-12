@@ -10,6 +10,7 @@ import type { DeploymentRouteContext } from "../types/routes";
 import { analyticsScriptTag } from "../utils/analytics-tag";
 import { html } from "../utils/responses";
 import {
+  llmsLinkHeader,
   markdownTwin,
   normalizeRequestPath,
   prefersMarkdown,
@@ -45,6 +46,7 @@ export const serveManifest = Effect.fn("Sites.serveManifest")(function* (
       analytics: resolved.isPreview
         ? null
         : analyticsScriptTag(resolved, loaded, url.pathname),
+      llmsLink: llmsLinkHeader(loaded.files, area?.mount ?? "/"),
       status: 200,
     },
   });
