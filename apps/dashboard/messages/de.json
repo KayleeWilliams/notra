@@ -521,10 +521,14 @@
     "viewDocs": "API-Dokumentation ansehen",
     "columns": {
       "key": "Schlüssel",
-      "permission": "Berechtigung"
+      "permission": "Berechtigung",
+      "status": "Status"
     },
-    "expiry": {
-      "expired": "Abgelaufen"
+    "status": {
+      "active": "Aktiv",
+      "expiringSoon": "Läuft bald ab",
+      "expired": "Abgelaufen",
+      "disabled": "Deaktiviert"
     },
     "permissionSummary": "{permission, select, none {Kein Zugriff} read {Nur lesen} write {Lesen & schreiben} geo {GEO-Zugriff} other {Benutzerdefiniert}}",
     "expirationOption": "{value, select, never {Kein Ablauf} 7d {7 Tage} 30d {30 Tage} 60d {60 Tage} 90d {90 Tage} other {{value}}}",

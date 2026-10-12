@@ -18,6 +18,7 @@ export type ApiKeyGranularScope = (typeof API_KEY_GRANULAR_PERMISSIONS)[number];
 export type ApiKeyPresetId = (typeof API_KEY_PRESET_IDS)[number];
 export type ApiKeyExpiration = (typeof API_KEY_EXPIRATION_VALUES)[number];
 export type ApiKeyAccessMode = (typeof API_KEY_ACCESS_MODE_VALUES)[number];
+export type ApiKeyStatus = "active" | "expiringSoon" | "expired" | "disabled";
 
 export interface ApiKeyPreset {
   id: ApiKeyPresetId;
@@ -90,3 +91,11 @@ export type ApiKeyListItem = Pick<
   createdBy: string | null;
   accountWide: boolean;
 };
+
+export interface ApiKeyStatusBadgeProps {
+  status: ApiKeyStatus;
+}
+
+export interface ApiKeyPermissionBadgeProps {
+  permission: ApiKeyListItem["permission"];
+}

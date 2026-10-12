@@ -521,10 +521,14 @@
     "viewDocs": "View API documentation",
     "columns": {
       "key": "Key",
-      "permission": "Permission"
+      "permission": "Permission",
+      "status": "Status"
     },
-    "expiry": {
-      "expired": "Expired"
+    "status": {
+      "active": "Active",
+      "expiringSoon": "Expiring soon",
+      "expired": "Expired",
+      "disabled": "Disabled"
     },
     "permissionSummary": "{permission, select, none {No access} read {Read only} write {Read & write} geo {GEO access} other {Custom}}",
     "expirationOption": "{value, select, never {No expiry} 7d {7 days} 30d {30 days} 60d {60 days} 90d {90 days} other {{value}}}",

@@ -62,11 +62,14 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useLocale, useTranslations } from "use-intl";
+import { useTranslations } from "use-intl";
 
+import { ApiKeyPermissionBadge } from "@/components/api-keys/api-key-permission-badge";
 import { ApiKeyRevealField } from "@/components/api-keys/api-key-reveal-field";
+import { ApiKeyStatusBadge } from "@/components/api-keys/api-key-status-badge";
 import { ApiKeyPermissionSelector } from "@/components/api-keys/permission-selector";
 import { Button } from "@/components/button";
+import { SiteRelativeTime } from "@/components/sites/site-relative-time";
 import {
   API_KEY_EXPIRATION_OPTIONS,
   API_KEYS_EMPTY_TABLE_HEIGHT,
@@ -74,19 +77,20 @@ import {
 import { inferApiKeyExpiration } from "@/lib/api-keys/expiration";
 import { expandLegacyApiKeyScopes } from "@/lib/api-keys/scopes";
 import { useApiKeyExpirationItems } from "@/lib/hooks/use-api-key-expiration-items";
+import { useApiKeyStatusNow } from "@/lib/hooks/use-api-key-status-now";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type {
   ApiKeyAccessMode,
   ApiKeyExpiration,
   ApiKeyListItem,
 } from "@/types/api-keys";
+import { apiKeyStatus } from "@/utils/api-key-status";
 
 export function AccountApiKeysSection() {
   const t = useTranslations("apiKeys");
   const tAccount = useTranslations("apiKeys.account");
   const tApiKeysShared = useTranslations("apiKeys.shared");
   const tCommon = useTranslations("common");
-  const locale = useLocale();
   const expirationItems = useApiKeyExpirationItems();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -218,15 +222,7 @@ export function AccountApiKeysSection() {
     updateMutation.mutate(result.data);
   };
 
-  const formatExpiry = (expires: number | null) => {
-    if (!expires) {
-      return tCommon("labels.never");
-    }
-    if (expires < Date.now()) {
-      return t("expiry.expired");
-    }
-    return new Date(expires).toLocaleDateString(locale);
-  };
+  const now = useApiKeyStatusNow(keys);
 
   const columns: TableColumn<ApiKeyListItem>[] = [
     {
@@ -256,17 +252,31 @@ export function AccountApiKeysSection() {
       header: t("columns.permission"),
       width: "1fr",
       minWidth: "9rem",
-      cell: (key) => t("permissionSummary", { permission: key.permission }),
+      cell: (key) => <ApiKeyPermissionBadge permission={key.permission} />,
+    },
+    {
+      key: "status",
+      header: t("columns.status"),
+      width: "9.5rem",
+      collapsePriority: 2,
+      cell: (key) => <ApiKeyStatusBadge status={apiKeyStatus(key, now)} />,
     },
     {
       key: "expires",
       header: tCommon("labels.expires"),
       width: "8.75rem",
-      cell: (key) => (
-        <span className="text-muted-foreground text-sm">
-          {formatExpiry(key.expires)}
-        </span>
-      ),
+      collapsePriority: 1,
+      cell: (key) =>
+        key.expires === null ? (
+          <span className="text-muted-foreground text-sm">
+            {tCommon("labels.never")}
+          </span>
+        ) : (
+          <SiteRelativeTime
+            className="text-muted-foreground text-sm whitespace-nowrap"
+            date={new Date(key.expires)}
+          />
+        ),
     },
     {
       key: "createdAt",
@@ -274,9 +284,10 @@ export function AccountApiKeysSection() {
       sortable: true,
       width: "9.5rem",
       cell: (key) => (
-        <span className="text-muted-foreground text-sm">
-          {new Date(key.createdAt).toLocaleDateString(locale)}
-        </span>
+        <SiteRelativeTime
+          className="text-muted-foreground text-sm whitespace-nowrap"
+          date={new Date(key.createdAt)}
+        />
       ),
     },
     {

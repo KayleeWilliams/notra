@@ -1,9 +1,9 @@
 "use client";
 
-import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { useTranslations } from "use-intl";
 
+import { StatusBadge } from "@/components/status-badge";
 import { SITE_STATUS_BADGES } from "@/constants/sites";
 import { cn } from "@/lib/utils";
 import type { SiteStatusBadgeProps } from "@/types/components/sites";
@@ -23,28 +23,7 @@ export function SiteStatusBadge({
         className
       )}
     >
-      <Badge shape="rounded" size="md" variant={appearance.variant}>
-        {appearance.icon && appearance.square ? (
-          <span
-            aria-hidden="true"
-            className="inline-flex size-3.5 shrink-0 items-center justify-center rounded-xs bg-current"
-          >
-            <HugeiconsIcon
-              className="text-background size-3"
-              icon={appearance.icon}
-              strokeWidth={2}
-            />
-          </span>
-        ) : null}
-        {appearance.icon && !appearance.square ? (
-          <HugeiconsIcon
-            aria-hidden="true"
-            icon={appearance.icon}
-            strokeWidth={1.5}
-          />
-        ) : null}
-        {label}
-      </Badge>
+      <StatusBadge appearance={appearance} label={label} />
       {duration ? (
         <span className="text-muted-foreground text-xs whitespace-nowrap tabular-nums">
           {duration}
