@@ -36,15 +36,10 @@ const smoothingStyle = {
   MozOsxFontSmoothing: "grayscale",
 } as const;
 
-// Bar variant: full-bleed card, square corners (a floating radius would pinch
-// against the viewport edge). Surface, shadow and the centered 72rem content
-// column live in globals.css (see
-// [data-testid="consent-banner-root"][data-variant="bar"]) so light/dark can
-// differ.
 export const consentComponents = {
   banner: {
     root: { style: smoothingStyle },
-    card: { style: { ...smoothingStyle, borderRadius: 0 } },
+    card: { style: smoothingStyle },
   },
   dialog: { root: { style: smoothingStyle }, card: { style: smoothingStyle } },
 };
