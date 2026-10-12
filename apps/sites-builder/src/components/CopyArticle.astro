@@ -10,6 +10,7 @@ const hasActions = copy || menu.length > 0;
 ---
 
 {hasActions && (
+<div class="relative" data-page-actions>
 <div class="split-button" role="group" aria-label="Page actions">
   {
     copy && (
@@ -65,27 +66,71 @@ const hasActions = copy || menu.length > 0;
     )
   }
 </div>
+{copy && (
+  <>
+    <p data-copy-status role="status" class="mt-2 max-w-72 text-sm text-muted-foreground empty:sr-only" />
+    <a data-copy-fallback href={markdownHref} hidden class="text-sm underline underline-offset-4">View as Markdown</a>
+  </>
+)}
+</div>
 )}
 
 <script>
   for (const button of document.querySelectorAll<HTMLButtonElement>("[data-copy-article]")) {
+    let resetTimer: ReturnType<typeof setTimeout> | undefined;
     button.addEventListener("click", async () => {
-      const response = await fetch(button.dataset.copyArticle ?? "");
-      if (!response.ok) {
+      if (button.getAttribute("aria-disabled") === "true") {
         return;
       }
-      await navigator.clipboard.writeText(await response.text());
       const label = button.querySelector("[data-copy-label]");
-      button.setAttribute("data-copied", "");
-      if (label) {
-        label.textContent = "Copied";
+      const status = button.closest("[data-page-actions]")?.querySelector("[data-copy-status]");
+      const fallback = button.closest("[data-page-actions]")?.querySelector<HTMLAnchorElement>("[data-copy-fallback]");
+      clearTimeout(resetTimer);
+      button.setAttribute("aria-disabled", "true");
+      button.setAttribute("aria-busy", "true");
+      button.removeAttribute("data-copied");
+      if (fallback) {
+        fallback.hidden = true;
       }
-      setTimeout(() => {
-        button.removeAttribute("data-copied");
-        if (label) {
-          label.textContent = "Copy page";
+      if (label) {
+        label.textContent = "Copy page";
+      }
+      if (status) {
+        status.textContent = "";
+      }
+      try {
+        const response = await fetch(button.dataset.copyArticle ?? "");
+        if (!response.ok) {
+          throw new Error("Unable to load Markdown");
         }
-      }, 2000);
+        await navigator.clipboard.writeText(await response.text());
+        button.setAttribute("data-copied", "");
+        if (label) {
+          label.textContent = "Copied";
+        }
+        if (status) {
+          status.textContent = "Page copied as Markdown.";
+        }
+        resetTimer = setTimeout(() => {
+          button.removeAttribute("data-copied");
+          if (label) {
+            label.textContent = "Copy page";
+          }
+          if (status?.textContent === "Page copied as Markdown.") {
+            status.textContent = "";
+          }
+        }, 2000);
+      } catch {
+        if (status) {
+          status.textContent = "Unable to copy. Try again, or open the Markdown version and copy it manually.";
+        }
+        if (fallback) {
+          fallback.hidden = false;
+        }
+      } finally {
+        button.removeAttribute("aria-disabled");
+        button.removeAttribute("aria-busy");
+      }
     });
   }
   for (const menu of document.querySelectorAll<HTMLDetailsElement>("[data-open-in]")) {

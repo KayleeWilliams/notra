@@ -1,9 +1,10 @@
 ---
 import type { ChangelogEntryProps as Props } from "../types/entries";
 import { render } from "astro:content";
-import { assetUrl, href } from "../lib/params";
+import { assetUrl, config, href, markdownHref } from "../lib/params";
 import { formatDate, isoDate } from "../utils/dates";
 import { excerpt } from "../utils/excerpt";
+import CopyArticle from "./CopyArticle.astro";
 import Icon from "./Icon.astro";
 
 const { entry, standalone = false, layout = "timeline" } = Astro.props;
@@ -60,6 +61,7 @@ const summary = layout === "compact" ? (entry.data.description ?? excerpt(entry.
         {standalone ? entry.data.title : <a href={href(entry.id)} class="decoration-foreground/25 decoration-2 underline-offset-[0.15em] hover:underline">{entry.data.title}</a>}
       </Heading>
       {entry.data.description && <p class="mt-4 text-lg leading-8 text-pretty text-muted-foreground">{entry.data.description}</p>}
+      {standalone && config.changelog?.pageActions && <div class="[&:has([data-page-actions])]:mt-5"><CopyArticle markdownHref={markdownHref(href(entry.id))} pagePath={href(entry.id)} title={entry.data.title} /></div>}
       {image && <img src={image} alt="" class="image-outline mt-8 w-full rounded-2xl" loading={standalone ? "eager" : "lazy"} />}
       <div class="mdx-content prose prose-notra mt-8 max-w-none" data-md-root={standalone ? "" : undefined}>
         <Content />

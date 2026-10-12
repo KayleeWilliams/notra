@@ -746,6 +746,10 @@
               "maxLength": 300
             }
           }
+        },
+        "pageActions": {
+          "default": false,
+          "type": "boolean"
         }
       }
     },

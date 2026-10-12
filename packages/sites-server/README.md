@@ -123,6 +123,15 @@ WHERE metrics #>> '{phases,compile}' IS NOT NULL;
 **Toolchain change (theme, Astro, compiler).** Rebuild the snapshot and roll the env var:
 `cd apps/sites-builder && bun --env-file=../../.env scripts/create-box-snapshot.ts` → set `SITES_BUILDER_SNAPSHOT_ID` (Vercel) → redeploy the dashboard. The deployment records the toolchain `VERSION`.
 
+**Reader page actions.** The theme shares `CopyArticle.astro` between blog posts and
+standalone changelog entries, using their generated `.md` files. Blog posts show
+actions by default; changelog entries require `changelog.pageActions: true`
+(default `false`). `blog.json`'s `contextual` setting applies to both areas and can
+still hide all actions. AI links pass the title and canonical
+Markdown URL in a prefilled prompt; they do not upload the article, bypass preview
+access controls or require provider API keys. A theme update requires the snapshot
+roll above and a new build of each Site; existing immutable deployments do not change.
+
 **Rotate the preview secret.** Generate a new value, set `SITES_PREVIEW_SECRET` (dashboard) and `PREVIEW_SECRET` (worker: `wrangler secret put PREVIEW_SECRET`) together. Existing preview sessions and share links stop working.
 
 **Preview access.** Protected previews open with a Notra login (member session), a share link (7 days) or, if set, the preview password.
