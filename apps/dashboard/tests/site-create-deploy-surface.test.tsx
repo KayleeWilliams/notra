@@ -135,7 +135,6 @@ if (!process.env.NOTRA_DEPLOY_SURFACE_TEST_WORKER) {
     );
     expect(html.match(/Deployment started/g)).toHaveLength(1);
     expect(html.match(/motion-safe:animate-spin/g)).toHaveLength(1);
-    expect(html).not.toContain(messages.sites.deploymentPage.log.streaming);
     expect(html).toContain("min-h-28");
     expect(html).not.toContain("h-80");
     expect(html.match(/rounded-xl border/g)).toHaveLength(1);
@@ -161,7 +160,6 @@ if (!process.env.NOTRA_DEPLOY_SURFACE_TEST_WORKER) {
     expect(html).toContain('aria-busy="true"');
     expect(html).toContain(messages.sites.deploymentPage.log.filter);
     expect(html).toContain("Building site");
-    expect(html).not.toContain(messages.sites.deploymentPage.log.streaming);
   });
 
   test.each(["failed", "canceled", "ready"] as const)(
@@ -280,13 +278,13 @@ if (!process.env.NOTRA_DEPLOY_SURFACE_TEST_WORKER) {
     expect(html).toContain(messages.sites.new.deploy.editConfiguration);
   });
 
-  test("shared logs retain their default summary and sizing without a heading", () => {
+  test("shared logs show their title and default sizing without a heading", () => {
     const html = renderToStaticMarkup(
       <IntlProvider locale="en" messages={messages} timeZone="UTC">
         <SiteBuildLogs inProgress log="Building site" queued={false} />
       </IntlProvider>
     );
-    expect(html).toContain(messages.sites.deploymentPage.log.streaming);
+    expect(html).toContain(messages.sites.deploymentPage.log.title);
     expect(html).toContain("max-h-[min(30rem,60vh)]");
     expect(html).not.toContain("h-72");
   });
@@ -362,6 +360,7 @@ if (!process.env.NOTRA_DEPLOY_SURFACE_TEST_WORKER) {
       <IntlProvider locale="en" messages={messages} timeZone="UTC">
         <SiteBuildLogRows
           entries={[]}
+          matchOffsets={new Map()}
           matchingLines={matchingLines}
           offsets={new Map()}
           query={query}

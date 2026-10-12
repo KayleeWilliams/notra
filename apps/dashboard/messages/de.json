@@ -7685,6 +7685,7 @@
     "deploymentPage": {
       "timeline": {
         "title": "Deployment-Zeitstrahl",
+        "total": "{duration} gesamt",
         "timingUnavailable": "Keine Zeitmessung verfügbar",
         "phases": {
           "queued": "Warteschlange",
@@ -7730,7 +7731,6 @@
       },
       "log": {
         "title": "Build-Logs",
-        "lines": "{count, plural, one {# Zeile} other {# Zeilen}}",
         "copy": "Log kopieren",
         "copied": "Log kopiert",
         "noMatches": "Keine Treffer",
@@ -7739,11 +7739,8 @@
         "waiting": "Warte auf den Start des Builds…",
         "empty": "Kein Build-Log für dieses Deployment.",
         "jumpToLatest": "Zum Ende springen",
-        "warnings": "{count, plural, one {# Warnung} other {# Warnungen}}",
-        "errors": "{count, plural, one {# Fehler} other {# Fehler}}",
         "label": "Ausgabe des Build-Logs",
         "starting": "Build-Sandbox startet…",
-        "streaming": "Live",
         "filter": "Log filtern",
         "clearFilter": "Filter löschen",
         "folded": "{count, plural, one {# weitere Zeile zeigen} other {# weitere Zeilen zeigen}}"

@@ -7685,6 +7685,7 @@
     "deploymentPage": {
       "timeline": {
         "title": "Deployment timeline",
+        "total": "{duration} total",
         "timingUnavailable": "Timing unavailable",
         "phases": {
           "queued": "Queued",
@@ -7730,7 +7731,6 @@
       },
       "log": {
         "title": "Build logs",
-        "lines": "{count, plural, one {# line} other {# lines}}",
         "copy": "Copy log",
         "copied": "Log copied",
         "noMatches": "No matches",
@@ -7739,11 +7739,8 @@
         "waiting": "Waiting for the build to start…",
         "empty": "No build log for this deployment.",
         "jumpToLatest": "Jump to latest",
-        "warnings": "{count, plural, one {# warning} other {# warnings}}",
-        "errors": "{count, plural, one {# error} other {# errors}}",
         "label": "Build log output",
         "starting": "Starting the build sandbox…",
-        "streaming": "Streaming",
         "filter": "Filter log",
         "clearFilter": "Clear filter",
         "folded": "{count, plural, one {Show # more line} other {Show # more lines}}"

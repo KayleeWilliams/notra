@@ -251,3 +251,22 @@ export function logOffsets(
   }
   return offsets;
 }
+
+/** Every matching line gets the offset of its own moment, not only the
+ * first line of each second, so filtered results keep their timing. */
+export function matchOffsets(
+  lines: readonly SiteBuildLogLine[],
+  offsets: ReadonlyMap<number, string>,
+  matching: readonly SiteBuildLogLine[]
+): Map<number, string> {
+  const wanted = new Set(matching.map((line) => line.number));
+  const result = new Map<number, string>();
+  let current: string | undefined;
+  for (const line of lines) {
+    current = offsets.get(line.number) ?? current;
+    if (current !== undefined && wanted.has(line.number)) {
+      result.set(line.number, current);
+    }
+  }
+  return result;
+}

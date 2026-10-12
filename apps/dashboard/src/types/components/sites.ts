@@ -237,6 +237,15 @@ export interface SiteUpdatedLineProps {
 export interface SiteBuildLogHighlightProps {
   text: string;
   query: string;
+  /** `[start, end)` range rendered in the muted tag color. */
+  muted?: readonly [start: number, end: number];
+}
+
+export interface SiteBuildLogPlainProps {
+  text: string;
+  /** Where `text` starts within the full line, to place the muted range. */
+  offset: number;
+  muted?: readonly [start: number, end: number];
 }
 
 export interface SiteBuildLogLineTextProps {
@@ -258,6 +267,7 @@ export interface SiteBuildLogFoldRowProps {
 export interface SiteBuildLogRowsProps {
   entries: SiteBuildLogEntry[];
   matchingLines: SiteBuildLogLine[];
+  matchOffsets: Map<number, string>;
   offsets: Map<number, string>;
   query: string;
 }
@@ -265,11 +275,6 @@ export interface SiteBuildLogRowsProps {
 export interface SiteBuildLogFilterProps {
   value: string;
   onChange: (value: string) => void;
-}
-
-export interface SiteBuildLogSummaryProps {
-  lines: SiteBuildLogLine[];
-  inProgress: boolean;
 }
 
 export interface SiteBuildLogEmptyProps {
