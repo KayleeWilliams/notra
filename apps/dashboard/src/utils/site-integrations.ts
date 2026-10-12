@@ -40,7 +40,7 @@ export function siteIntegrationSettingsFromValues(
   values: SiteIntegrationValues,
   current: Record<string, unknown> | null = null
 ): Record<string, unknown> {
-  const fieldKeys = new Set(provider.fields.map((field) => field.key));
+  const fieldKeys = new Set<string>(provider.fields.map((field) => field.key));
   const settings: Record<string, unknown> = Object.fromEntries(
     Object.entries(current ?? {}).filter(([key]) => !fieldKeys.has(key))
   );

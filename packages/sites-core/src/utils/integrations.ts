@@ -1,5 +1,4 @@
 import {
-  CAMEL_CASE_BOUNDARY,
   DATABUDDY_API_URL,
   DATABUDDY_SCRIPT_URL,
   GOOGLE_ANALYTICS_CONNECT_ORIGINS,
@@ -16,6 +15,7 @@ import type {
   SiteHeadScript,
   SiteIntegrations,
 } from "@notra/sites-core/types/site-integrations";
+import { dataAttributes } from "@notra/sites-core/utils/data-attributes";
 
 export function inlineScriptLiteral(value: unknown): string {
   return JSON.stringify(value)
@@ -31,22 +31,14 @@ export function integrationHeadScripts(
   const { databuddy, ga4, plausible, posthog, umami } = integrations;
   if (databuddy) {
     const { scriptUrl, ...options } = databuddy;
-    const attributes: Record<string, string | true> = {
-      async: true,
-      crossorigin: "anonymous",
-    };
-    for (const [key, value] of Object.entries(options)) {
-      const name = key.replace(
-        CAMEL_CASE_BOUNDARY,
-        (letter) => `-${letter.toLowerCase()}`
-      );
-      attributes[`data-${name}`] =
-        typeof value === "string" ? value : JSON.stringify(value);
-    }
     scripts.push({
       kind: "external",
       src: scriptUrl ?? DATABUDDY_SCRIPT_URL,
-      attributes,
+      attributes: {
+        async: true,
+        crossorigin: "anonymous",
+        ...dataAttributes(options),
+      },
     });
   }
   if (ga4) {
