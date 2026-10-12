@@ -28,6 +28,21 @@ function shikiThemesFor(setting) {
     : setting;
 }
 const shikiThemes = shikiThemesFor(codeblocks);
+const consent = params.consent;
+async function consentIntegrations() {
+  if (!consent) {
+    return [];
+  }
+  const { default: c15t, hosted, offline } = await import("@c15t/astro");
+  return [
+    c15t({
+      ...consent.options,
+      mode: consent.backendURL
+        ? hosted({ backendURL: consent.backendURL })
+        : offline(),
+    }),
+  ];
+}
 
 export default defineConfig({
   site: params.publicOrigin,
@@ -46,9 +61,10 @@ export default defineConfig({
   telemetry: false,
   integrations: [
     mdx({ shikiConfig: { themes: shikiThemes, wrap: false } }),
-    ...(params.hasReactComponents
+    ...(params.hasReactComponents || consent
       ? [(await import("@astrojs/react")).default()]
       : []),
+    ...(await consentIntegrations()),
   ],
   markdown: {
     shikiConfig: {
@@ -79,6 +95,16 @@ export default defineConfig({
         ),
         "@notra/builtins": resolve("src/builtins"),
         "@notra/custom-css": resolve(workDir, "custom.css"),
+        "@notra/consent-devtools": resolve(
+          consent?.devTools
+            ? "src/components/ConsentDevTools.astro"
+            : "src/components/ConsentDisabled.astro"
+        ),
+        "@notra/consent": resolve(
+          consent
+            ? "src/components/Consent.astro"
+            : "src/components/ConsentDisabled.astro"
+        ),
       },
     },
     server: {

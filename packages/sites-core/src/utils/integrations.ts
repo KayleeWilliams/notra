@@ -1,4 +1,5 @@
 import {
+  C15T_ANALYTICS_CATEGORY,
   GOOGLE_ANALYTICS_CONNECT_ORIGINS,
   GOOGLE_TAG_ORIGIN,
   PLAUSIBLE_SCRIPT_URL,
@@ -9,6 +10,7 @@ import {
   UMAMI_SCRIPT_URL,
 } from "@notra/sites-core/constants/integrations";
 import type {
+  SiteConsentScript,
   SiteCspSources,
   SiteHeadScript,
   SiteIntegrations,
@@ -72,12 +74,51 @@ export function integrationHeadScripts(
   return scripts;
 }
 
+export function analyticsGatedByConsent(
+  integrations: SiteIntegrations
+): boolean {
+  return integrations.c15t?.gateAnalytics ?? false;
+}
+
+export function integrationConsentScripts(
+  integrations: SiteIntegrations
+): SiteConsentScript[] {
+  return integrationHeadScripts(integrations).map((script, index) => {
+    const id = `notra-analytics-${index}`;
+    if (script.kind === "inline") {
+      return {
+        id,
+        category: C15T_ANALYTICS_CATEGORY,
+        textContent: script.code,
+      };
+    }
+    const { async, defer, ...rest } = script.attributes;
+    const attributes = Object.fromEntries(
+      Object.entries(rest).map(([name, value]) => [
+        name,
+        value === true ? "" : value,
+      ])
+    );
+    return {
+      id,
+      category: C15T_ANALYTICS_CATEGORY,
+      src: script.src,
+      attributes,
+      async: async === true,
+      defer: defer === true,
+    };
+  });
+}
+
 export function integrationCspSources(
   integrations: SiteIntegrations
 ): SiteCspSources {
   const scriptSrc: string[] = [];
   const connectSrc: string[] = [];
-  const { ga4, plausible, posthog, umami } = integrations;
+  const { c15t, ga4, plausible, posthog, umami } = integrations;
+  if (c15t) {
+    connectSrc.push(new URL(c15t.backendURL).origin);
+  }
   if (ga4) {
     scriptSrc.push(GOOGLE_TAG_ORIGIN);
     connectSrc.push(...GOOGLE_ANALYTICS_CONNECT_ORIGINS);

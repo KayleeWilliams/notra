@@ -1,4 +1,5 @@
 import type { DevRefreshOptions } from "../types/dev-refresh";
+import { siteConsent } from "./consent";
 import { siteHeadScripts } from "./head-scripts";
 import { hasReactComponents } from "./react";
 
@@ -83,6 +84,7 @@ export function createDevRefresh(options: DevRefreshOptions) {
         prepared.customScripts,
         false
       ),
+      consent: siteConsent(config, false, true),
     };
     const snapshot = JSON.stringify(params);
     if (snapshot === published && active) {

@@ -26,9 +26,10 @@ import { writeOgImages } from "./og-images";
 import { prepareSite } from "./prepare";
 import type { AreaPages } from "./types/agent-files";
 import type { AstroPackageJson, BuildSiteOptions } from "./types/build";
+import { siteConsent } from "./utils/consent";
 import { listFiles } from "./utils/fs";
 import { siteHeadScripts } from "./utils/head-scripts";
-import { inlineScriptHashes } from "./utils/inline-scripts";
+import { inlineScriptHashes, scriptTextHash } from "./utils/inline-scripts";
 import { unnestLinks } from "./utils/nested-links";
 import { rewritePublicAssetUrls } from "./utils/public-assets";
 import { hasReactComponents } from "./utils/react";
@@ -152,6 +153,7 @@ export async function buildSite(
   const publicFiles = new Set(publicFileList);
   const areas: SiteBuildResult["areas"] = [];
   const areaPages: AreaPages[] = [];
+  const consent = siteConsent(config, options.target.analytics, false);
   const pageHtml = new Map<string, string>();
   for (const { area, mount } of listMountedAreas(mounts)) {
     const paramsPath = join(workDir, `params.${area}.json`);
@@ -176,6 +178,7 @@ export async function buildSite(
         prepared.customScripts,
         options.target.analytics
       ),
+      consent,
     });
     const started = Date.now();
     let log = "";
@@ -250,9 +253,12 @@ export async function buildSite(
     notFound: config.errors[404],
   });
 
-  const scriptHashes = new Set(
-    [...pageHtml.values()].flatMap((html) => inlineScriptHashes(html))
-  );
+  const scriptHashes = new Set([
+    ...[...pageHtml.values()].flatMap((html) => inlineScriptHashes(html)),
+    ...(consent?.options.scripts ?? []).flatMap((script) =>
+      script.textContent ? [scriptTextHash(script.textContent)] : []
+    ),
+  ]);
   let contentSecurityPolicy: string | null = null;
   if (
     config.security.contentSecurityPolicy &&

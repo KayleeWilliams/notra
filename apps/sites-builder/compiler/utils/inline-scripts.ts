@@ -7,6 +7,10 @@ import {
   TYPE_ATTRIBUTE,
 } from "../constants/inline-scripts";
 
+export function scriptTextHash(text: string): string {
+  return createHash("sha256").update(text, "utf8").digest("base64");
+}
+
 export function inlineScriptHashes(html: string): string[] {
   const hashes: string[] = [];
   for (const [, attributes = "", body = ""] of html.matchAll(SCRIPT_ELEMENT)) {
@@ -21,7 +25,7 @@ export function inlineScriptHashes(html: string): string[] {
       continue;
     }
     const text = body.replaceAll("\r\n", "\n").replaceAll("\r", "\n");
-    hashes.push(createHash("sha256").update(text, "utf8").digest("base64"));
+    hashes.push(scriptTextHash(text));
   }
   return hashes;
 }
