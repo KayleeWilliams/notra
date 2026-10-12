@@ -56,6 +56,7 @@ export const uploadRouter = {
   deleteChatUpload: authorizedProcedure
     .input(deleteChatUploadSchema)
     .handler(async ({ context, input }) => {
+      assertNotDemo();
       return deleteChatUpload({
         headers: context.headers,
         key: input.key,
@@ -64,6 +65,7 @@ export const uploadRouter = {
   recordChatAttachment: authorizedProcedure
     .input(recordChatAttachmentSchema)
     .handler(async ({ context, input }) => {
+      assertNotDemo();
       const result = await recordChatAttachment({
         headers: context.headers,
         key: input.key,

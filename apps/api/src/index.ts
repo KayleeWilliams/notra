@@ -18,10 +18,11 @@ import { ACCOUNT_API_KEY_ORGANIZATION_HEADERS } from "@notra/utils/constants/acc
 import { DEMO_CONSOLE_HEADER } from "@notra/utils/constants/demo";
 import { isDemoMode } from "@notra/utils/demo-mode";
 import type { Context } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { HTTPException } from "hono/http-exception";
 import { trimTrailingSlash } from "hono/trailing-slash";
 
-import { DEMO_API_URL } from "./constants/demo";
+import { DEMO_API_MAX_BODY_BYTES, DEMO_API_URL } from "./constants/demo";
 import { apiAnalyticsMiddleware } from "./middleware/analytics";
 import { authMiddleware } from "./middleware/auth";
 import { demoRequestLogMiddleware } from "./middleware/demo-request-log";
@@ -206,6 +207,13 @@ app.use("/v1/*", databaseMiddleware);
 app.use("/v2/*", databaseMiddleware);
 
 if (IS_DEMO) {
+  // Before the request log, which buffers bodies ahead of auth.
+  const demoBodyLimit = bodyLimit({
+    maxSize: DEMO_API_MAX_BODY_BYTES,
+    onError: (c) => c.json({ error: "Payload too large" }, 413),
+  });
+  app.use("/v1/*", demoBodyLimit);
+  app.use("/v2/*", demoBodyLimit);
   app.use("/v1/*", demoRequestLogMiddleware);
   app.use("/v2/*", demoRequestLogMiddleware);
 }

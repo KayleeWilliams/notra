@@ -17,6 +17,8 @@ import { demoPoolSize } from "../../src/utils/demo-limits";
 const originalPoolSize = process.env.NOTRA_DEMO_POOL_SIZE;
 let total = 300;
 let pooled = 3;
+/** Visitors seen within the eviction floor; never returned as candidates. */
+let activeVisitors = 0;
 let lockedPoolRows = 0;
 let transactionActive = false;
 let activeTransactions = 0;
@@ -52,6 +54,7 @@ const findMany = mock(
       expect(dialect.sqlToQuery(input.where).params).toContain(
         `${DEMO_SEED_ID_PREFIX}%`
       );
+      expect(where).toContain('"demo_sandboxes"."last_seen_at" <');
     }
     expect(
       (input.orderBy ?? []).map((order: SQL) => dialect.sqlToQuery(order).sql)
@@ -64,7 +67,9 @@ const findMany = mock(
       {
         length: Math.min(
           input.limit,
-          visitors ? total - pooled - reservations.size : pooled
+          visitors
+            ? total - pooled - reservations.size - activeVisitors
+            : pooled
         ),
       },
       (_, index) => ({
@@ -188,10 +193,15 @@ const transaction = mock(async (work: (tx: unknown) => Promise<unknown>) => {
                       of: demoSandboxes,
                       skipLocked: true,
                     });
+                    const visitors = new PgDialect()
+                      .sqlToQuery(where)
+                      .sql.includes("not like");
                     return findMany({
                       where,
                       orderBy,
-                      limit: Math.min(limit, pooled - lockedPoolRows),
+                      limit: visitors
+                        ? limit
+                        : Math.min(limit, pooled - lockedPoolRows),
                     });
                   },
                 }),
@@ -301,6 +311,7 @@ beforeEach(() => {
   process.env.NOTRA_DEMO_POOL_SIZE = "3";
   total = 300;
   pooled = 3;
+  activeVisitors = 0;
   lockedPoolRows = 0;
   transactionActive = false;
   activeTransactions = 0;
@@ -437,6 +448,18 @@ test("in-flight seeds cannot be evicted to make room for another seed", async ()
   }
   expect(await createDemoSandbox({ timeZone: null, ipHash: null })).toBeNull();
   expect(total).toBe(DEMO_MAX_ACTIVE_SANDBOXES);
+  expect(deleteOrganization).not.toHaveBeenCalled();
+  expect(seedDemoWorkspace).not.toHaveBeenCalled();
+});
+
+test("recently active visitors are never evicted; new sandboxes are turned away instead", async () => {
+  total = 60;
+  pooled = 0;
+  activeVisitors = 60;
+  expect(await createDemoSandbox({ timeZone: null, ipHash: null })).toBeNull();
+  maintainDemoSandboxPool();
+  await afterResponse.mock.calls[0]?.[0]();
+  expect(total).toBe(60);
   expect(deleteOrganization).not.toHaveBeenCalled();
   expect(seedDemoWorkspace).not.toHaveBeenCalled();
 });

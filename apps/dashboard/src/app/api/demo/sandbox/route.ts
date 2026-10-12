@@ -6,11 +6,15 @@ import { writeDemoSession } from "@/lib/demo/session";
 import { demoSandboxCreateInputSchema } from "@/schemas/demo";
 import type { DemoSandboxCreateResponse } from "@/types/demo";
 import { getDemoClientIp, hashDemoClientIp } from "@/utils/demo-ip-hash";
+import { isForeignDemoRequest } from "@/utils/demo-same-origin";
 import { ratelimit } from "@/utils/ratelimit";
 
 export async function POST(request: Request) {
   if (!isDemoMode()) {
     return new Response(null, { status: 404 });
+  }
+  if (isForeignDemoRequest(request)) {
+    return Response.json({ error: "Cross-site request" }, { status: 403 });
   }
 
   const ipHash = hashDemoClientIp(getDemoClientIp(await headers()));

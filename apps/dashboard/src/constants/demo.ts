@@ -59,7 +59,7 @@ export const DEMO_POOL_FRESH_MS = 2 * 60 * 60 * 1000;
 /** One pool refill at a time; the lock outlives a stuck one. */
 export const DEMO_POOL_REFILL_LOCK_KEY = "demo:pool-refill";
 export const DEMO_POOL_REFILL_LOCK_SECONDS = 120;
-/** Releases the refill lock only while it still holds the caller's token. */
+/** Releases a demo lock only while it still holds the caller's token. */
 export const DEMO_POOL_REFILL_RELEASE_SCRIPT = `
 if redis.call("get", KEYS[1]) == ARGV[1] then
   return redis.call("del", KEYS[1])
@@ -77,6 +77,15 @@ export const DEMO_ENTER_PATH = "/api/demo/enter";
  */
 export const DEMO_SANDBOX_CREATE_LIMIT = 30;
 export const DEMO_SANDBOX_CREATE_WINDOW = "1 h";
+/** Resets and customizations reseed a whole workspace each. */
+export const DEMO_SANDBOX_RESET_LIMIT = 3;
+export const DEMO_SANDBOX_RESET_WINDOW = "1 m";
+/** One rebuild per sandbox at a time; outlives a stuck seed. */
+export const DEMO_SANDBOX_RESET_LOCK_PREFIX = "demo:sandbox-reset:";
+export const DEMO_SANDBOX_RESET_LOCK_SECONDS = 120;
+/** A changed time zone can force a full rebase of the sandbox's data. */
+export const DEMO_SANDBOX_TIME_ZONE_LIMIT = 5;
+export const DEMO_SANDBOX_TIME_ZONE_WINDOW = "1 h";
 
 // Lives under the reserved /auth prefix so it can never collide with an
 // organization slug route.
@@ -146,6 +155,12 @@ export const DEMO_BLOCKED_HTML = `<!doctype html><html lang="en"><head><meta cha
 
 /** About 5 MB each; includes the ready pool, not just visitor workspaces. */
 export const DEMO_MAX_ACTIVE_SANDBOXES = 50;
+/**
+ * Visitors seen this recently are never evicted to make room: at the cap a
+ * flood of new sandboxes gets "busy" instead of kicking out active visitors.
+ * Must exceed DEMO_TOUCH_INTERVAL_MS, which throttles `last_seen_at` writes.
+ */
+export const DEMO_EVICTION_IDLE_MS = 15 * 60 * 1000;
 
 export const DEMO_PERSONALIZATION_NAME_MAX = 40;
 export const DEMO_PERSONALIZATION_COMPANY_MAX = 60;
