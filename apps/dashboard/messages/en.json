@@ -6548,10 +6548,13 @@
       "navigate": "Navigate"
     },
     "sections": {
-      "ai": "AI"
+      "recent": "Recent",
+      "suggested": "Suggested"
     },
     "entitySections": {
-      "brandVoices": "Brand voices"
+      "brandVoices": "Brand voices",
+      "chats": "Chats",
+      "prompts": "Tracked prompts"
     },
     "entities": {
       "reference": "Reference"
@@ -6561,15 +6564,32 @@
       "openingChat": "Opening chat…",
       "almostThere": "Hang tight, almost there.",
       "figuringOut": "Figuring out where to take you for \"{query}\".",
-      "navigate": "Navigate with AI",
-      "askChat": "Ask AI chat",
-      "failed": "AI search failed. Try the chat fallback.",
-      "navigateQuery": "Navigate with AI: \"{query}\"",
-      "askChatAbout": "Ask AI chat about this"
+      "failed": "AI search failed. Try again in a moment.",
+      "ask": "Ask AI"
     },
     "empty": {
       "title": "No matches for \"{query}\"",
-      "description": "Let AI navigate for you or open a chat with your question."
+      "description": "Ask AI. It opens the right page or answers in chat."
+    },
+    "actions": {
+      "newContent": "New content",
+      "switchProject": "Switch project",
+      "switchWorkspace": "Switch workspace",
+      "inviteMembers": "Invite members",
+      "darkMode": "Switch to dark mode",
+      "lightMode": "Switch to light mode"
+    },
+    "pages": {
+      "projects": {
+        "title": "Projects",
+        "placeholder": "Search projects…",
+        "count": "{count} projects"
+      },
+      "workspaces": {
+        "title": "Workspaces",
+        "placeholder": "Search workspaces…",
+        "count": "{count} workspaces"
+      }
     }
   },
   "dashboard": {

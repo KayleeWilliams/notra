@@ -6548,10 +6548,13 @@
       "navigate": "Navigieren"
     },
     "sections": {
-      "ai": "KI"
+      "recent": "Zuletzt",
+      "suggested": "Vorgeschlagen"
     },
     "entitySections": {
-      "brandVoices": "Markenstimmen"
+      "brandVoices": "Markenstimmen",
+      "chats": "Chats",
+      "prompts": "Getrackte Prompts"
     },
     "entities": {
       "reference": "Referenz"
@@ -6561,15 +6564,32 @@
       "openingChat": "Chat wird geöffnet…",
       "almostThere": "Einen Moment, gleich geschafft.",
       "figuringOut": "Wir finden heraus, wohin es für „{query}“ gehen soll.",
-      "navigate": "Mit KI navigieren",
-      "askChat": "KI-Chat fragen",
-      "failed": "KI-Suche fehlgeschlagen. Versuch es stattdessen im Chat.",
-      "navigateQuery": "Mit KI navigieren: „{query}“",
-      "askChatAbout": "KI-Chat dazu fragen"
+      "failed": "KI-Suche fehlgeschlagen. Versuch es gleich noch mal.",
+      "ask": "KI fragen"
     },
     "empty": {
       "title": "Keine Treffer für „{query}“",
-      "description": "Lass die KI für dich navigieren oder öffne einen Chat mit deiner Frage."
+      "description": "Frag die KI. Sie öffnet die passende Seite oder antwortet im Chat."
+    },
+    "actions": {
+      "newContent": "Neuer Content",
+      "switchProject": "Projekt wechseln",
+      "switchWorkspace": "Workspace wechseln",
+      "inviteMembers": "Mitglieder einladen",
+      "darkMode": "Zum dunklen Modus wechseln",
+      "lightMode": "Zum hellen Modus wechseln"
+    },
+    "pages": {
+      "projects": {
+        "title": "Projekte",
+        "placeholder": "Projekte suchen…",
+        "count": "{count} Projekte"
+      },
+      "workspaces": {
+        "title": "Workspaces",
+        "placeholder": "Workspaces suchen…",
+        "count": "{count} Workspaces"
+      }
     }
   },
   "dashboard": {
