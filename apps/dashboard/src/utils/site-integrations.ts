@@ -37,9 +37,13 @@ export function siteIntegrationFormValues(
 
 export function siteIntegrationSettingsFromValues(
   provider: SiteIntegrationProvider,
-  values: SiteIntegrationValues
+  values: SiteIntegrationValues,
+  current: Record<string, unknown> | null = null
 ): Record<string, unknown> {
-  const settings: Record<string, unknown> = {};
+  const fieldKeys = new Set(provider.fields.map((field) => field.key));
+  const settings: Record<string, unknown> = Object.fromEntries(
+    Object.entries(current ?? {}).filter(([key]) => !fieldKeys.has(key))
+  );
   for (const field of provider.fields) {
     const raw = values[field.key];
     const value = typeof raw === "string" ? raw.trim() : raw;
@@ -52,11 +56,12 @@ export function siteIntegrationSettingsFromValues(
 
 export function siteIntegrationUpdateFromValues(
   provider: SiteIntegrationProvider,
-  values: SiteIntegrationValues
+  values: SiteIntegrationValues,
+  current: Record<string, unknown> | null = null
 ) {
   const result = siteIntegrationUpdateSchema.safeParse({
     provider: provider.id,
-    settings: siteIntegrationSettingsFromValues(provider, values),
+    settings: siteIntegrationSettingsFromValues(provider, values, current),
   });
   return result.success ? result.data : null;
 }

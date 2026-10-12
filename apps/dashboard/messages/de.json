@@ -7763,12 +7763,20 @@
       "invalidTitle": "Ungültige blog.json-Konfiguration",
       "invalidDescription": "Das JSON oder die Integrationseinstellungen sind ungültig. Korrigiere sie im Editor und komm dann zurück.",
       "providers": {
+        "databuddy": "Datenschutzfreundliche Analytics mit Web Vitals, Fehlern und eigenen Events.",
         "plausible": "Leichtgewichtige Analytics ohne Cookies.",
         "posthog": "Product Analytics, Session Replay und Feature Flags.",
         "umami": "Leichte Web-Analytics ohne Cookies.",
         "ga4": "Die Web-Analytics von Google."
       },
       "fields": {
+        "databuddy": {
+          "clientId": "Client-ID",
+          "trackWebVitals": "Web Vitals",
+          "trackErrors": "Fehler",
+          "trackOutgoingLinks": "Ausgehende Links",
+          "trackInteractions": "Interaktionen"
+        },
         "plausible": {
           "domain": "Domain",
           "server": "Eigener Server"
@@ -7797,6 +7805,13 @@
       "retry": "Erneut versuchen",
       "openEditor": "Editor öffnen",
       "fieldDescriptions": {
+        "databuddy": {
+          "clientId": "Öffne deine Website in Databuddy und kopiere data-client-id aus dem Tracking-Code.",
+          "trackWebVitals": "Core Web Vitals für jede Seite senden.",
+          "trackErrors": "Nicht abgefangene JavaScript-Fehler senden.",
+          "trackOutgoingLinks": "Ein Event senden, wenn Besucher Links zu anderen Seiten klicken.",
+          "trackInteractions": "Klicks, Rage Clicks und Dead Clicks senden. Weitere Optionen wie Sampling und ausgeschlossene Pfade gibt es in blog.json."
+        },
         "plausible": {
           "domain": "Gib die Domain ein, die du in Plausible angelegt hast, ohne https://.",
           "server": "Gib für selbst gehostetes Plausible den Hostnamen mit optionalem Port ein (z. B. plausible.acme.com:8443), ohne https://. Leer lassen für plausible.io."

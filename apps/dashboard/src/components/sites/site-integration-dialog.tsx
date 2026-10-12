@@ -61,12 +61,12 @@ export function SiteIntegrationDialog({
   const [removalFailed, setRemovalFailed] = useState(false);
   const autosave = useSiteIntegrationAutosave(
     scope,
-    siteIntegrationUpdateFromValues(provider, values) ?? {
+    siteIntegrationUpdateFromValues(provider, values, settings) ?? {
       provider: provider.id,
       settings: null,
     }
   );
-  const next = siteIntegrationSettingsFromValues(provider, values);
+  const next = siteIntegrationSettingsFromValues(provider, values, settings);
   const errors = siteIntegrationFieldErrors(provider, next);
   const hasErrors = Object.keys(errors).length > 0;
   const parsed = siteIntegrationSchemas[provider.id].safeParse(next);
@@ -82,7 +82,9 @@ export function SiteIntegrationDialog({
     setRemovalFailed(false);
     const changed = { ...values, [key]: value };
     setValues(changed);
-    autosave.update(siteIntegrationUpdateFromValues(provider, changed));
+    autosave.update(
+      siteIntegrationUpdateFromValues(provider, changed, settings)
+    );
   };
 
   const close = async () => {

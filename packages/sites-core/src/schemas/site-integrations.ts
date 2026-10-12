@@ -1,5 +1,11 @@
 import {
   CSP_ORIGIN,
+  DATABUDDY_CLIENT_ID,
+  DATABUDDY_MAX_BATCH_SIZE,
+  DATABUDDY_MAX_DELAY_MS,
+  DATABUDDY_MAX_PATH_PATTERNS,
+  DATABUDDY_MAX_RETRIES,
+  DATABUDDY_PATH_PATTERN,
   GA4_MEASUREMENT_ID,
   HOSTNAME,
   HOSTNAME_WITH_PORT,
@@ -8,6 +14,7 @@ import {
   POSTHOG_API_KEY,
 } from "@notra/sites-core/constants/integrations";
 import { SITE_CSP_MAX_ALLOWED_ORIGINS } from "@notra/sites-core/constants/security";
+import type { DatabuddySchemaShape } from "@notra/sites-core/types/site-integrations";
 import { z } from "zod";
 
 const ga4Schema = z.strictObject({
@@ -98,7 +105,149 @@ const umamiSchema = z.strictObject({
     ),
 });
 
+const databuddyPathPatternsSchema = z
+  .array(
+    z
+      .string()
+      .trim()
+      .regex(
+        DATABUDDY_PATH_PATTERN,
+        "Use a path glob starting with /, e.g. /changelog/*"
+      )
+  )
+  .max(DATABUDDY_MAX_PATH_PATTERNS);
+
+const databuddyDelaySchema = z
+  .number()
+  .int()
+  .min(0)
+  .max(DATABUDDY_MAX_DELAY_MS);
+
+const databuddySchema = z.strictObject({
+  clientId: z
+    .string({
+      error: "Copy the Client ID from your Databuddy website settings",
+    })
+    .trim()
+    .regex(
+      DATABUDDY_CLIENT_ID,
+      "Copy the Client ID from your Databuddy website settings"
+    )
+    .describe(
+      "Public Databuddy Client ID from your website's tracking code (data-client-id). No API key is needed."
+    ),
+  scriptUrl: z
+    .string()
+    .trim()
+    .regex(
+      HTTPS_SCRIPT_URL,
+      "Use the full https:// script URL including its path, without query or hash"
+    )
+    .optional()
+    .describe(
+      "Tracker script URL. Defaults to https://cdn.databuddy.cc/databuddy.js; set it for a self-hosted or proxied script."
+    ),
+  apiUrl: z
+    .string()
+    .trim()
+    .regex(HTTPS_BASE_URL, "Use an https:// URL without query or hash")
+    .overwrite((value) => value.replace(/\/+$/, ""))
+    .optional()
+    .describe(
+      "Event ingestion URL. Defaults to https://basket.databuddy.cc; set it for a self-hosted or proxied endpoint."
+    ),
+  trackWebVitals: z
+    .boolean()
+    .optional()
+    .describe(
+      "Send Core Web Vitals (LCP, CLS, INP, FCP, TTFB) for each page (default: false)."
+    ),
+  trackErrors: z
+    .boolean()
+    .optional()
+    .describe("Send uncaught JavaScript errors (default: false)."),
+  trackOutgoingLinks: z
+    .boolean()
+    .optional()
+    .describe(
+      "Send an event when visitors click links to other domains (default: false)."
+    ),
+  trackInteractions: z
+    .boolean()
+    .optional()
+    .describe("Send clicks, rage clicks and dead clicks (default: false)."),
+  trackAttributes: z
+    .boolean()
+    .optional()
+    .describe(
+      "Send a custom event when visitors click elements with a data-track attribute, using other data-* attributes as properties (default: false)."
+    ),
+  trackHashChanges: z
+    .boolean()
+    .optional()
+    .describe("Count URL hash changes as page views (default: false)."),
+  samplingRate: z
+    .number()
+    .min(0)
+    .max(1)
+    .optional()
+    .describe("Share of events to send, from 0 to 1 (default: 1)."),
+  skipPatterns: databuddyPathPatternsSchema
+    .optional()
+    .describe('Path globs that are never tracked, e.g. ["/drafts/**"].'),
+  maskPatterns: databuddyPathPatternsSchema
+    .optional()
+    .describe(
+      'Path globs whose matching segments are masked before sending, e.g. ["/authors/*"].'
+    ),
+  anonymizeVisitorIds: z
+    .union([z.boolean(), z.literal("auto")])
+    .optional()
+    .describe(
+      'Anonymize visitor IDs before storage, or "auto" to let Databuddy decide (default: true).'
+    ),
+  ignoreBotDetection: z
+    .boolean()
+    .optional()
+    .describe("Also track visits that look like bots (default: false)."),
+  usePixel: z
+    .boolean()
+    .optional()
+    .describe(
+      "Send events with a 1x1 image request instead of fetch (default: false)."
+    ),
+  enableBatching: z
+    .boolean()
+    .optional()
+    .describe("Send events in batches (default: true)."),
+  batchSize: z
+    .number()
+    .int()
+    .min(1)
+    .max(DATABUDDY_MAX_BATCH_SIZE)
+    .optional()
+    .describe("Events per batch, from 1 to 50 (default: 10)."),
+  batchTimeout: databuddyDelaySchema
+    .optional()
+    .describe("Milliseconds before a partial batch is sent (default: 5000)."),
+  enableRetries: z
+    .boolean()
+    .optional()
+    .describe("Retry failed requests (default: true)."),
+  maxRetries: z
+    .number()
+    .int()
+    .min(0)
+    .max(DATABUDDY_MAX_RETRIES)
+    .optional()
+    .describe("Retries per failed request (default: 3)."),
+  initialRetryDelay: databuddyDelaySchema
+    .optional()
+    .describe("Milliseconds before the first retry (default: 500)."),
+} satisfies DatabuddySchemaShape);
+
 export const siteIntegrationSchemas = {
+  databuddy: databuddySchema,
   ga4: ga4Schema,
   plausible: plausibleSchema,
   posthog: posthogSchema,
@@ -106,6 +255,10 @@ export const siteIntegrationSchemas = {
 };
 
 export const siteIntegrationUpdateSchema = z.discriminatedUnion("provider", [
+  z.object({
+    provider: z.literal("databuddy"),
+    settings: databuddySchema.nullable(),
+  }),
   z.object({ provider: z.literal("ga4"), settings: ga4Schema.nullable() }),
   z.object({
     provider: z.literal("umami"),
@@ -123,6 +276,7 @@ export const siteIntegrationUpdateSchema = z.discriminatedUnion("provider", [
 
 export const siteIntegrationsSchema = z
   .strictObject({
+    databuddy: databuddySchema.optional(),
     ga4: ga4Schema.optional(),
     plausible: plausibleSchema.optional(),
     posthog: posthogSchema.optional(),

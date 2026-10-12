@@ -1,4 +1,7 @@
 import {
+  CAMEL_CASE_BOUNDARY,
+  DATABUDDY_API_URL,
+  DATABUDDY_SCRIPT_URL,
   GOOGLE_ANALYTICS_CONNECT_ORIGINS,
   GOOGLE_TAG_ORIGIN,
   PLAUSIBLE_SCRIPT_URL,
@@ -25,7 +28,27 @@ export function integrationHeadScripts(
   integrations: SiteIntegrations
 ): SiteHeadScript[] {
   const scripts: SiteHeadScript[] = [];
-  const { ga4, plausible, posthog, umami } = integrations;
+  const { databuddy, ga4, plausible, posthog, umami } = integrations;
+  if (databuddy) {
+    const { scriptUrl, ...options } = databuddy;
+    const attributes: Record<string, string | true> = {
+      async: true,
+      crossorigin: "anonymous",
+    };
+    for (const [key, value] of Object.entries(options)) {
+      const name = key.replace(
+        CAMEL_CASE_BOUNDARY,
+        (letter) => `-${letter.toLowerCase()}`
+      );
+      attributes[`data-${name}`] =
+        typeof value === "string" ? value : JSON.stringify(value);
+    }
+    scripts.push({
+      kind: "external",
+      src: scriptUrl ?? DATABUDDY_SCRIPT_URL,
+      attributes,
+    });
+  }
   if (ga4) {
     scripts.push(
       {
@@ -77,7 +100,11 @@ export function integrationCspSources(
 ): SiteCspSources {
   const scriptSrc: string[] = [];
   const connectSrc: string[] = [];
-  const { ga4, plausible, posthog, umami } = integrations;
+  const { databuddy, ga4, plausible, posthog, umami } = integrations;
+  if (databuddy) {
+    scriptSrc.push(new URL(databuddy.scriptUrl ?? DATABUDDY_SCRIPT_URL).origin);
+    connectSrc.push(new URL(databuddy.apiUrl ?? DATABUDDY_API_URL).origin);
+  }
   if (ga4) {
     scriptSrc.push(GOOGLE_TAG_ORIGIN);
     connectSrc.push(...GOOGLE_ANALYTICS_CONNECT_ORIGINS);
