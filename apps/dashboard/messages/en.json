@@ -972,6 +972,7 @@
       "writerPlanFailed": "The content plan couldn't be created or saved. Please try again.",
       "promptAlreadyTracked": "This prompt is already tracked",
       "lastProjectDelete": "You cannot delete your last project. Create another one first.",
+      "projectHasSitesDelete": "This project has hosted sites. Delete its sites before deleting the project.",
       "createBrandIdentityFirst": "Create a brand identity first",
       "noGroundedEngines": "No search-grounded engines are available under your privacy settings",
       "createConversationFailed": "Failed to create conversation",
@@ -7043,6 +7044,14 @@
     "title": "Sites",
     "description": "Blogs and changelogs, built and hosted from your GitHub repository",
     "newSite": "New site",
+    "projectRequired": {
+      "title": "Select a project",
+      "description": "Create or select a project in the sidebar to manage its sites."
+    },
+    "projectLoadFailed": {
+      "title": "Couldn't load projects",
+      "description": "Reload the page to try again."
+    },
     "empty": {
       "title": "No sites yet",
       "description": "Host a blog and changelog from a GitHub repo. Every push goes live, every pull request gets a preview."
@@ -7126,6 +7135,10 @@
     },
     "new": {
       "title": "New site",
+      "project": "Project: {name}",
+      "projectLoading": "Loading project…",
+      "projectRequired": "Create or select a project in the sidebar before creating a site.",
+      "projectLoadFailed": "Couldn't load projects. Reload the page to try again.",
       "description": "Import a repository. Every push to its production branch goes live.",
       "private": "Private repository",
       "name": "Site name",
