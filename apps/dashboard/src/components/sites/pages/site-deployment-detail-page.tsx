@@ -8,7 +8,6 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PageHeading } from "@notra/ui/components/shared/page-heading";
-import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { TABLE_FRAME_CLASS } from "@notra/ui/constants/table";
 import { ORPCError } from "@orpc/client";
 import { useEffect, useRef, useState } from "react";
@@ -22,6 +21,7 @@ import { useSite } from "@/components/sites/site-context";
 import { SiteDeploymentFailure } from "@/components/sites/site-deployment-failure";
 import { SiteDeploymentSummary } from "@/components/sites/site-deployment-summary";
 import { SiteDeploymentTimeline } from "@/components/sites/site-deployment-timeline";
+import { SiteDeploymentSkeleton } from "@/components/sites/site-page-skeleton";
 import { SitePreviewDeleteDialog } from "@/components/sites/site-preview-delete-dialog";
 import { SitePreviewRowMenu } from "@/components/sites/site-preview-row-menu";
 import { SiteRelativeTime } from "@/components/sites/site-relative-time";
@@ -33,7 +33,9 @@ import {
 } from "@/lib/hooks/use-site-deployments";
 import { useSitePreviewLinks } from "@/lib/hooks/use-site-preview-links";
 import { useInvalidateSites } from "@/lib/hooks/use-sites";
+import { useSkeletonReveal } from "@/lib/hooks/use-skeleton-reveal";
 import { useRouter } from "@/lib/navigation";
+import { cn } from "@/lib/utils";
 import type {
   SiteDeploymentActionsProps,
   SiteDeploymentDetailPageProps,
@@ -59,6 +61,7 @@ export function SiteDeploymentDetailPage({
   const { organizationId, organizationSlug, siteId, detail } = useSite();
   const t = useTranslations("sites.deployment");
   const query = useSiteDeployment({ organizationId, siteId, deploymentId });
+  const revealClass = useSkeletonReveal(query.data !== undefined);
 
   if (!query.data) {
     if (query.error) {
@@ -79,7 +82,7 @@ export function SiteDeploymentDetailPage({
         />
       );
     }
-    return <DeploymentDetailSkeleton />;
+    return <SiteDeploymentSkeleton />;
   }
 
   return (
@@ -89,6 +92,7 @@ export function SiteDeploymentDetailPage({
       key={deploymentId}
       log={query.data.log}
       organizationId={organizationId}
+      revealClass={revealClass}
       siteId={siteId}
     />
   );
@@ -96,6 +100,7 @@ export function SiteDeploymentDetailPage({
 
 function DeploymentDetail({
   organizationId,
+  revealClass,
   siteId,
   detail,
   deployment,
@@ -129,7 +134,7 @@ function DeploymentDetail({
     : t(`bylineAnonymous.${deployment.trigger}`);
 
   return (
-    <div className="space-y-6">
+    <div className={cn("space-y-6", revealClass)}>
       <span aria-live="polite" className="sr-only">
         {tDeployment("statusAnnouncement", {
           status: tStatus(deployment.status),
@@ -332,21 +337,5 @@ function DeploymentNote({ deployment }: SiteDeploymentRecordProps) {
       />
       {t(deployment.status)}
     </span>
-  );
-}
-
-function DeploymentDetailSkeleton() {
-  return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-6">
-        <div className="min-w-0 flex-1 space-y-3">
-          <Skeleton className="h-9 w-80 max-w-full" />
-          <Skeleton className="h-5 w-64 max-w-full" />
-        </div>
-        <Skeleton className="h-9 w-48 rounded-lg" />
-      </div>
-      <Skeleton className="h-64 rounded-2xl" />
-      <Skeleton className="h-96 rounded-2xl" />
-    </div>
   );
 }

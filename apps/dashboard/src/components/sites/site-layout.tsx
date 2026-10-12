@@ -16,6 +16,8 @@ import { EmptyState } from "@/components/empty-state";
 import Link from "@/components/framework/link";
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { useSiteDetail, useSitesOrganizationId } from "@/lib/hooks/use-sites";
+import { useSkeletonReveal } from "@/lib/hooks/use-skeleton-reveal";
+import { useParams } from "@/lib/navigation";
 import type {
   SiteLayoutProps,
   SiteLoadErrorProps,
@@ -23,7 +25,10 @@ import type {
 import { siteHref } from "@/utils/site-links";
 
 import { SiteContext } from "./site-context";
-import { SitePageSkeleton } from "./site-page-skeleton";
+import {
+  SiteDeploymentSkeleton,
+  SiteSectionSkeleton,
+} from "./site-page-skeleton";
 import { SitesPageShell } from "./sites-page-shell";
 import { SitesUnavailableState } from "./sites-unavailable-state";
 
@@ -37,6 +42,9 @@ export function SiteLayout({
   const detailQuery = useSiteDetail(organizationId, siteId);
   const [projectParam, setProjectParam] = useGeoProjectQueryState();
   const owningProjectId = detailQuery.data?.site.projectId;
+  const ready = Boolean(detailQuery.data) && projectParam === owningProjectId;
+  const revealClass = useSkeletonReveal(ready);
+  const { deploymentId } = useParams<{ deploymentId?: string }>();
 
   useEffect(() => {
     if (owningProjectId && projectParam !== owningProjectId) {
@@ -53,8 +61,14 @@ export function SiteLayout({
     );
   }
 
-  if (!detailQuery.data || projectParam !== owningProjectId) {
-    return <SitePageSkeleton />;
+  if (!(ready && detailQuery.data)) {
+    // The skeleton of the page that loads next, so it doesn't swap shapes
+    // again once the site arrives and the page starts its own query.
+    return (
+      <SitesPageShell>
+        {deploymentId ? <SiteDeploymentSkeleton /> : <SiteSectionSkeleton />}
+      </SitesPageShell>
+    );
   }
   const detail = detailQuery.data;
   const liveDeployment =
@@ -72,7 +86,7 @@ export function SiteLayout({
         liveDeployment,
       }}
     >
-      <SitesPageShell>
+      <SitesPageShell className={revealClass}>
         {detail.site.status === "suspended" ? (
           <Alert role="status">
             <HugeiconsIcon

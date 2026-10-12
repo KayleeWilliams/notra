@@ -39,6 +39,7 @@ import type {
 
 export interface SitesPageShellProps {
   children: ReactNode;
+  className?: string;
 }
 
 export interface ProjectSitesListProps {
@@ -327,6 +328,8 @@ export interface SiteDeploymentDetailProps extends SiteScope {
   detail: SiteDetail;
   deployment: SiteDeploymentRecord;
   log: string | null;
+  /** Fade-in when the page replaces its skeleton. */
+  revealClass?: string;
 }
 
 export interface SiteDeploymentActionsProps extends SiteScope {

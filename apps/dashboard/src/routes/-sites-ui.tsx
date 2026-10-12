@@ -35,6 +35,18 @@ const SiteLoading = lazyPage(() =>
     default: module.SitePageSkeleton,
   }))
 );
+// Child routes render inside `SiteLayout`'s shell, so their pending UI is
+// only the page body; a second shell would double the padding.
+const SiteSectionLoading = lazyPage(() =>
+  import("@/components/sites/site-page-skeleton").then((module) => ({
+    default: module.SiteSectionSkeleton,
+  }))
+);
+const SiteDeploymentLoading = lazyPage(() =>
+  import("@/components/sites/site-page-skeleton").then((module) => ({
+    default: module.SiteDeploymentSkeleton,
+  }))
+);
 const Overview = lazyPage(() =>
   import("@/components/sites/pages/site-overview-page").then((module) => ({
     default: module.SiteOverviewPage,
@@ -91,7 +103,7 @@ export function createSitesUiRoutes(organization: AnyRoute) {
       parent: site,
       path: "/",
       title: { namespace: "sites.detail.tabs", key: "overview" },
-      pendingComponent: SiteLoading,
+      pendingComponent: SiteSectionLoading,
       preload: Overview.preload,
       component: () => <Overview />,
     }),
@@ -100,7 +112,7 @@ export function createSitesUiRoutes(organization: AnyRoute) {
         parent: site,
         path: section,
         title: { namespace: "sites.detail.tabs", key: section },
-        pendingComponent: SiteLoading,
+        pendingComponent: SiteSectionLoading,
         preload: Page.preload,
         component: () => <Page />,
       })
@@ -109,7 +121,7 @@ export function createSitesUiRoutes(organization: AnyRoute) {
       parent: site,
       path: "deployments/$deploymentId",
       title: { namespace: "sites.deploymentPage", key: "title" },
-      pendingComponent: SiteLoading,
+      pendingComponent: SiteDeploymentLoading,
       preload: DeploymentDetail.preload,
       component: ({ params }) => (
         <DeploymentDetail deploymentId={params.deploymentId} />
