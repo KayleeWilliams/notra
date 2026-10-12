@@ -12,6 +12,7 @@ import { previewRobotsTxtRoute } from "../routes/preview-robots-txt";
 import { previewSignOutRoute } from "../routes/preview-sign-out";
 import { robotsTxtRoute } from "../routes/robots-txt";
 import { rootRedirectRoute } from "../routes/root-redirect";
+import { sitemapIndexRoute } from "../routes/sitemap-index";
 import { staticFileRoute } from "../routes/static-file";
 import { trailingSlashRedirectRoute } from "../routes/trailing-slash-redirect";
 import { wellKnownLlmsTxtRoute } from "../routes/well-known-llms-txt";
@@ -42,6 +43,7 @@ export const DEPLOYMENT_ROUTES: readonly SiteRoute<DeploymentRouteContext>[] = [
 export const MANIFEST_ROUTES: readonly SiteRoute<ManifestRouteContext>[] = [
   robotsTxtRoute,
   manifestRedirectsRoute,
+  sitemapIndexRoute,
   wellKnownLlmsTxtRoute,
   trailingSlashRedirectRoute,
   markdownFileRoute,
