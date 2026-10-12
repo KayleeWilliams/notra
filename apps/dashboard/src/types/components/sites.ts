@@ -52,10 +52,29 @@ export interface SiteLayoutProps {
   children: ReactNode;
 }
 
-export interface SitesTableProps {
+export interface SitesListProps {
   organizationId: string;
   organizationSlug: string;
   sites: SiteListItem[];
+}
+
+export interface SiteListCardProps {
+  organizationId: string;
+  organizationSlug: string;
+  site: SiteListItem;
+}
+
+export type SiteVisitorsSummaryProps = Pick<
+  SiteListCardProps,
+  "organizationId" | "site"
+>;
+
+export interface SiteListMenuItemsProps extends Pick<
+  SiteListCardProps,
+  "organizationSlug" | "site"
+> {
+  onDelete: () => void;
+  variant: "context" | "dropdown";
 }
 
 export interface SiteCreateFormProps {
@@ -158,9 +177,8 @@ export interface SiteRelativeTimeProps {
   inline?: boolean;
 }
 
-export interface SiteStatusDotProps {
+export interface SiteStatusBadgeProps {
   status: SiteDeploymentStatus;
-  live?: boolean;
   duration?: string | null;
   className?: string;
 }
@@ -198,14 +216,14 @@ export interface SiteOverviewExternalLinkProps {
   muted?: boolean;
 }
 
-export interface SitePendingProductionProps {
+export interface SiteProductionBuildProps {
   deployment: SiteDeployment;
 }
 
 export interface SiteOverviewStatusProps {
-  pendingProduction: SiteDeployment | null;
+  /** The newest unpublished production build, else the live one. */
+  deployment: SiteDeployment | null;
   suspended: boolean;
-  live: boolean;
 }
 
 export interface SiteOverviewPreviewProps {
@@ -335,7 +353,6 @@ export interface SiteDeploymentActionsProps extends SiteScope {
 export interface SiteEnvironmentBadgeProps {
   kind: SiteDeployment["kind"];
   previewKey: string | null;
-  live: boolean;
   className?: string;
 }
 

@@ -7032,12 +7032,11 @@
       "description": "Notra Sites isn't set up on this environment yet."
     },
     "list": {
-      "columns": {
-        "site": "Site",
-        "visitors": "Visitors · 7d",
-        "updated": "Updated"
-      },
+      "visitors": "Visitors · 7d",
       "noDeployments": "No deployments yet",
+      "viewDeployments": "View deployments",
+      "deploymentCreated": "Deployment created <time></time>",
+      "actionsLabel": "Actions for {name}",
       "actions": {
         "openSite": "Open site",
         "visitSite": "Visit live site",
@@ -7048,8 +7047,8 @@
       "queued": "Queued",
       "building": "Building",
       "uploading": "Uploading",
-      "ready": "Ready",
-      "live": "Live",
+      "ready": "Successful",
+      "offline": "Offline",
       "superseded": "Superseded",
       "failed": "Failed",
       "canceled": "Canceled",
@@ -7415,7 +7414,7 @@
         "allStatuses": "All statuses"
       },
       "statusFilters": {
-        "ready": "Ready",
+        "ready": "Successful",
         "building": "Building",
         "queued": "Queued",
         "failed": "Failed",
