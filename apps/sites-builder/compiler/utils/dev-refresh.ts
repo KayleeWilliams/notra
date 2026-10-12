@@ -59,6 +59,7 @@ export function createDevRefresh(options: DevRefreshOptions) {
       entries: prepared.validation.entries,
       areas: listMountedAreas(options.params.mounts).map(({ area }) => area),
       publicFiles: prepared.publicFiles,
+      publicOrigin: options.params.publicOrigin,
       includeDrafts: options.params.includeDrafts,
     });
     if (closed || current !== revision) {

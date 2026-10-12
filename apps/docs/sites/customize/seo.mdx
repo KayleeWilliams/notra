@@ -41,14 +41,15 @@ Every site comes with sitemaps, RSS feeds, canonical URLs, Open Graph tags and s
 
 ## Share images
 
-Posts and entries without an `image` get a generated 1200×630 share image with your site name, the section, the title and your brand color.
+Posts and entries without an `image` get a generated 1200×630 share image with your logo and site name, the section, the title, the description and the date, on a background tinted with your brand color. Index pages get one with the section title and description.
 
 ```json blog.json
 "thumbnails": { "appearance": "dark", "background": "/images/og-background.png" }
 ```
 
 - `appearance` is `light` (default) or `dark`.
-- `background` is a PNG, JPEG or SVG in `public/` behind the text.
+- `background` is a PNG, JPEG, WebP or SVG in `public/` behind the text.
+- The logo comes from `logo`, using the `dark` variant when `appearance` is `dark`. Without a logo, the first letter of your site name is shown in your brand color.
 - `"enabled": false` turns them off, and pages without an image then use your logo.
 
 ## 404 page

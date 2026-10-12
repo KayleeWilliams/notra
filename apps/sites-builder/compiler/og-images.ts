@@ -5,52 +5,54 @@ import { extname, join } from "node:path";
 import { parseEntryFrontmatter } from "@notra/sites-compiler/frontmatter";
 import { SITE_CONFIG_FILENAME } from "@notra/sites-core/constants/sites";
 import type { SiteDiagnostic } from "@notra/sites-core/types/build";
-import { Resvg } from "@resvg/resvg-js";
-import satori from "satori";
+import { Renderer } from "@takumi-rs/core";
+import { render } from "takumi-js";
 
 import { OG_MANIFEST_FILE } from "../src/constants/og";
-import { configuredAreaTitle, withSiteName } from "../src/utils/area-titles";
+import { configuredAreaTitle } from "../src/utils/area-titles";
 import { OgCard } from "./components/og-card";
 import {
-  OG_BACKGROUND_MIME_TYPES,
+  OG_FONT_FAMILY,
   OG_FONT_SUBSETS,
   OG_FONT_WEIGHTS,
   OG_IMAGE_HEIGHT,
+  OG_IMAGE_MIME_TYPES,
   OG_IMAGE_WIDTH,
   OG_IMAGES_DIR,
 } from "./constants/og-images";
 import type {
-  OgBackgroundResult,
+  OgAppearance,
+  OgAssetResult,
   OgCardContent,
   OgImagesResult,
   OgManifest,
-  SatoriFont,
   WriteOgImagesParams,
 } from "./types/og-images";
 import { writeFileEnsured } from "./utils/fs";
 
-let fontsPromise: Promise<SatoriFont[]> | null = null;
+let rendererPromise: Promise<Renderer> | null = null;
 
-function loadFonts(): Promise<SatoriFont[]> {
-  fontsPromise ??= (async () => {
+function loadRenderer(): Promise<Renderer> {
+  rendererPromise ??= (async () => {
     const require = createRequire(import.meta.url);
-    const specs = OG_FONT_SUBSETS.flatMap((subset) =>
-      OG_FONT_WEIGHTS.map((weight) => ({ subset, weight }))
-    );
-    return Promise.all(
-      specs.map(async ({ subset, weight }) => ({
-        name: `Inter ${subset}`,
-        weight,
-        style: "normal" as const,
-        data: await readFile(
-          require.resolve(
-            `@fontsource/inter/files/inter-${subset}-${weight}-normal.woff`
-          )
-        ),
-      }))
-    );
+    const renderer = new Renderer();
+    for (const subset of OG_FONT_SUBSETS) {
+      for (const weight of OG_FONT_WEIGHTS) {
+        await renderer.registerFont({
+          name: OG_FONT_FAMILY,
+          weight,
+          style: "normal",
+          data: await readFile(
+            require.resolve(
+              `@fontsource/inter/files/inter-${subset}-${weight}-normal.woff2`
+            )
+          ),
+        });
+      }
+    }
+    return renderer;
   })();
-  return fontsPromise;
+  return rendererPromise;
 }
 
 function formatDate(date: Date): string {
@@ -62,22 +64,23 @@ function formatDate(date: Date): string {
   }).format(date);
 }
 
-async function loadBackground(
-  params: WriteOgImagesParams
-): Promise<OgBackgroundResult> {
-  const path = params.config.thumbnails.background;
+async function loadPublicImage(
+  params: WriteOgImagesParams,
+  path: string | undefined,
+  setting: string
+): Promise<OgAssetResult> {
   if (!path) {
     return {};
   }
   const normalized = path.startsWith("/") ? path : `/${path}`;
-  const mimeType = OG_BACKGROUND_MIME_TYPES[extname(normalized).toLowerCase()];
+  const mimeType = OG_IMAGE_MIME_TYPES[extname(normalized).toLowerCase()];
   if (!(mimeType && params.publicFiles.includes(normalized))) {
     return {
       diagnostic: {
         severity: "warning",
         file: SITE_CONFIG_FILENAME,
-        code: "thumbnail_background",
-        message: `thumbnails.background: ${path} is not a PNG, JPEG or SVG file in public/. Share images are generated without it.`,
+        code: "thumbnail_asset",
+        message: `${setting}: ${path} is not a PNG, JPEG, WebP or SVG file in public/. Share images are generated without it.`,
       },
     };
   }
@@ -87,20 +90,24 @@ async function loadBackground(
   return { dataUri: `data:${mimeType};base64,${bytes.toString("base64")}` };
 }
 
-async function renderPng(
-  content: OgCardContent,
-  fonts: SatoriFont[]
-): Promise<Buffer> {
-  const svg = await satori(OgCard(content), {
+function logoPath(
+  params: WriteOgImagesParams,
+  appearance: OgAppearance
+): string | undefined {
+  const { logo } = params.config;
+  if (!logo || typeof logo === "string") {
+    return logo;
+  }
+  return logo[appearance];
+}
+
+async function renderPng(content: OgCardContent): Promise<Uint8Array> {
+  return render(OgCard(content), {
+    renderer: await loadRenderer(),
     width: OG_IMAGE_WIDTH,
     height: OG_IMAGE_HEIGHT,
-    fonts,
+    format: "png",
   });
-  return new Resvg(svg, {
-    fitTo: { mode: "width", value: OG_IMAGE_WIDTH },
-  })
-    .render()
-    .asPng();
 }
 
 export async function writeOgImages(
@@ -111,18 +118,31 @@ export async function writeOgImages(
   const diagnostics: SiteDiagnostic[] = [];
   const { config } = params;
   if (config.thumbnails.enabled) {
-    const [fonts, background] = await Promise.all([
-      loadFonts(),
-      loadBackground(params),
-    ]);
-    if (background.diagnostic) {
-      diagnostics.push(background.diagnostic);
-    }
     const appearance = config.thumbnails.appearance;
-    const accent =
-      appearance === "dark"
-        ? (config.colors.light ?? config.colors.primary)
-        : config.colors.primary;
+    const [background, logo] = await Promise.all([
+      loadPublicImage(
+        params,
+        config.thumbnails.background,
+        "thumbnails.background"
+      ),
+      loadPublicImage(params, logoPath(params, appearance), "logo"),
+    ]);
+    for (const asset of [background, logo]) {
+      if (asset.diagnostic) {
+        diagnostics.push(asset.diagnostic);
+      }
+    }
+    const base = {
+      siteName: config.name,
+      appearance,
+      accent:
+        appearance === "dark"
+          ? (config.colors.light ?? config.colors.primary)
+          : config.colors.primary,
+      logo: logo.dataUri,
+      background: background.dataUri,
+    };
+    const host = new URL(params.publicOrigin).host;
     await Promise.all(
       params.entries.map(async (entry) => {
         const source = await readFile(
@@ -139,23 +159,13 @@ export async function writeOgImages(
           return;
         }
         const version = "version" in data ? data.version : undefined;
-        const png = await renderPng(
-          {
-            eyebrow: withSiteName(
-              config.name,
-              configuredAreaTitle(config, entry.area),
-              " · "
-            ),
-            title: data.title,
-            footer: [version, formatDate(data.date)]
-              .filter(Boolean)
-              .join(" · "),
-            appearance,
-            accent,
-            background: background.dataUri,
-          },
-          fonts
-        );
+        const png = await renderPng({
+          ...base,
+          section: configuredAreaTitle(config, entry.area),
+          title: data.title,
+          description: data.description,
+          meta: [version, formatDate(data.date)].filter(Boolean).join("  ·  "),
+        });
         const urlPath = `/${OG_IMAGES_DIR}/${entry.area}/${entry.slug}.png`;
         await writeFileEnsured(
           join(params.workDir, "site", "public", urlPath),
@@ -167,17 +177,12 @@ export async function writeOgImages(
     await Promise.all(
       params.areas.map(async (area) => {
         const title = configuredAreaTitle(config, area);
-        const png = await renderPng(
-          {
-            eyebrow: withSiteName(config.name, title, " · "),
-            title: config[area]?.description ?? config.description ?? title,
-            footer: config.name,
-            appearance,
-            accent,
-            background: background.dataUri,
-          },
-          fonts
-        );
+        const png = await renderPng({
+          ...base,
+          title,
+          description: config[area]?.description ?? config.description,
+          meta: host,
+        });
         const urlPath = `/${OG_IMAGES_DIR}/${area}.png`;
         await writeFileEnsured(
           join(params.workDir, "site", "public", urlPath),

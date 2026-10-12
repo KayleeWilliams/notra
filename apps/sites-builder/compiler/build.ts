@@ -133,6 +133,7 @@ export async function buildSite(
     entries: prepared.validation.entries,
     areas: listMountedAreas(mounts).map(({ area }) => area),
     publicFiles: prepared.publicFiles,
+    publicOrigin: options.target.publicOrigin,
     includeDrafts: options.target.includeDrafts,
   });
   diagnostics.push(...ogImages.diagnostics);

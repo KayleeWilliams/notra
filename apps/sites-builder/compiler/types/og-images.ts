@@ -2,7 +2,6 @@ import type { SiteEntry } from "@notra/sites-compiler/types/entries";
 import type { SiteDiagnostic } from "@notra/sites-core/types/build";
 import type { SiteArea } from "@notra/sites-core/types/deployment";
 import type { SiteConfig } from "@notra/sites-core/types/site-config";
-import type satori from "satori";
 
 export interface WriteOgImagesParams {
   workDir: string;
@@ -10,6 +9,7 @@ export interface WriteOgImagesParams {
   entries: readonly SiteEntry[];
   areas: readonly SiteArea[];
   publicFiles: readonly string[];
+  publicOrigin: string;
   includeDrafts: boolean;
 }
 
@@ -21,18 +21,21 @@ export interface OgImagesResult {
   durationMs: number;
 }
 
-export interface OgBackgroundResult {
+export interface OgAssetResult {
   dataUri?: string;
   diagnostic?: SiteDiagnostic;
 }
 
+export type OgAppearance = "light" | "dark";
+
 export interface OgCardContent {
-  eyebrow: string;
+  siteName: string;
+  section?: string;
   title: string;
-  footer: string;
-  appearance: "light" | "dark";
+  description?: string;
+  meta: string;
+  appearance: OgAppearance;
   accent: string;
+  logo?: string;
   background?: string;
 }
-
-export type SatoriFont = Parameters<typeof satori>[1]["fonts"][number];
