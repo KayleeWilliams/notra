@@ -2,6 +2,7 @@ import { writeFile } from "node:fs/promises";
 
 import { SQL } from "bun";
 
+import { organizationNames } from "./schemas/organization-names.ts";
 import type { OrganizationNameRow } from "./types/history.ts";
 
 if (!process.env.DATABASE_URL || !process.argv[2]) {
@@ -21,10 +22,7 @@ try {
       OrganizationNameRow[]
     >`SELECT id, name FROM organizations ORDER BY id LIMIT 10001`;
   });
-  if (rows.length > 10000) {
-    throw new Error("Organization mapping exceeds the limit");
-  }
-  const names = Object.fromEntries(rows.map((row) => [row.id, row.name]));
+  const names = organizationNames(rows);
   await writeFile(process.argv[2], JSON.stringify(names), {
     mode: 0o600,
     flag: "wx",

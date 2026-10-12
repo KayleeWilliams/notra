@@ -1,4 +1,12 @@
-(try ($ARGS.named.organizationNames[0] // (env.NOTRA_ORGANIZATION_NAMES // "{}" | fromjson))
+(try (
+   if ($ARGS.named | has("organizationNames")) then
+     if ($ARGS.named.organizationNames | length) != 1 then
+       error("Organization mapping file must contain exactly one JSON value")
+     else $ARGS.named.organizationNames[0] end
+   else
+     (env.NOTRA_ORGANIZATION_NAMES // "")
+     | if . == "" then {} else fromjson end
+   end)
  catch error("Invalid organization name mapping JSON")) as $names
 | if ($names | type) != "object" then
     error("Organization names must be an ID-to-name object")
@@ -8,7 +16,7 @@
     (.key | length) == 0 or (.key | length) > 256 or
     (.value | type) != "string") then
     error("Invalid organization name mapping")
-  elif any($names[]; length > 256 or contains("${") or test("[\\x00-\\x1f\\x7f]")) then
+  elif any($names[]; length > 256 or contains("${") or test("[\u0000-\u001f\u007f-\u009f]")) then
     error("Invalid organization display name")
   else
     [$names | to_entries[] | select(.value | test("\\S")) |
