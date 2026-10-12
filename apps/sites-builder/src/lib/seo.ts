@@ -70,7 +70,9 @@ function organization(): JsonLdNode {
 
 function contactPoint(): JsonLdNode | undefined {
   const links = [
-    ...config.navbar.links,
+    ...config.navbar.links.flatMap((item) =>
+      "items" in item ? item.items : [item]
+    ),
     ...(config.navbar.cta ? [config.navbar.cta] : []),
     ...config.footer.links.flatMap((item) =>
       "items" in item ? item.items : [item]

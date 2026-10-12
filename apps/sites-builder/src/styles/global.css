@@ -540,6 +540,8 @@ body {
   position: fixed;
   inset: 3.5rem 0 auto;
   width: 100%;
+  max-height: calc(100dvh - 3.5rem);
+  overflow-y: auto;
   max-width: none;
   margin: 0;
   border: 0;
@@ -555,6 +557,59 @@ body {
     transform 150ms ease-out,
     overlay 150ms allow-discrete,
     display 150ms allow-discrete;
+}
+
+.site-nav-link[aria-current],
+.site-nav-link[data-active] {
+  color: var(--foreground);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+.site-nav-dropdown {
+  position: relative;
+}
+
+.site-nav-dropdown > summary {
+  list-style: none;
+}
+
+.site-nav-dropdown > summary::-webkit-details-marker {
+  display: none;
+}
+
+.site-nav-dropdown[open] > summary > svg:last-child {
+  transform: rotate(180deg);
+}
+
+.site-nav-dropdown-links {
+  position: absolute;
+  inset: 100% 0 auto auto;
+  width: max-content;
+  min-width: 12rem;
+  max-width: min(20rem, calc(100vw - 2rem));
+  padding: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--page-background);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.12);
+}
+
+.site-nav-dropdown-links > a:hover {
+  background: var(--muted);
+}
+
+.site-nav-dropdown-mobile .site-nav-dropdown-links {
+  position: static;
+  display: flex;
+  flex-direction: column;
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  padding: 0 0 0.25rem 1rem;
+  border: 0;
+  box-shadow: none;
 }
 
 .site-menu:not(:popover-open) {

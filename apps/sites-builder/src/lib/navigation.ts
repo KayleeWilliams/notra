@@ -3,10 +3,13 @@ import type {
   FooterColumn,
   NavbarLink,
   PlainLink,
+  ResolvedDropdown,
   ResolvedLink,
 } from "../types/navigation";
 import { brandIcon, lucideIcon } from "../utils/icons";
-import { config } from "./params";
+import { resolveNavbarAreas } from "../utils/navbar-areas";
+import { listedAreas } from "./entries";
+import { config, href, params } from "./params";
 
 function plainLink(link: PlainLink): ResolvedLink {
   return {
@@ -29,8 +32,25 @@ function navbarLink(link: NavbarLink): ResolvedLink {
   return plainLink(link);
 }
 
-export function navbarLinks(): ResolvedLink[] {
-  return config.navbar.links.map(navbarLink);
+export function navbarLinks(): (ResolvedLink | ResolvedDropdown)[] {
+  return config.navbar.links.map((item) =>
+    "items" in item
+      ? {
+          label: item.label,
+          icon: lucideIcon(item.icon),
+          items: item.items.map(navbarLink),
+        }
+      : navbarLink(item)
+  );
+}
+
+export async function navbarAreas() {
+  return resolveNavbarAreas(
+    config.navbar.areas,
+    config.navbar.areas === undefined ? await listedAreas() : [],
+    { ...params.mounts, [params.area]: href() },
+    params.area
+  );
 }
 
 export function navbarCta(): ResolvedLink | undefined {

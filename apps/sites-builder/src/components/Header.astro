@@ -1,16 +1,17 @@
 ---
-import { listedAreas } from "../lib/entries";
-import { navbarCta, navbarLinks, navbarPrimary } from "../lib/navigation";
+import { navbarAreas, navbarCta, navbarLinks, navbarPrimary } from "../lib/navigation";
 import { config, href } from "../lib/params";
 import { logoFor } from "../lib/theme";
 import Icon from "./Icon.astro";
 import LinkIcon from "./LinkIcon.astro";
 import SiteAreas from "./SiteAreas.astro";
+import NavbarItem from "./NavbarItem.astro";
 
 const lightLogo = logoFor("light");
 const darkLogo = logoFor("dark");
 const logoHref = typeof config.logo === "object" && config.logo.href ? config.logo.href : href();
-const hasSections = (await listedAreas()).length > 1;
+const sections = await navbarAreas();
+const hasSections = sections.length > 0;
 const links = navbarLinks();
 const cta = navbarCta();
 const primary = navbarPrimary();
@@ -39,8 +40,8 @@ const hasMenu = links.length > 0 || Boolean(cta) || Boolean(primary);
       hasSections && (
         <>
           <span aria-hidden="true" class="h-4 w-px shrink-0 bg-border" />
-          <div class="-ml-1">
-            <SiteAreas />
+          <div class="-ml-1 min-w-0">
+            <SiteAreas sections={sections} />
           </div>
         </>
       )
@@ -50,17 +51,7 @@ const hasMenu = links.length > 0 || Boolean(cta) || Boolean(primary);
       {
         links.length > 0 && (
           <nav aria-label="Main" class="mr-2 hidden items-center gap-5 text-sm md:flex">
-            {links.map((link) => (
-              <a
-                href={link.href}
-                aria-label={link.iconOnly ? link.label : undefined}
-                title={link.iconOnly ? link.label : undefined}
-                class="inline-flex items-center gap-1.5 text-muted-foreground transition-colors duration-150 ease-out hover:text-foreground"
-              >
-                <LinkIcon icon={link.icon} size={15} class="shrink-0" />
-                {!link.iconOnly && link.label}
-              </a>
-            ))}
+            {links.map((item) => <NavbarItem item={item} />)}
           </nav>
         )
       }
@@ -98,12 +89,7 @@ const hasMenu = links.length > 0 || Boolean(cta) || Boolean(primary);
     hasMenu && (
       <div id="mobile-nav" popover class="site-menu md:hidden">
         <nav id="mobile-nav-content" aria-label="Main" class="site-container flex flex-col py-2">
-          {links.map((link) => (
-            <a href={link.href} class="flex h-11 items-center gap-2.5 border-b border-border text-[0.9375rem] last:border-b-0">
-              <LinkIcon icon={link.icon} size={16} class="shrink-0 text-muted-foreground" />
-              {link.label}
-            </a>
-          ))}
+          {links.map((item) => <NavbarItem item={item} mobile />)}
         </nav>
         {
           (cta || primary) && (

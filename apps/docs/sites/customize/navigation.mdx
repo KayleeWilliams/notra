@@ -46,13 +46,55 @@ docolin:
 
 | Setting | What it does |
 | --- | --- |
-| `links` | Up to 8 links, each with a `label` of up to 60 characters and an `href` that is a path, `https://` or `mailto:` URL |
+| `links` | Up to 8 links or dropdowns; link labels hold up to 60 characters and `href` accepts a path, `https://` or `mailto:` URL |
 | `links[].icon` | Any [Lucide](https://lucide.dev/icons) icon name, like `book-open` |
 | `links[].type` | `github`, `discord`, `x`, `linkedin`, `youtube` or `slack`, which shows the platform's icon, and `label` adds text next to it |
 | `primary` | A secondary button with a platform icon and name, like "GitHub", that takes `type` and `href` |
 | `cta` | The main button on the right, which takes `label` and `href` |
 
 On phones, the links move into a menu.
+
+### Blog and changelog links
+
+By default, the header shows **Blog** and **Changelog** when both mounted areas have content (the current area also counts when empty). Set `navbar.areas` to choose their labels and order, even before you publish any entries:
+
+```json blog.json
+"navbar": {
+  "areas": [
+    { "area": "changelog", "label": "What's new" },
+    { "area": "blog", "label": "Journal" }
+  ]
+}
+```
+
+Each area can appear once, with an optional label of up to 60 characters. Omit an area from the list to hide its link, or use `"areas": []` to hide both. An area without a configured mount never gets a link. Hiding a link does not unpublish the area or remove its feed. Remove `areas` to restore automatic navigation. `<SiteAreas />` in a custom header uses the same settings.
+
+### Dropdowns
+
+Give a navbar entry `items` instead of `href` to make it a dropdown:
+
+```json blog.json
+"navbar": {
+  "links": [
+    { "label": "Journal", "href": "/blog" },
+    {
+      "label": "Resources",
+      "icon": "book-open",
+      "items": [
+        { "label": "Docs", "href": "https://acme.com/docs" },
+        { "label": "Support", "href": "mailto:help@acme.com" },
+        { "type": "discord", "href": "https://discord.gg/acme", "label": "Community" }
+      ]
+    }
+  ]
+}
+```
+
+A dropdown has 1 to 8 links, including the same platform links and icons as the navbar. Platform links and the `primary` button require an `http://` or `https://` URL. Dropdowns cannot contain other dropdowns. They open on click or with Enter/Space, support Tab between links, and close with Escape, when focus leaves, or when you click outside. On phones, they expand inside the navigation menu.
+
+### Active links
+
+Internal navbar links are underlined and bold on their destination and child pages: `/blog` stays active on `/blog/2026/launch`, but not `/blogger`. The root `/` is active only on the homepage. Absolute URLs on the site's public origin also count as internal; external, email and fragment links are not marked active. A dropdown label is highlighted when one of its links is active. Links expose `aria-current="page"` for an exact match and `aria-current="location"` for a parent section.
 
 ## Footer
 
