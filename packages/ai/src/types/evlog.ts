@@ -39,6 +39,7 @@ export interface EvlogRuntimeState {
   aiDrain?: LogPipeline;
   geoDrain?: LogPipeline;
   flushScheduler?: LogFlushScheduler;
+  pendingAIUsage?: Set<Promise<void>>;
 }
 
 export type EvlogGlobal = typeof globalThis & {

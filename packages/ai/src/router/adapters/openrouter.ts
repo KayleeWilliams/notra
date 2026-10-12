@@ -114,12 +114,9 @@ export function createOpenRouterAdapter(
         usage.costDetails && typeof usage.costDetails === "object"
           ? (usage.costDetails as Record<string, unknown>)
           : undefined;
-      const measuredUpstreamCost = readNumber(
-        costDetails?.upstreamInferenceCost
-      );
-      // Keep the legacy billing fallback separate from measured telemetry.
-      const upstreamCost =
-        usage.costDetails === undefined ? 0 : measuredUpstreamCost;
+      // SDK usage.cost is the OpenRouter credit charge, not BYOK passthrough.
+      // Missing/null details do not establish that upstream inference was free.
+      const upstreamCost = readNumber(costDetails?.upstreamInferenceCost);
       const costUsd =
         gatewayCost !== undefined &&
         gatewayCost >= 0 &&
@@ -132,11 +129,14 @@ export function createOpenRouterAdapter(
         ...(gatewayCost !== undefined && gatewayCost >= 0
           ? { gatewayCostUsd: gatewayCost }
           : {}),
-        ...(measuredUpstreamCost !== undefined && measuredUpstreamCost >= 0
-          ? { byokInferenceCostUsd: measuredUpstreamCost }
+        ...(costDetails && upstreamCost !== undefined && upstreamCost >= 0
+          ? {
+              upstreamInferenceCostUsd: upstreamCost,
+              byokInferenceCostUsd: upstreamCost,
+            }
           : {}),
         ...(costUsd !== undefined && Number.isFinite(costUsd)
-          ? { costUsd }
+          ? { costUsd, costSource: "reported" as const }
           : {}),
         upstreamProvider:
           typeof record.provider === "string" && record.provider.length > 0

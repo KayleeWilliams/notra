@@ -87,12 +87,12 @@ test("real OpenRouter usage survives a later error and is accounted once", async
     assert.ok(finish?.type === "finish");
     assert.equal(
       router.getRouteMetadata(finish.providerMetadata)?.costUsd,
-      0.25
+      undefined
     );
   });
 });
 
-test("OpenRouter telemetry distinguishes absent/null BYOK measurement from measured zero while billing retains its fallback", async () => {
+test("OpenRouter telemetry and billing distinguish absent/null BYOK measurement from measured zero", async () => {
   for (const costDetails of [
     undefined,
     null,
@@ -155,7 +155,10 @@ test("OpenRouter telemetry distinguishes absent/null BYOK measurement from measu
       assert.ok(result);
       const metadata = router.getRouteMetadata(result.providerMetadata);
       const measuredCost = costDetails?.upstream_inference_cost ?? undefined;
-      assert.equal(metadata?.costUsd, 0.25 + (measuredCost ?? 0));
+      assert.equal(
+        metadata?.costUsd,
+        measuredCost === undefined ? undefined : 0.25 + measuredCost
+      );
       assert.equal(metadata?.byokInferenceCostUsd, measuredCost);
       // Chat SDK normalization drops raw is_byok, so false cannot prove zero.
       const normalizedUsage = result.providerMetadata?.openrouter?.usage;

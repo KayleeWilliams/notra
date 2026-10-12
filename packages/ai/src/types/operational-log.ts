@@ -30,6 +30,9 @@ export interface OperationalContext {
   runId?: string;
   scanId?: string;
   promptId?: string;
+  sessionId?: string;
+  turnId?: string;
+  chatId?: string;
   turn?: number;
 }
 

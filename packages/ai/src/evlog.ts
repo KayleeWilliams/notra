@@ -31,6 +31,7 @@ export function setLogFlushScheduler(scheduler: LogFlushScheduler): void {
 }
 
 export async function flushLogs(): Promise<void> {
+  await Promise.all(runtime.pendingAIUsage ?? []);
   await Promise.all([
     runtime.aiDrain?.flush(),
     runtime.geoDrain?.flush(),

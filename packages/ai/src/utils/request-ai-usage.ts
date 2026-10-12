@@ -19,7 +19,13 @@ function routeInfo(
   const route = providerMetadata?.[ROUTER_METADATA_KEY];
   const record =
     route && typeof route === "object" && !Array.isArray(route) ? route : {};
-  const { costUsd, generationId, model } = record;
+  const { costUsd, model } = record;
+  const generationId =
+    record.generationId ?? providerMetadata?.gateway?.generationId;
+  let gateway = typeof record.gateway === "string" ? record.gateway : undefined;
+  if (!gateway && typeof providerMetadata?.gateway?.generationId === "string") {
+    gateway = "vercel";
+  }
   const completeCost =
     record.gateway !== "openrouter" ||
     (typeof record.byokInferenceCostUsd === "number" &&
@@ -33,7 +39,7 @@ function routeInfo(
       costUsd >= 0
         ? costUsd
         : undefined,
-    ...(typeof record.gateway === "string" ? { gateway: record.gateway } : {}),
+    ...(gateway ? { gateway } : {}),
     ...(typeof generationId === "string" ? { generationId } : {}),
     ...(typeof model === "string" ? { model } : {}),
   };
@@ -134,20 +140,24 @@ export function recordRequestAIUsage(call: ModelCallUsage): void {
   const newModel = !usage.models.has(model);
   usage.models.add(model);
 
-  logger.set({
-    ai: {
-      calls: usage.calls,
-      model,
-      inputTokens: usage.inputTokens,
-      outputTokens: usage.outputTokens,
-      totalTokens: usage.totalTokens,
-      cacheReadTokens: usage.cacheReadTokens,
-      cacheWriteTokens: usage.cacheWriteTokens,
-      reasoningTokens: usage.reasoningTokens,
-      ...roundedCost(usage),
-      ...(newModel ? { models: [model] } : {}),
-    },
-  });
+  try {
+    logger.set({
+      ai: {
+        calls: usage.calls,
+        model,
+        inputTokens: usage.inputTokens,
+        outputTokens: usage.outputTokens,
+        totalTokens: usage.totalTokens,
+        cacheReadTokens: usage.cacheReadTokens,
+        cacheWriteTokens: usage.cacheWriteTokens,
+        reasoningTokens: usage.reasoningTokens,
+        ...roundedCost(usage),
+        ...(newModel ? { models: [model] } : {}),
+      },
+    });
+  } catch {
+    // A logging sink failure must never retry an already completed model call.
+  }
 }
 
 /**
@@ -169,5 +179,9 @@ export function recordRequestAICost(
   }
   usage.costedGenerations.add(generationId);
   usage.costUsd += costUsd;
-  logger.set({ ai: roundedCost(usage) });
+  try {
+    logger.set({ ai: roundedCost(usage) });
+  } catch {
+    // Cost enrichment remains authoritative even when request logging fails.
+  }
 }
