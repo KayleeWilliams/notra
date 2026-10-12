@@ -287,7 +287,7 @@ describe("production serving", () => {
     const page = await request("https://acme.notra.site/blog/post");
     expect(await page.text()).toBe("dep_live:/blog/post/index.html");
     expect(page.headers.get("Vary")).toBe("Accept");
-    expect(page.headers.get("Link")).toContain("</blog/post/index.md>");
+    expect(page.headers.get("Link")).toContain("</blog/post.md>");
 
     const negotiated = await request("https://acme.notra.site/blog/post", {
       Accept: "text/markdown, text/html;q=0.9, */*;q=0.8",

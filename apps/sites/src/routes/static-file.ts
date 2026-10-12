@@ -2,11 +2,14 @@ import { Effect, Option } from "effect";
 
 import { serveFile } from "../responses";
 import type { ManifestRouteContext } from "../types/routes";
+import { markdownAlternatePath } from "../utils/routing";
 
 export const staticFileRoute = Effect.fn("Sites.route.staticFile")(function* ({
   path,
   file,
   twin,
+  area,
+  loaded,
   markdownNotFoundPath,
   fileParams,
 }: ManifestRouteContext) {
@@ -20,7 +23,7 @@ export const staticFileRoute = Effect.fn("Sites.route.staticFile")(function* ({
       extraHeaders: twin
         ? {
             Vary: "Accept",
-            Link: `<${twin.path}>; rel="alternate"; type="text/markdown"`,
+            Link: `<${markdownAlternatePath(loaded.files, twin.path, area?.mount)}>; rel="alternate"; type="text/markdown"`,
           }
         : undefined,
     })

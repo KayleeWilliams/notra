@@ -115,6 +115,20 @@ export function twinPagePath(twinPath: string): string | null {
   return twinPath.slice(0, -"/index.md".length) || "/";
 }
 
+export function markdownAlternatePath(
+  files: Map<string, SiteManifestFile>,
+  twinPath: string,
+  mount: string | undefined
+): string {
+  const pagePath = twinPagePath(twinPath);
+  return pagePath &&
+    pagePath !== "/" &&
+    pagePath !== mount &&
+    !files.has(`${pagePath}.md`)
+    ? `${pagePath}.md`
+    : twinPath;
+}
+
 export function wellKnownLlmsTxtTarget(
   files: Map<string, SiteManifestFile>,
   path: string
