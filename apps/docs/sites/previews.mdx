@@ -18,7 +18,7 @@ A preview is a full copy of your site that Notra builds from a pull request or a
 
 ## Pull request previews
 
-Every pull request into the production branch gets a preview at `https://pr-<number>--<address>.notra.site`, which updates with every new commit and goes away when the pull request is closed. The **Notra Sites preview** check on the pull request links to it. Pull requests from forks don't get a preview.
+Every pull request into the production branch gets a preview at `https://pr-<number>--<address>.notra.site`, which updates with every new commit and goes away when the pull request is closed. The **Notra Sites preview** check on the pull request links to it. Pull requests from forks don't get a preview, and if the site is in a subdirectory, a pull request that changes nothing in its folder doesn't get one either.
 
 ## Branch previews
 

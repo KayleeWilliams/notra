@@ -8,6 +8,9 @@ import type {
 import type {
   RepositorySuggestionsResult,
   SiteBuildAgentPromptInput,
+  SiteBulkRow,
+  SiteBulkRowEdit,
+  SiteBulkSlugIssue,
   SiteBuildLogEntry,
   SiteBuildLogFold,
   SiteBuildLogLine,
@@ -117,6 +120,40 @@ export interface SiteCreateSourceFieldsProps {
   sections: SiteCreateSectionPlan;
 }
 
+export interface SiteCreateBulkToggleProps {
+  id: string;
+  count: number;
+  checked: boolean;
+  disabled: boolean;
+  onCheckedChange: (checked: boolean) => void;
+}
+
+export interface SiteCreateBulkFieldsProps {
+  idPrefix: string;
+  hostingDomain: string | null;
+  branch: string;
+  onBranchChange: (value: string) => void;
+  branchLocked: boolean;
+  repository: SiteRepository | null;
+  suggestions: RepositorySuggestionsResult;
+  rows: SiteBulkRow[];
+  issues: Record<string, SiteBulkSlugIssue>;
+  onRowChange: (rootDirectory: string, edit: SiteBulkRowEdit) => void;
+  onSelectAll: (selected: boolean) => void;
+  previewsEnabled: boolean;
+  onPreviewsChange: (enabled: boolean) => void;
+  /** Locks every control while a bulk import is running. */
+  disabled: boolean;
+}
+
+export interface SiteCreateBulkResultsProps {
+  organizationSlug: string;
+  rows: SiteBulkRow[];
+  isRetrying: boolean;
+  onRetry: () => void;
+  onEdit: () => void;
+}
+
 export interface SiteCreateSectionFieldsProps {
   idPrefix: string;
   plan: SiteCreateSectionPlan;
@@ -133,6 +170,7 @@ export interface SiteAddressInputProps {
   placeholder: string;
   hostingDomain: string | null;
   describedBy?: string;
+  disabled?: boolean;
 }
 
 export interface SiteChoiceGroupProps<T extends string> {
@@ -538,6 +576,7 @@ export interface SiteSuggestInputProps {
   emptyLabel: string;
   invalid?: boolean;
   describedBy?: string;
+  disabled?: boolean;
 }
 
 export interface SiteIntegrationLogoProps {

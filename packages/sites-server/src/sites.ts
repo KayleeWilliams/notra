@@ -167,6 +167,7 @@ export async function createSite(
         mounts,
         previewVisibility: input.previewVisibility ?? "protected",
         publishMode: input.publishMode ?? "pull_request",
+        previewsEnabled: input.previewsEnabled ?? true,
         createdByUserId: input.userId,
       })
       .returning();
@@ -178,10 +179,14 @@ export async function createSite(
     throw new Error("Could not create site");
   }
   await invalidateSiteIngestCaches(site);
+  // The site exists from here on, so a failed first write must not report the
+  // creation as failed: the first activation writes the serving state anyway.
   await mutateServingState(site, (state) => ({
     write: state,
     result: undefined,
-  }));
+  })).catch((error: unknown) => {
+    console.warn("sites.initial_serving_state_failed", errorMessage(error));
+  });
   const jobId = await deployBranchHead(site, {
     trigger: "manual",
     userId: input.userId,

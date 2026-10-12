@@ -38,6 +38,7 @@ import type { SmartDeploymentComparison } from "./types/smart-deployments";
 import { redactBuildLog } from "./utils/build-log";
 import { summarizeDiagnostics } from "./utils/diagnostics";
 import { errorMessage, isNotFoundError } from "./utils/errors";
+import { pathsTouchRootDirectory } from "./utils/push-paths";
 import { runSitesEffect } from "./utils/run-sites-effect";
 
 const writeBuildLog = Effect.fn("Sites.writeBuildLog")(function* (
@@ -82,7 +83,7 @@ const headMatchesForFolder = Effect.fn("Sites.headMatchesForFolder")(function* (
       changedPathsBetween(repository, token, deployment.commitSha, head),
     catch: (error) => error,
   }).pipe(Effect.catch(() => Effect.succeed(null)));
-  return !paths?.some((path) => path.startsWith(`${rootDirectory}/`));
+  return !(paths && pathsTouchRootDirectory(paths, rootDirectory));
 });
 
 const whyNotBuild = Effect.fn("Sites.whyNotBuild")(function* (

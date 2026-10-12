@@ -19,6 +19,8 @@ type SitesOutputs = InferRouterOutputs<DashboardRouter>["sites"];
 type SitesInputs = InferRouterInputs<DashboardRouter>["sites"];
 
 export type SiteCreateInput = SitesInputs["create"];
+export type SiteCreateManyInput = SitesInputs["createMany"];
+export type SiteBulkResult = SitesOutputs["createMany"]["results"][number];
 
 export type SiteListResult = SitesOutputs["list"];
 export type SiteListItem = SiteListResult["sites"][number];
@@ -262,6 +264,52 @@ export interface SiteCreateSectionPlan {
   blogPath: string;
   changelogPath: string;
   counts: RepositoryContentCount | null;
+}
+
+/** What the user changed on one row of a bulk import; the rest is derived. */
+export interface SiteBulkRowEdit {
+  name?: string;
+  slug?: string;
+  selected?: boolean;
+}
+
+/** One folder with a blog.json, as a site the bulk import would create. */
+export interface SiteBulkRow {
+  rootDirectory: string;
+  name: string;
+  slug: string;
+  selected: boolean;
+  sections: SiteCreateSectionPlan;
+  /** Outcome of the last attempt, or null when it was never submitted. */
+  result: SiteBulkResult | null;
+}
+
+export interface SiteBulkSubmitOptions {
+  branch: string;
+  previewsEnabled: boolean;
+}
+
+export type SiteBulkSlugIssue = "invalid" | "reserved" | "duplicate";
+
+export interface SiteBulkRowsInput {
+  directories: string[];
+  contentCounts: Record<string, RepositoryContentCount> | undefined;
+  repositoryName: string;
+  edits: Record<string, SiteBulkRowEdit>;
+  results: Record<string, SiteBulkResult>;
+}
+
+export interface SiteBulkImportScope {
+  repository: SiteRepository | null;
+  branch: string;
+  suggestions: RepositorySuggestionsResult;
+}
+
+/** The folders of the last complete repository scan for one branch. */
+export interface SiteBulkScan {
+  scope: string;
+  directories: string[];
+  contentCounts: Record<string, RepositoryContentCount> | undefined;
 }
 
 export interface RepositorySuggestionsResult {

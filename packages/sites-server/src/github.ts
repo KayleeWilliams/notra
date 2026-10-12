@@ -22,6 +22,7 @@ import {
   GITHUB_COMPARE_MAX_FILES,
   GITHUB_ARCHIVE_TIMEOUT_MS,
   GITHUB_PAGE_SIZE,
+  GITHUB_PULL_REQUEST_MAX_FILES,
   MAX_TARBALL_BYTES,
 } from "./constants/github";
 import { SitePermanentBuildError } from "./errors";
@@ -294,6 +295,43 @@ export async function changedPathsBetween(
       ? [file.filename, file.previous_filename]
       : [file.filename]
   );
+}
+
+export async function pullRequestChangedPaths(
+  repository: SiteRepository,
+  token: string,
+  pullNumber: number
+): Promise<string[] | null> {
+  const octokit = createOctokit(token);
+  const paths: string[] = [];
+  for (
+    let page = 1;
+    page <= GITHUB_PULL_REQUEST_MAX_FILES / GITHUB_PAGE_SIZE;
+    page += 1
+  ) {
+    const { data } = await octokit.request(
+      "GET /repos/{owner}/{repo}/pulls/{pull_number}/files",
+      {
+        owner: repository.owner,
+        repo: repository.repo,
+        pull_number: pullNumber,
+        per_page: GITHUB_PAGE_SIZE,
+        page,
+        headers: GITHUB_API_VERSION_HEADER,
+      }
+    );
+    for (const file of data) {
+      paths.push(file.filename);
+      if (file.previous_filename) {
+        paths.push(file.previous_filename);
+      }
+    }
+    if (data.length < GITHUB_PAGE_SIZE) {
+      return paths;
+    }
+  }
+  // Beyond the endpoint's limit the list may be incomplete.
+  return null;
 }
 
 export async function createCheckRun(

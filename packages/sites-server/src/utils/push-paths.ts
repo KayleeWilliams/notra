@@ -25,12 +25,22 @@ export function pushTouchesRootDirectory(
   ) {
     return true;
   }
-  const prefix = `${rootDirectory}/`;
   return commits.some((commit) =>
-    [
-      ...(commit.added ?? []),
-      ...(commit.modified ?? []),
-      ...(commit.removed ?? []),
-    ].some((path) => path.startsWith(prefix))
+    pathsTouchRootDirectory(
+      [
+        ...(commit.added ?? []),
+        ...(commit.modified ?? []),
+        ...(commit.removed ?? []),
+      ],
+      rootDirectory
+    )
   );
+}
+
+export function pathsTouchRootDirectory(
+  paths: readonly string[],
+  rootDirectory: string
+): boolean {
+  const prefix = `${rootDirectory}/`;
+  return paths.some((path) => path.startsWith(prefix));
 }

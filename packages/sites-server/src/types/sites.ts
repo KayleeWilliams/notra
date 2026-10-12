@@ -37,6 +37,7 @@ export interface CreateSiteInput {
   mounts?: SiteMounts;
   previewVisibility?: Site["previewVisibility"];
   publishMode?: Site["publishMode"];
+  previewsEnabled?: boolean;
 }
 
 export interface RepositorySuggestionsParams {

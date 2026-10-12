@@ -18,6 +18,7 @@ export function SiteAddressInput({
   placeholder,
   hostingDomain,
   describedBy,
+  disabled,
 }: SiteAddressInputProps) {
   return (
     <InputGroup>
@@ -26,6 +27,7 @@ export function SiteAddressInput({
         aria-invalid={invalid || undefined}
         autoCapitalize="none"
         autoComplete="off"
+        disabled={disabled}
         id={id}
         maxLength={SITE_SLUG_MAX_LENGTH}
         onChange={(event) => onValueChange(event.target.value)}

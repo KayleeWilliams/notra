@@ -17,6 +17,7 @@ import {
   addSiteDomainInputSchema,
   connectSiteRepositoryInputSchema,
   createSiteInputSchema,
+  createSitesInputSchema,
   repositorySuggestionsInputSchema,
   siteRepositorySuggestionsInputSchema,
   listSiteDeploymentsInputSchema,
@@ -135,7 +136,11 @@ import {
 import { toGeoOrpcError } from "@/lib/orpc/utils/geo-errors";
 import { assertSitesAccess } from "@/lib/sites/access";
 import { dispatchSiteJobs } from "@/lib/sites/dispatch";
-import { toSitesOrpcError } from "@/lib/sites/orpc-errors";
+import { isSitesBulkImportEnabled } from "@/lib/sites/flag";
+import {
+  bulkImportErrorMessage,
+  toSitesOrpcError,
+} from "@/lib/sites/orpc-errors";
 import {
   liveDeploymentsFromState,
   serializeDeployment,
@@ -145,6 +150,7 @@ import {
 } from "@/lib/sites/serialize";
 import type { SiteScope } from "@/types/sites";
 import type {
+  CreateSitesResult,
   SiteAccess,
   SiteAccessOptions,
   SiteRequestContext,
@@ -471,6 +477,52 @@ export const sitesRouter = {
         site: serializeSite(result.site, null),
         deploymentQueued: Boolean(result.jobId),
       };
+    }),
+
+  createMany: sitesProcedure
+    .input(createSitesInputSchema)
+    .handler(async ({ context, input }) => {
+      assertNotDemo();
+      const access = await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+      });
+      if (!(await isSitesBulkImportEnabled(input.organizationId))) {
+        throw forbidden("Bulk import is not enabled for this organization");
+      }
+      // One at a time, so each site claims its address before the next one
+      // picks a slug. A failed row doesn't stop the rest.
+      const results: CreateSitesResult[] = [];
+      const jobIds: Array<string | null> = [];
+      for (const entry of input.sites) {
+        try {
+          const result = await createSite({
+            organizationId: input.organizationId,
+            projectId: input.projectId,
+            userId: access.user.id,
+            repositoryId: input.repositoryId,
+            productionBranch: input.productionBranch,
+            previewsEnabled: input.previewsEnabled,
+            name: entry.name,
+            slug: entry.slug || undefined,
+            rootDirectory: entry.rootDirectory,
+            mounts: entry.mounts,
+          });
+          jobIds.push(result.jobId);
+          results.push({
+            rootDirectory: entry.rootDirectory ?? "",
+            site: serializeSite(result.site, null),
+            deploymentQueued: Boolean(result.jobId),
+          });
+        } catch (error) {
+          results.push({
+            rootDirectory: entry.rootDirectory ?? "",
+            error: bulkImportErrorMessage(error),
+          });
+        }
+      }
+      dispatchLater(jobIds);
+      return { results };
     }),
 
   update: sitesProcedure

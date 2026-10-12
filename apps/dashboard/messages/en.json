@@ -7389,7 +7389,32 @@
       "subdirectory": "Site is in a subdirectory",
       "subdirectoryHint": "Turn on when the site lives in a folder of the repository.",
       "rootDirectoryPath": "Site folder",
-      "rootDirectoryPathHint": "Folder for the site, relative to the repository root. A blog.json is optional."
+      "rootDirectoryPathHint": "Folder for the site, relative to the repository root. A blog.json is optional.",
+      "bulk": {
+        "toggle": "Import all {count} sites",
+        "toggleHint": "Every folder with a blog.json becomes its own site.",
+        "columns": {
+          "site": "Site",
+          "status": "Status"
+        },
+        "selectAll": "Select all sites",
+        "select": "Import {folder}",
+        "nameLabel": "Name for {folder}",
+        "addressLabel": "Address for {folder}",
+        "rootFolder": "Repository root",
+        "duplicate": "Another site in this import uses this address.",
+        "previews": "Previews",
+        "previewsHint": "Builds a preview for every pull request that touches a site's folder.",
+        "create": "Create {count, plural, one {# site} other {# sites}}",
+        "createFailed": "Couldn't create the sites",
+        "summary": "Created {created} of {total} sites.",
+        "created": "Created",
+        "open": "Open",
+        "openSite": "Open {name}",
+        "edit": "Edit failed sites",
+        "retry": "Retry {count, plural, one {# failed site} other {# failed sites}}",
+        "tooMany": "Select up to {max} sites per import."
+      }
     },
     "detail": {
       "visit": "Visit",

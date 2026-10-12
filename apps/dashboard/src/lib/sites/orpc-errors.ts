@@ -39,3 +39,17 @@ export function toSitesOrpcError(error: unknown): unknown {
   }
   return error;
 }
+
+/** A message for one failed row of a bulk import, safe to show to the user. */
+export function bulkImportErrorMessage(error: unknown): string {
+  if (
+    error instanceof SiteInputError ||
+    error instanceof SiteHostConflictError
+  ) {
+    return error.message;
+  }
+  console.warn("sites.bulk_import_failed", {
+    error: error instanceof Error ? error.message : String(error),
+  });
+  return "Could not create this site";
+}

@@ -7389,7 +7389,32 @@
       "subdirectory": "Site liegt in einem Unterordner",
       "subdirectoryHint": "Einschalten, wenn die Seite in einem Ordner des Repositorys liegt.",
       "rootDirectoryPath": "Ordner der Site",
-      "rootDirectoryPathHint": "Ordner für die Site, relativ zum Repository-Root. Eine blog.json ist optional."
+      "rootDirectoryPathHint": "Ordner für die Site, relativ zum Repository-Root. Eine blog.json ist optional.",
+      "bulk": {
+        "toggle": "Alle {count} Sites importieren",
+        "toggleHint": "Jeder Ordner mit einer blog.json wird zu einer eigenen Site.",
+        "columns": {
+          "site": "Site",
+          "status": "Status"
+        },
+        "selectAll": "Alle Sites auswählen",
+        "select": "{folder} importieren",
+        "nameLabel": "Name für {folder}",
+        "addressLabel": "Adresse für {folder}",
+        "rootFolder": "Repository-Root",
+        "duplicate": "Eine andere Site in diesem Import nutzt diese Adresse schon.",
+        "previews": "Vorschauen",
+        "previewsHint": "Baut eine Vorschau für jeden Pull Request, der den Ordner einer Site ändert.",
+        "create": "{count, plural, one {# Site erstellen} other {# Sites erstellen}}",
+        "createFailed": "Sites konnten nicht erstellt werden",
+        "summary": "{created} von {total} Sites erstellt.",
+        "created": "Erstellt",
+        "open": "Öffnen",
+        "openSite": "{name} öffnen",
+        "edit": "Fehlgeschlagene Sites bearbeiten",
+        "retry": "{count, plural, one {Import für # Site wiederholen} other {Import für # Sites wiederholen}}",
+        "tooMany": "Wähle höchstens {max} Sites pro Import aus."
+      }
     },
     "detail": {
       "visit": "Öffnen",

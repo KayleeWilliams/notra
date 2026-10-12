@@ -1,6 +1,7 @@
 import type { siteDeployments, siteDomains } from "@notra/db/schema";
 import type { Site } from "@notra/sites-server/types/sites";
 
+import type { serializeSite } from "@/lib/sites/serialize";
 import type { SiteDomainConnectOutcome } from "@/types/sites";
 
 export type SiteDeploymentDbRow = typeof siteDeployments.$inferSelect;
@@ -37,3 +38,12 @@ export interface FinishDnsCallbackParams {
   userId: string;
   outcome: SiteDomainConnectOutcome;
 }
+
+/** One row of a bulk import: the created site, or why it failed. */
+export type CreateSitesResult =
+  | {
+      rootDirectory: string;
+      site: ReturnType<typeof serializeSite>;
+      deploymentQueued: boolean;
+    }
+  | { rootDirectory: string; error: string };

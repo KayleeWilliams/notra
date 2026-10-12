@@ -28,7 +28,9 @@ import {
   getDeployment,
 } from "./deployments";
 import { SiteNotBuildableError } from "./errors";
+import { pullRequestChangedPaths, siteRepositoryAccess } from "./github";
 import type { EnqueueDeploymentInput } from "./types/deployments";
+import type { Site } from "./types/sites";
 import type {
   CheckRunPayload,
   PullRequestPayload,
@@ -37,7 +39,10 @@ import type {
   SitesWebhookResult,
 } from "./types/webhooks";
 import { redeploymentInput } from "./utils/deployments";
-import { pushTouchesRootDirectory } from "./utils/push-paths";
+import {
+  pathsTouchRootDirectory,
+  pushTouchesRootDirectory,
+} from "./utils/push-paths";
 
 async function enqueueOrSkip(
   input: EnqueueDeploymentInput
@@ -171,10 +176,34 @@ async function handlePush(payload: PushPayload): Promise<string[]> {
   return jobIds;
 }
 
+/**
+ * Whether a pull request changes a site's folder. Sites sharing a repository
+ * share one lookup per pull request, and any failure counts as a change.
+ */
+function pullRequestPathsLookup() {
+  const cache = new Map<number, Promise<string[] | null>>();
+  return (site: Site, pullNumber: number, rootDirectory: string) => {
+    let paths = cache.get(pullNumber);
+    if (!paths) {
+      paths = siteRepositoryAccess(site, { pull_requests: "read" })
+        .then(({ repository, token }) =>
+          pullRequestChangedPaths(repository, token, pullNumber)
+        )
+        .catch(() => null);
+      cache.set(pullNumber, paths);
+    }
+    return paths.then(
+      (changed) =>
+        changed === null || pathsTouchRootDirectory(changed, rootDirectory)
+    );
+  };
+}
+
 async function handlePullRequest(
   payload: PullRequestPayload
 ): Promise<string[]> {
   const previewKey = pullRequestPreviewKey(payload.number);
+  const pullRequestTouchesRootDirectory = pullRequestPathsLookup();
   const jobIds: string[] = [];
   for (const site of await sitesForRepository(
     payload.repository.id,
@@ -192,6 +221,18 @@ async function handlePullRequest(
     if (
       payload.pull_request.base.ref !== site.productionBranch ||
       !fromSameRepository
+    ) {
+      continue;
+    }
+    if (
+      site.rootDirectory &&
+      // An unreadable preview state counts as open, so it never skips a build.
+      !(await isPreviewOpen(site.id, previewKey).catch(() => true)) &&
+      !(await pullRequestTouchesRootDirectory(
+        site,
+        payload.number,
+        site.rootDirectory
+      ))
     ) {
       continue;
     }

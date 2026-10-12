@@ -27,6 +27,8 @@ import type {
 
 export const SITES_NAV_LINK = "/sites";
 export const SITES_FLAG_KEY = "sites";
+/** Importing every site of a repository at once, rolled out per organization. */
+export const SITES_BULK_IMPORT_FLAG_KEY = "sites-bulk-import";
 export const SITES_FLAG_TIMEOUT_MS = 3000;
 
 export const SITE_ACTIVE_POLL_INTERVAL_MS = 2000;

@@ -103,3 +103,10 @@ export const SITE_CREATE_DEPLOY_TONE_ICONS = {
   success: CheckmarkCircle02Icon,
   error: MultiplicationSignCircleIcon,
 } as const;
+
+/** Bulk import is offered once a repository holds this many sites. */
+export const SITE_BULK_IMPORT_MIN_DIRECTORIES = 2;
+/** Height of a bulk import row: an input plus the folder line under it. */
+export const SITE_BULK_ROW_HEIGHT = 84;
+
+export const SITE_BULK_FOLDER_WORD_SEPARATOR = /[-_.\s]+/;
