@@ -538,7 +538,7 @@ export async function getRepositorySuggestions(
       repository,
       token,
       ref || defaultBranch
-    ).catch(() => EMPTY_TREE_SCAN);
+    ).catch(() => ({ ...EMPTY_TREE_SCAN, truncated: true }));
     return { defaultBranch, config };
   };
   const [branches, { defaultBranch, config }] = await Promise.all([

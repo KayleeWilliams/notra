@@ -34,7 +34,7 @@ for (const rejects of [false, true]) {
       setRepository: () => {
         picked = true;
       },
-      setStarterPullRequestUrl: () => {},
+      resetStarterSource: () => {},
       setForm: () => {},
       clearErrors: () => {},
       goTo: () => {},

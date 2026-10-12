@@ -37,7 +37,7 @@ if (!process.env.NOTRA_SITE_DEFAULTS_TEST_WORKER) {
   };
   const mutate = mock(() => {});
   mock.module("../src/lib/hooks/use-site-starter", () => ({
-    useSiteStarterStatus: () => ({ data: { hasConfig } }),
+    useSiteStarterStatus: () => ({ data: { hasConfig }, isReady: true }),
     useCreateSiteStarter: () => ({ isPending: false, mutate }),
   }));
   mock.module("@tanstack/react-query", () => ({
@@ -47,6 +47,7 @@ if (!process.env.NOTRA_SITE_DEFAULTS_TEST_WORKER) {
     dashboardOrpc: { sites: { get: { queryOptions: () => ({}) } } },
   }));
   mock.module("../src/lib/hooks/use-site-deployments", () => ({
+    useDeployLatest: () => ({ isPending: false, mutate: () => {} }),
     useSiteDeployment: () => ({
       data: {
         deployment: {
@@ -71,7 +72,12 @@ if (!process.env.NOTRA_SITE_DEFAULTS_TEST_WORKER) {
     useNow: () => Date.parse("2026-10-07T00:00:01Z"),
   }));
   mock.module("../src/components/sites/site-build-logs", () => ({
-    SiteBuildLogs: ({ heading }: SiteBuildLogsProps) => heading ?? null,
+    SiteBuildLogs: ({ heading, log }: SiteBuildLogsProps) => (
+      <div role="log">
+        {heading}
+        {log}
+      </div>
+    ),
   }));
   mock.module("../src/components/framework/link", () => ({
     default: ({ children, ...props }: ComponentProps<"a">) => (
@@ -93,16 +99,21 @@ if (!process.env.NOTRA_SITE_DEFAULTS_TEST_WORKER) {
         <IntlProvider locale={locale} messages={messages} timeZone="UTC">
           <SiteCreateStarter
             branch="main"
-            onPullRequestOpened={() => {}}
+            configDirectories={[]}
+            onRequestStart={() => () => {}}
+            onRootDirectoryChange={() => {}}
             organizationId="organization"
             pullRequestUrl={null}
             repositoryId="repository"
             rootDirectory=""
+            suggestionsComplete
+            suggestionsReady
           />
         </IntlProvider>
       );
-      expect(html).toContain(messages.sites.new.starter.missing);
-      expect(html).toContain(messages.sites.new.starter.create);
+      expect(html).toContain(messages.sites.new.starter.createAt);
+      expect(html.match(/role="status"/g)).toHaveLength(1);
+      expect(html).toContain("blog.json");
       expect(html).toContain('type="button"');
       expect(mutate).not.toHaveBeenCalled();
       expect(messages.sites.new.create).toBe(
@@ -115,15 +126,20 @@ if (!process.env.NOTRA_SITE_DEFAULTS_TEST_WORKER) {
         <IntlProvider locale={locale} messages={messages} timeZone="UTC">
           <SiteCreateStarter
             branch="main"
-            onPullRequestOpened={() => {}}
+            configDirectories={[]}
+            onRequestStart={() => () => {}}
+            onRootDirectoryChange={() => {}}
             organizationId="organization"
             pullRequestUrl="https://github.example/repository/pull/1"
             repositoryId="repository"
             rootDirectory=""
+            suggestionsComplete
+            suggestionsReady
           />
         </IntlProvider>
       );
-      expect(html).toContain(messages.sites.new.starter.optional);
+      expect(html).toContain(messages.sites.new.starter.opened);
+      expect(html.match(/role="status"/g)).toHaveLength(1);
       expect(html).toContain(messages.sites.new.starter.view);
       expect(html).toContain('href="https://github.example/repository/pull/1"');
       expect(html).not.toContain("<button");
@@ -141,9 +157,12 @@ if (!process.env.NOTRA_SITE_DEFAULTS_TEST_WORKER) {
           />
         </IntlProvider>
       );
-      expect(html).toContain(messages.sites.new.deploy.configMissingRetry);
-      expect(html).toContain(messages.sites.new.deploy.viewDeployment);
-      expect(html).toContain(messages.common.labels.copyAgentPrompt);
+      expect(html).toContain("Example build diagnostic");
+      expect(html).toContain(messages.sites.new.deploy.retryDeployment);
+      expect(html).toContain(messages.sites.new.deploy.editConfiguration);
+      expect(html).not.toContain(messages.sites.new.deploy.configMissingRetry);
+      expect(html).not.toContain(messages.sites.new.deploy.viewDeployment);
+      expect(html).not.toContain(messages.common.labels.copyAgentPrompt);
       expect(html).not.toContain(messages.sites.new.deploy.openSite);
       expect(html).not.toContain(messages.sites.new.deploy.viewPullRequest);
     });
@@ -156,11 +175,15 @@ if (!process.env.NOTRA_SITE_DEFAULTS_TEST_WORKER) {
         <IntlProvider locale="en" messages={en} timeZone="UTC">
           <SiteCreateStarter
             branch="main"
-            onPullRequestOpened={() => {}}
+            configDirectories={[]}
+            onRequestStart={() => () => {}}
+            onRootDirectoryChange={() => {}}
             organizationId="organization"
             pullRequestUrl={null}
             repositoryId="repository"
             rootDirectory=""
+            suggestionsComplete
+            suggestionsReady
           />
         </IntlProvider>
       )
@@ -176,7 +199,6 @@ if (!process.env.NOTRA_SITE_DEFAULTS_TEST_WORKER) {
           organizationId="organization"
           organizationSlug="organization"
           site={site}
-          starterPullRequestUrl="https://github.example/repository/pull/1"
         />
       </IntlProvider>
     );

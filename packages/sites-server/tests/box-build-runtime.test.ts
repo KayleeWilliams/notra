@@ -142,8 +142,14 @@ beforeEach(() => {
           await logTail(body.command[3], Number(body.command[4]))
         );
       }
-      const run = await command(body.command[2]);
-      return Response.json({ output: run.result, exit_code: 0 });
+      const run: unknown = await command(body.command[2]);
+      if (run instanceof Response) {
+        return run;
+      }
+      return Response.json({
+        output: (run as { result: string }).result,
+        exit_code: 0,
+      });
     }
     if (init?.method === "DELETE") {
       await remove();
@@ -237,9 +243,14 @@ test("startup failure still completes with redacted metrics and preserves the or
   expect(completed?.log).toContain("[build:lifecycle]");
   expect(completed?.log).not.toContain("box-test-secret");
   expect(completed?.log).not.toContain("abc");
+  expect(completed?.metrics?.phases.resultRead).toBeUndefined();
+  expect(read).not.toHaveBeenCalled();
+  expect(logTail).not.toHaveBeenCalled();
+  expect(command).not.toHaveBeenCalled();
+  expect(upload).not.toHaveBeenCalled();
 });
 
-test("upload failure captures logs and deletes the sandbox", async () => {
+test("upload failure skips nonexistent guest artifacts and deletes the sandbox", async () => {
   const error = new Error("upload network failure");
   upload.mockRejectedValueOnce(error);
   await expect(runSandboxBuild(params)).rejects.toMatchObject({
@@ -249,9 +260,15 @@ test("upload failure captures logs and deletes the sandbox", async () => {
     message: error.message,
   });
   expect(remove).toHaveBeenCalledTimes(1);
-  expect(completed?.log).toContain("compiler final log");
+  expect(completed?.log).not.toContain("compiler final log");
   expect(completed?.log).toContain("upload network failure");
   expect(completed?.metrics?.phases.sourceUpload).toBeGreaterThanOrEqual(0);
+  expect(completed?.metrics?.phases.execution).toBeUndefined();
+  expect(completed?.metrics?.phases.resultRead).toBeUndefined();
+  expect(read).not.toHaveBeenCalled();
+  expect(logTail).not.toHaveBeenCalled();
+  expect(command).not.toHaveBeenCalled();
+  expect(complete).toHaveBeenCalledTimes(1);
 });
 
 test("command SDK failure captures the final bounded log and does not let callback failure hide it", async () => {
@@ -277,6 +294,8 @@ test("command SDK failure captures the final bounded log and does not let callba
   expect(completed?.log).toContain("final compiler output [REDACTED]");
   expect(completed?.log).toContain("command transport failed");
   expect(completed?.metrics?.phases.execution).toBeGreaterThanOrEqual(0);
+  expect(read).toHaveBeenCalled();
+  expect(logTail).toHaveBeenCalled();
   expect(remove).toHaveBeenCalledTimes(1);
 });
 

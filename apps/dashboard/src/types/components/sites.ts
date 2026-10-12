@@ -112,7 +112,7 @@ export interface SiteCreateSourceFieldsProps {
   slugInvalid: boolean;
   errors: SiteCreateFieldErrors;
   starterPullRequestUrl: string | null;
-  onStarterPullRequestOpened: (url: string) => void;
+  onStarterRequestStart: () => (url: string) => void;
   suggestions: RepositorySuggestionsResult;
   sections: SiteCreateSectionPlan;
 }
@@ -598,6 +598,28 @@ export interface SiteCreateStageProps {
   children: ReactNode;
 }
 
+export type SiteCreateDeployPhase =
+  | "pending"
+  | "ready"
+  | "failed"
+  | "lookupFailed";
+
+export interface SiteCreateDeployHeadingProps {
+  headline: string;
+  tone: "pending" | "success" | "error";
+}
+
+export interface SiteCreateDeployActionsProps {
+  phase: SiteCreateDeployPhase;
+  settingsHref: string;
+  overviewHref: string;
+  liveUrl: string;
+  isReloadingStatus: boolean;
+  onReloadStatus: () => void;
+  isRetrying: boolean;
+  onRetry: () => void;
+}
+
 export interface SiteCreateDeployProps {
   organizationId: string;
   organizationSlug: string;
@@ -612,7 +634,6 @@ export interface SiteCreateDeployProps {
     | "rootDirectory"
   >;
   deploymentQueued: boolean;
-  starterPullRequestUrl?: string | null;
 }
 
 export interface SiteCreateStarterProps {
@@ -621,7 +642,11 @@ export interface SiteCreateStarterProps {
   branch: string;
   rootDirectory: string;
   pullRequestUrl: string | null;
-  onPullRequestOpened: (url: string) => void;
+  onRequestStart: () => (url: string) => void;
+  configDirectories: string[];
+  suggestionsReady: boolean;
+  suggestionsComplete: boolean;
+  onRootDirectoryChange: (value: string) => void;
 }
 
 export interface SiteRootDirectoryToggleProps {

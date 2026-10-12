@@ -7347,7 +7347,7 @@
         "deploy": "Deploy"
       },
       "stepDeploy": "Deploy",
-      "stepDeployDescription": "Deine Site wird aus dem neuesten Commit gebaut. Sie geht live, sobald der Build fertig ist.",
+      "stepDeployDescription": "Build-Logs und Status.",
       "deploy": {
         "waiting": "Warte auf einen Builder…",
         "started": "Deployment vor {seconds} s gestartet…",
@@ -7357,10 +7357,22 @@
         "openSite": "Zur Site",
         "viewDeployment": "Deployment ansehen",
         "configMissingRetry": "Dieser Build hat eine fehlende blog.json gemeldet. Starte das Deployment auf der Site erneut, um das Standardlayout und die Standardkonfiguration zu verwenden. Der Starter-Pull-Request ist optional.",
+        "editConfiguration": "Konfiguration bearbeiten",
+        "retryDeployment": "Deployment erneut starten",
+        "retryFailed": "Das Deployment konnte nicht gestartet werden. Versuche es erneut.",
+        "retryStatus": "Status erneut laden",
+        "statusLoadFailed": "Der Deployment-Status konnte nicht geladen werden.",
+        "failureRecovery": "Das Deployment wurde nicht abgeschlossen. Prüfe die Konfiguration oder versuche es erneut.",
         "viewPullRequest": "Pull Request ansehen",
-        "notStarted": "Der erste Build konnte nicht starten. Öffne die Deployments, um es erneut zu versuchen."
+        "notStarted": "Der erste Build konnte nicht starten."
       },
       "starter": {
+        "existingTitle": "Bestehende Site-Konfiguration gefunden",
+        "existingDescription": "Wähle eine bestehende Konfiguration oder behalte den gewählten Pfad für eine neue Site bei.",
+        "useExisting": "Ordner verwenden: {path}",
+        "useFolder": "Ordner verwenden",
+        "selectedLocation": "Gewählte Konfiguration: {path} auf {branch}.",
+        "createAt": "Starter-PR öffnen",
         "missingTitle": "Noch keine blog.json",
         "missing": "Notra nutzt das Standardlayout. Mit einer blog.json kommen deine Marke, Header und Footer dazu.",
         "why": "Wozu eine blog.json?",

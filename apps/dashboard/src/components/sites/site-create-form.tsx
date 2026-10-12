@@ -9,7 +9,7 @@ import {
   MotionConfig,
   useReducedMotion,
 } from "motion/react";
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "use-intl";
 
@@ -80,6 +80,21 @@ export function SiteCreateForm({
   const [starterPullRequestUrl, setStarterPullRequestUrl] = useState<
     string | null
   >(null);
+  const sourceRevision = useRef(0);
+  const resetStarterSource = () => {
+    sourceRevision.current += 1;
+    setStarterPullRequestUrl(null);
+  };
+  // Snapshot the source when the request starts, so a PR for an older
+  // repository, branch or folder never lands on the current one.
+  const startStarterRequest = () => {
+    const revision = sourceRevision.current;
+    return (url: string) => {
+      if (sourceRevision.current === revision) {
+        setStarterPullRequestUrl(url);
+      }
+    };
+  };
 
   const projectId = resolvedSiteProjectId(useActiveProject());
   const createMutation = useCreateSite();
@@ -122,6 +137,9 @@ export function SiteCreateForm({
     key: K,
     value: SiteCreateFormValues[K]
   ) => {
+    if (key === "repositoryId" || key === "branch" || key === "rootDirectory") {
+      resetStarterSource();
+    }
     setForm((current) => ({ ...current, [key]: value }));
     const field = SITE_CREATE_VALUE_FIELDS[key];
     if (field) {
@@ -157,7 +175,7 @@ export function SiteCreateForm({
           }
         : await connect.mutateAsync(candidate.githubRepositoryId);
       setRepository(picked);
-      setStarterPullRequestUrl(null);
+      resetStarterSource();
       setForm((current) =>
         withSiteRepository({ ...current, name: "", slug: "" }, picked)
       );
@@ -299,7 +317,7 @@ export function SiteCreateForm({
                     hostingDomain={hostingDomain}
                     idPrefix={id}
                     onChange={update}
-                    onStarterPullRequestOpened={setStarterPullRequestUrl}
+                    onStarterRequestStart={startStarterRequest}
                     organizationId={organizationId}
                     repository={repository}
                     sections={sections}
@@ -319,7 +337,6 @@ export function SiteCreateForm({
                 organizationId={organizationId}
                 organizationSlug={organizationSlug}
                 site={created}
-                starterPullRequestUrl={starterPullRequestUrl}
               />
             ) : (
               <div className="h-80" />

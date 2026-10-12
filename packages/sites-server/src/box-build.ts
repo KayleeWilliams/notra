@@ -42,6 +42,7 @@ import { isSafeRootDirectory } from "./utils/root-directory";
 import { runSitesEffect } from "./utils/run-sites-effect";
 import { measureSandboxPhase } from "./utils/sandbox-phase";
 import {
+  isRejectedBeforeExecution,
   sandboxJsonEffect,
   sandboxRequestEffect,
 } from "./utils/sandbox-transport";
@@ -186,6 +187,7 @@ export const runSandboxBuildEffect = Effect.fn("Sites.Sandbox.build")(
     let boxId: string | null = null;
     let apiKey = "";
     let readResult = false;
+    let executionAttempted = false;
     let runOutput = "";
     let lifecycleLog = "";
     const boundedLog = (log: string) =>
@@ -392,6 +394,7 @@ export const runSandboxBuildEffect = Effect.fn("Sites.Sandbox.build")(
       const execution = performance.now();
       const executionBoxId = currentBoxId;
       const execute = Effect.gen(function* () {
+        executionAttempted = true;
         const bytes = yield* sandboxRequestEffect(
           apiKey,
           "exec",
@@ -400,6 +403,14 @@ export const runSandboxBuildEffect = Effect.fn("Sites.Sandbox.build")(
           JSON.stringify({ command: ["sh", "-c", script] }),
           undefined,
           SANDBOX_EXEC_TIMEOUT_MS
+        ).pipe(
+          Effect.tapError((error) =>
+            Effect.sync(() => {
+              if (isRejectedBeforeExecution(error)) {
+                executionAttempted = false;
+              }
+            })
+          )
         );
         const run = yield* sandboxJsonEffect(
           bytes,
@@ -441,7 +452,7 @@ export const runSandboxBuildEffect = Effect.fn("Sites.Sandbox.build")(
       Effect.catch((error) =>
         Effect.gen(function* () {
           appendError("lifecycle", error);
-          if (boxId && !readResult) {
+          if (executionAttempted && boxId && !readResult) {
             yield* readBuildFiles().pipe(
               Effect.match({
                 onFailure: (readError) => appendError("read", readError),

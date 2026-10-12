@@ -1,13 +1,20 @@
-import { expect, mock, test } from "bun:test";
+import { beforeEach, expect, mock, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-import type { ComponentProps } from "react";
+import type { ComponentProps, SetStateAction } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { IntlProvider } from "use-intl";
 
+import germanMessages from "../messages/de.json";
 import messages from "../messages/en.json";
-import type { SiteDeploymentStatus } from "../src/types/sites";
+import type { SiteBuildLogsProps } from "../src/types/components/sites";
+import type { UseSiteDeploymentParams } from "../src/types/hooks/sites";
+import type {
+  SiteDeploymentStatus,
+  SiteDiagnostic,
+  SiteScope,
+} from "../src/types/sites";
 import { buildSiteBuildAgentPrompt } from "../src/utils/site-build-agent-prompt";
 import { findMatches, parseBuildLog } from "../src/utils/site-build-log";
 
@@ -15,7 +22,7 @@ if (!process.env.NOTRA_DEPLOY_SURFACE_TEST_WORKER) {
   test("creation deployment log surface", () => {
     const result = spawnSync(
       process.execPath,
-      ["test", fileURLToPath(import.meta.url)],
+      ["--no-env-file", "--no-install", "test", fileURLToPath(import.meta.url)],
       {
         cwd: fileURLToPath(new URL("../../..", import.meta.url)),
         env: { ...process.env, NOTRA_DEPLOY_SURFACE_TEST_WORKER: "1" },
@@ -29,6 +36,24 @@ if (!process.env.NOTRA_DEPLOY_SURFACE_TEST_WORKER) {
   let log: string | null = null;
   let hasRecord = true;
   let configMissing = false;
+  let detailError = false;
+  let deploymentError = false;
+  let retryPending = false;
+  let retryError: Error | null = null;
+  let errorMessage: string | null = null;
+  let diagnostics: SiteDiagnostic[] = [];
+  beforeEach(() => {
+    status = "building";
+    log = null;
+    hasRecord = true;
+    configMissing = false;
+    detailError = false;
+    deploymentError = false;
+    retryPending = false;
+    retryError = null;
+    errorMessage = null;
+    diagnostics = [];
+  });
   const site = {
     id: "site",
     name: "Example blog",
@@ -41,6 +66,7 @@ if (!process.env.NOTRA_DEPLOY_SURFACE_TEST_WORKER) {
   mock.module("@tanstack/react-query", () => ({
     useQuery: () => ({
       data: { deployments: hasRecord ? [{ id: "deployment" }] : [] },
+      isError: detailError,
     }),
   }));
   mock.module("../src/lib/orpc/query", () => ({
@@ -48,13 +74,14 @@ if (!process.env.NOTRA_DEPLOY_SURFACE_TEST_WORKER) {
   }));
   mock.module("../src/lib/hooks/use-site-deployments", () => ({
     useSiteDeployment: () => ({
+      isError: deploymentError,
       data: {
         deployment: hasRecord
           ? {
               status,
               branch: "main",
               commitSha: "abc123",
-              errorMessage: null,
+              errorMessage,
               createdAt: "2026-10-07T00:00:00Z",
               startedAt: null,
               finishedAt: null,
@@ -67,11 +94,17 @@ if (!process.env.NOTRA_DEPLOY_SURFACE_TEST_WORKER) {
                       message: "Missing blog.json",
                     },
                   ]
-                : [],
+                : diagnostics,
             }
           : null,
         log,
       },
+    }),
+    useDeployLatest: () => ({
+      isPending: retryPending,
+      isError: retryError !== null,
+      error: retryError,
+      mutate: mock(() => {}),
     }),
   }));
   mock.module("../src/lib/hooks/use-now", () => ({
@@ -135,6 +168,7 @@ if (!process.env.NOTRA_DEPLOY_SURFACE_TEST_WORKER) {
     "%s deployments keep their headline and actions",
     (nextStatus) => {
       status = nextStatus;
+      log = "12:00:00 Building site\n12:00:01 Built site";
       const html = renderToStaticMarkup(
         <IntlProvider locale="en" messages={messages} timeZone="UTC">
           <SiteCreateDeploy
@@ -150,20 +184,22 @@ if (!process.env.NOTRA_DEPLOY_SURFACE_TEST_WORKER) {
         expect(html).not.toContain(messages.common.labels.copyAgentPrompt);
         expect(html).toContain("Your site is live.");
         expect(html).toContain('href="https://site.example"');
+        expect(html).not.toContain(messages.sites.new.deploy.editConfiguration);
       } else {
         expect(html).toContain(messages.sites.new.deploy.failed);
         expect(html).toContain(
           'class="inline-flex items-center gap-2 text-destructive"'
         );
         expect(html).not.toContain("mt-0.5 size-4 shrink-0");
-        expect(html).toContain(messages.sites.new.deploy.viewDeployment);
+        expect(html).not.toContain(messages.sites.new.deploy.viewDeployment);
+        expect(html).toContain(messages.sites.new.deploy.retryDeployment);
+        expect(html).toContain(messages.sites.new.deploy.failureRecovery);
         expect(html).not.toContain(messages.sites.new.deploy.openSite);
         expect(html).not.toContain('href="https://site.example"');
-        expect(html).toContain(messages.common.labels.copyAgentPrompt);
-        expect(
-          html.indexOf(messages.common.labels.copyAgentPrompt)
-        ).toBeLessThan(html.indexOf(messages.sites.new.deploy.viewDeployment));
-        expect(html).toContain("me-auto");
+        expect(html).not.toContain(messages.common.labels.copyAgentPrompt);
+        expect(html).toContain(messages.sites.new.deploy.editConfiguration);
+        expect(html.match(/<a\b/g)).toHaveLength(1);
+        expect(html).not.toContain('role="alert"');
         expect(html).toContain("min-h-24");
         expect(html).toContain("max-h-48");
         expect(html).toContain('data-streaming="false"');
@@ -173,7 +209,7 @@ if (!process.env.NOTRA_DEPLOY_SURFACE_TEST_WORKER) {
     }
   );
 
-  test("a deployment that was not queued has no empty log box", () => {
+  test("a deployment that was not queued has recovery guidance in its log", () => {
     status = "queued";
     hasRecord = false;
     const html = renderToStaticMarkup(
@@ -190,10 +226,14 @@ if (!process.env.NOTRA_DEPLOY_SURFACE_TEST_WORKER) {
       messages.sites.new.deploy.notStarted
     );
     expect(html).not.toContain(messages.sites.new.deploy.openSite);
-    expect(html).toContain(messages.common.labels.copyAgentPrompt);
-    expect(html).toContain(messages.sites.new.deploy.viewDeployment);
-    expect(html).toContain('href="/organization/sites/site/deployments"');
-    expect(html).not.toContain(messages.sites.deploymentPage.log.copy);
+    expect(html).not.toContain(messages.common.labels.copyAgentPrompt);
+    expect(html).not.toContain(messages.sites.new.deploy.viewDeployment);
+    expect(html).toContain(
+      'href="/organization/sites/site/settings?project=project"'
+    );
+    expect(html).toContain(messages.sites.new.deploy.retryDeployment);
+    expect(html).toContain(messages.sites.new.deploy.failureRecovery);
+    expect(html).toContain('role="log"');
     expect(html).not.toContain("motion-safe:animate-spin");
   });
 
@@ -215,7 +255,7 @@ if (!process.env.NOTRA_DEPLOY_SURFACE_TEST_WORKER) {
     expect(html).not.toContain(messages.sites.new.deploy.openSite);
   });
 
-  test("legacy missing configuration retains retry guidance and PR link", () => {
+  test("legacy missing configuration stays in the log with two recovery controls", () => {
     hasRecord = true;
     status = "failed";
     configMissing = true;
@@ -226,13 +266,18 @@ if (!process.env.NOTRA_DEPLOY_SURFACE_TEST_WORKER) {
           organizationId="organization"
           organizationSlug="organization"
           site={site}
-          starterPullRequestUrl="https://github.example/repository/pull/1"
         />
       </IntlProvider>
     );
     expect(html).toContain(messages.sites.new.deploy.failed);
-    expect(html).toContain(messages.sites.new.deploy.configMissingRetry);
-    expect(html).toContain('href="https://github.example/repository/pull/1"');
+    expect(html).not.toContain(messages.sites.new.deploy.configMissingRetry);
+    expect(html).toContain("Missing blog.json");
+    expect(html).not.toContain(
+      'href="https://github.example/repository/pull/1"'
+    );
+    expect(html).toContain('role="log"');
+    expect(html).toContain(messages.sites.new.deploy.retryDeployment);
+    expect(html).toContain(messages.sites.new.deploy.editConfiguration);
   });
 
   test("shared logs retain their default summary and sizing without a heading", () => {

@@ -247,3 +247,13 @@ export const sandboxJsonEffect = Effect.fn("Sites.Sandbox.decode")(function* <
     )
   );
 });
+
+// A 4xx answer means the sandbox refused the request, so nothing ran in the guest.
+export function isRejectedBeforeExecution(error: unknown): boolean {
+  return (
+    error instanceof SandboxRequestError &&
+    error.status !== null &&
+    error.status >= 400 &&
+    error.status < 500
+  );
+}
