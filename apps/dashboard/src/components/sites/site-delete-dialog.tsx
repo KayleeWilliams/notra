@@ -8,8 +8,8 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
+import { CopyButton } from "@notra/ui/components/ui/copy-button";
 import { Input } from "@notra/ui/components/ui/input";
-import { Label } from "@notra/ui/components/ui/label";
 import { useMutation } from "@tanstack/react-query";
 import { useId, useState } from "react";
 import { toast } from "sonner";
@@ -20,6 +20,7 @@ import { useInvalidateSites } from "@/lib/hooks/use-sites";
 import { useRouter } from "@/lib/navigation";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { SiteDeleteDialogProps } from "@/types/components/sites";
+import { toastCopyError } from "@/utils/copy-to-clipboard";
 import { toErrorMessage } from "@/utils/error-message";
 
 export function SiteDeleteDialog({
@@ -79,15 +80,28 @@ export function SiteDeleteDialog({
             }
           }}
         >
-          <Label htmlFor={`${id}-confirm`}>
+          <div
+            className="flex items-center gap-2 text-sm leading-none font-medium"
+            id={`${id}-confirm-label`}
+          >
             {t.rich("confirmLabel", {
               name: siteName,
               code: (chunks) => (
-                <span className="font-mono font-semibold">{chunks}</span>
+                <CopyButton
+                  aria-label={`${tCommon("actions.copy")}: ${siteName}`}
+                  disabled={deleteMutation.isPending}
+                  onCopyError={toastCopyError}
+                  size="xs"
+                  title={tCommon("actions.copy")}
+                  value={siteName}
+                >
+                  <span className="font-mono font-semibold">{chunks}</span>
+                </CopyButton>
               ),
             })}
-          </Label>
+          </div>
           <Input
+            aria-labelledby={`${id}-confirm-label`}
             autoComplete="off"
             id={`${id}-confirm`}
             onChange={(event) => setConfirmation(event.target.value)}
