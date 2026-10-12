@@ -94,6 +94,14 @@ jobs:
           cd apps/web
           bun run test:production
 
+      # Build the standalone Workflow functions too; node-server builds do not
+      # exercise the Vercel step bundler's dependency resolution.
+      - name: Verify dashboard Vercel build
+        working-directory: apps/dashboard
+        env:
+          VERCEL: "1"
+        run: bun run build
+
       - name: Restore incremental TypeScript state
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:

@@ -65,9 +65,11 @@ import { assertActiveSubscription } from "@/lib/billing/subscription";
 import {
   attachBrandGuidelineSourcePdf,
   BrandGuidelineSourcePdfValidationError,
+  removeBrandGuidelineSourcePdf,
+} from "@/lib/brand-guideline-pdf";
+import {
   getBrandGuidelines,
   markBrandGuidelinesFailed,
-  removeBrandGuidelineSourcePdf,
   startBrandGuidelineGeneration,
 } from "@/lib/brand-guidelines";
 import { countBrandVoices } from "@/lib/brand-voice-count";
