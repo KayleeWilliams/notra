@@ -115,6 +115,17 @@ export function twinPagePath(twinPath: string): string | null {
   return twinPath.slice(0, -"/index.md".length) || "/";
 }
 
+export function wellKnownLlmsTxtTarget(
+  files: Map<string, SiteManifestFile>,
+  path: string
+): string | null {
+  if (!path.endsWith("/.well-known/llms.txt")) {
+    return null;
+  }
+  const target = `${path.slice(0, -"/.well-known/llms.txt".length)}/llms.txt`;
+  return files.has(target) ? target : null;
+}
+
 export function prefersMarkdown(accept: string | null): boolean {
   if (!accept) {
     return false;
