@@ -1,3 +1,5 @@
+import { listMountedAreas } from "@notra/sites-core/utils/mounts";
+
 import type { DevRefreshOptions } from "../types/dev-refresh";
 import { siteHeadScripts } from "./head-scripts";
 import { hasReactComponents } from "./react";
@@ -55,6 +57,7 @@ export function createDevRefresh(options: DevRefreshOptions) {
       workDir: options.params.workDir,
       config,
       entries: prepared.validation.entries,
+      areas: listMountedAreas(options.params.mounts).map(({ area }) => area),
       publicFiles: prepared.publicFiles,
       includeDrafts: options.params.includeDrafts,
     });

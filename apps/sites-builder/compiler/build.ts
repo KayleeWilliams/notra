@@ -131,6 +131,7 @@ export async function buildSite(
     workDir,
     config,
     entries: prepared.validation.entries,
+    areas: listMountedAreas(mounts).map(({ area }) => area),
     publicFiles: prepared.publicFiles,
     includeDrafts: options.target.includeDrafts,
   });

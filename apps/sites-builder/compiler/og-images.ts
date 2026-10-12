@@ -110,7 +110,7 @@ export async function writeOgImages(
   const manifest: OgManifest = {};
   const diagnostics: SiteDiagnostic[] = [];
   const { config } = params;
-  if (config.thumbnails.enabled && params.entries.length > 0) {
+  if (config.thumbnails.enabled) {
     const [fonts, background] = await Promise.all([
       loadFonts(),
       loadBackground(params),
@@ -164,9 +164,8 @@ export async function writeOgImages(
         manifest[`${entry.area}/${entry.slug}`] = urlPath;
       })
     );
-    const areas = [...new Set(params.entries.map((entry) => entry.area))];
     await Promise.all(
-      areas.map(async (area) => {
+      params.areas.map(async (area) => {
         const title = configuredAreaTitle(config, area);
         const png = await renderPng(
           {
