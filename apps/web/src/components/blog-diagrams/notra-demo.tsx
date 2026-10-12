@@ -68,33 +68,33 @@ export function DemoDeploymentsDiagram() {
         />
         <div className="hidden w-full sm:block">
           <div className="bg-border relative mx-auto h-5 w-px">
-            <FlowDot accent={false} delay={0.12} short />
+            <FlowDot accent={false} delay={0.11} short />
           </div>
           <div className="mx-auto flex h-5 w-[calc(50%+0.5rem)]">
             <span className="border-border relative flex-1 border-t border-l">
               <span className="absolute inset-x-0 -top-px h-px">
-                <FlowDot accent={false} axis="left" delay={0.18} />
+                <FlowDot accent={false} axis="left" delay={0.16} linear />
               </span>
               <span className="absolute inset-y-0 -left-px w-px">
-                <FlowDot accent={false} delay={0.33} short />
+                <FlowDot accent={false} delay={0.28} short />
               </span>
             </span>
             <span className="border-primary relative flex-1 border-r">
               <span className="from-border to-primary absolute inset-x-0 top-0 h-px bg-linear-to-r to-60%" />
               <span className="absolute inset-x-0 top-0 h-px">
-                <FlowDot axis="right" delay={0.18} />
+                <FlowDot axis="right" delay={0.16} linear />
               </span>
               <span className="absolute inset-y-0 -right-px w-px">
-                <FlowDot delay={0.33} short />
+                <FlowDot delay={0.28} short />
               </span>
             </span>
           </div>
         </div>
         <div className="mt-4 grid w-full gap-4 sm:mt-0 sm:grid-cols-2">
-          <Panel aside="usenotra.com" scan={0.39} title="production">
+          <Panel aside="usenotra.com" scan={0.33} title="production">
             <Row
               k="Hosting"
-              v={<WithLogo Logo={VercelLogo}>Vercel + Unkey</WithLogo>}
+              v={<WithLogo Logo={VercelLogo}>Vercel</WithLogo>}
             />
             {SWAPS.map((swap) => (
               <Row
@@ -104,7 +104,7 @@ export function DemoDeploymentsDiagram() {
               />
             ))}
           </Panel>
-          <Panel accent aside="demo.usenotra.com" scan={0.39} title="demo">
+          <Panel accent aside="demo.usenotra.com" scan={0.33} title="demo">
             <Row
               accent
               k="Hosting"
@@ -167,11 +167,11 @@ export function DemoPoolDiagram() {
     >
       <Panel aside="no cookie" scan={0} title="GET /api/demo/enter" />
       <Connector
-        flowDelay={0.12}
+        flowDelay={0.11}
         label="claim · FOR UPDATE SKIP LOCKED"
         step={1}
       />
-      <Panel accent aside="~0.4 s" scan={0.27} title="demo_sandboxes">
+      <Panel accent aside="pool" scan={0.23} title="demo_sandboxes">
         {POOL_ROWS.map((row) => (
           <div
             className={cn(
@@ -198,8 +198,8 @@ export function DemoPoolDiagram() {
           </div>
         ))}
       </Panel>
-      <Connector flowDelay={0.41} label="307 + signed cookie" step={2} />
-      <Panel aside="your workspace" scan={0.56} title="/demo-xxxx/geo" />
+      <Connector flowDelay={0.34} label="307 + signed cookie" step={2} />
+      <Panel aside="your workspace" scan={0.46} title="/demo-xxxx/geo" />
       <Legend>
         <span className="flex items-center gap-2">
           <span className="border-muted-foreground/60 size-3 rounded-sm border border-dashed" />
@@ -342,21 +342,21 @@ export function DemoApiFlowDiagram() {
     >
       <Panel aside="your terminal" scan={0} title="curl" />
       <Connector
-        flowDelay={0.12}
+        flowDelay={0.11}
         label="POST /v1/posts · Bearer notra_demo_…"
         step={1}
       />
-      <Panel aside="apps/api" scan={0.27} title="demo-api.usenotra.com">
+      <Panel aside="apps/api" scan={0.23} title="demo-api.usenotra.com">
         <Row k="key" v="Unkey, separate workspace" />
         <Row k="limit" v="60 req/min" />
         <Row k="writes" v="post + demo_request_log" />
       </Panel>
       <Connector
-        flowDelay={0.41}
+        flowDelay={0.34}
         label="Upstash Realtime · demo:<orgId>"
         step={2}
       />
-      <Panel accent aside="live" scan={0.56} title="Dashboard · API feed">
+      <Panel accent aside="live" scan={0.46} title="Dashboard · API feed">
         {FEED.map((entry, index) => (
           <div
             className={cn(

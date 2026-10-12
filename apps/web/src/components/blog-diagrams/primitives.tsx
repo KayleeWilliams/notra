@@ -155,6 +155,8 @@ interface FlowDotProps {
   accent?: boolean;
   /** Travel faster, for stubs that are only a few pixels long. */
   short?: boolean;
+  /** Constant speed, for a segment that joins other segments of one path. */
+  linear?: boolean;
 }
 
 /** A packet that travels along its parent line. The parent must be positioned. */
@@ -163,6 +165,7 @@ export function FlowDot({
   delay = 0,
   accent = true,
   short = false,
+  linear = false,
 }: FlowDotProps) {
   return (
     <span
@@ -170,6 +173,7 @@ export function FlowDot({
       className={cn(
         "pointer-events-none absolute motion-reduce:hidden",
         short ? "diagram-flow-travel-short" : "diagram-flow-travel",
+        linear ? "diagram-flow-linear" : null,
         axis === "down" ? "inset-x-0 top-0 h-full" : "inset-y-0 w-full",
         axis === "left" ? "right-0" : null,
         axis === "right" ? "left-0" : null

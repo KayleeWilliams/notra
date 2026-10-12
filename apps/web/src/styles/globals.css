@@ -445,13 +445,20 @@
   }
 }
 
-/* Blog diagrams: a dot travels one segment in the first ~20% of the cycle, then waits. */
+/* Blog diagrams: a dot travels one segment in 0.6 s (0.25 s for short stubs) and
+   a scan sweeps a panel in 0.55 s, so a whole sequence fits in the first ~80% of
+   the cycle and the rest is a pause. */
 .diagram-flow-travel,
 .diagram-flow-travel-short,
 .diagram-flow-scan {
-  --flow-cycle: 4s;
+  --flow-cycle: 5s;
   animation: diagramFlowTravel var(--flow-cycle) linear
     calc(var(--flow-delay, 0) * var(--flow-cycle)) infinite both;
+}
+
+/* Segments of a multi-part path move at constant speed so the dot doesn't stall at corners. */
+.diagram-flow-travel.diagram-flow-linear {
+  animation-name: diagramFlowTravelLinear;
 }
 
 .diagram-flow-travel-short {
@@ -469,10 +476,26 @@
     animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
   }
   1%,
-  14% {
+  11% {
     opacity: 1;
   }
-  15%,
+  12%,
+  100% {
+    transform: var(--flow-target);
+    opacity: 0;
+  }
+}
+
+@keyframes diagramFlowTravelLinear {
+  0% {
+    transform: none;
+    opacity: 0;
+  }
+  1%,
+  11% {
+    opacity: 1;
+  }
+  12%,
   100% {
     transform: var(--flow-target);
     opacity: 0;
@@ -485,10 +508,10 @@
     opacity: 0;
   }
   1%,
-  5% {
+  4% {
     opacity: 1;
   }
-  6%,
+  5%,
   100% {
     transform: var(--flow-target);
     opacity: 0;
@@ -501,12 +524,12 @@
     opacity: 1;
     animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
-  14% {
+  11% {
     transform: none;
     opacity: 1;
     animation-timing-function: ease-out;
   }
-  40%,
+  32%,
   100% {
     transform: none;
     opacity: 0;
