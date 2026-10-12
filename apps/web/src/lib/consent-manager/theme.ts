@@ -1,11 +1,4 @@
-import type { Theme } from "@c15t/react";
-
-const smoothingSlot = {
-  style: {
-    WebkitFontSmoothing: "antialiased",
-    MozOsxFontSmoothing: "grayscale",
-  },
-} satisfies NonNullable<Theme["slots"]>["consentBanner"];
+import type { Theme } from "c15t/tanstack-start";
 
 const colors = {
   primary: "var(--primary)",
@@ -36,10 +29,22 @@ export const consentTheme = {
     fontFamily: "var(--font-inter)",
   },
   radius,
-  slots: {
-    consentBanner: smoothingSlot,
-    consentBannerCard: smoothingSlot,
-    consentDialog: smoothingSlot,
-    consentDialogCard: smoothingSlot,
-  },
 } satisfies Theme;
+
+const smoothingStyle = {
+  WebkitFontSmoothing: "antialiased",
+  MozOsxFontSmoothing: "grayscale",
+} as const;
+
+// Bar variant: full-bleed card, square corners (a floating radius would pinch
+// against the viewport edge). Surface, shadow and the centered 72rem content
+// column live in globals.css (see
+// [data-testid="consent-banner-root"][data-variant="bar"]) so light/dark can
+// differ.
+export const consentComponents = {
+  banner: {
+    root: { style: smoothingStyle },
+    card: { style: { ...smoothingStyle, borderRadius: 0 } },
+  },
+  dialog: { root: { style: smoothingStyle }, card: { style: smoothingStyle } },
+};

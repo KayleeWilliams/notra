@@ -1,7 +1,6 @@
 @import "tailwindcss" source("../");
 @import "./ui-sources.css";
 @import "tw-animate-css";
-@import "@c15t/react/styles.css";
 @import "@fontsource-variable/inter";
 @import "@fontsource/instrument-serif/400.css";
 @import "../../../../packages/ui/src/styles/ai-overview.css";
@@ -552,3 +551,37 @@
  * GEO colour tokens live in @notra/ui/status.css — both imported at the top of
  * this file.
  */
+
+/*
+ * c15t consent bar (variant="bar", position="bottom"): full-bleed bar. The
+ * card carries the surface background and the elevation shadow (a stacked
+ * shadow, not a solid border; collapsed to a 1px white ring in dark mode,
+ * where shadows are invisible). Content centers in a 72rem column via inline
+ * padding on the card, and the "Secured by" tag insets to the same column
+ * edge so it lines up with the content.
+ */
+[data-testid="consent-banner-root"][data-variant="bar"] {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+[data-testid="consent-banner-root"][data-variant="bar"]
+  [data-testid="consent-banner-card"] {
+  box-sizing: border-box;
+  width: 100%;
+  padding-inline: max(1.5rem, calc((100vw - 72rem) / 2));
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.05),
+    0 -1px 3px rgb(0 0 0 / 0.05),
+    0 -8px 24px -8px rgb(0 0 0 / 0.12);
+}
+
+.dark
+  [data-testid="consent-banner-root"][data-variant="bar"]
+  [data-testid="consent-banner-card"] {
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.09);
+}
+
+[data-testid="consent-banner-root"][data-variant="bar"]
+  [data-testid="consent-banner-branding"] {
+  margin-right: max(1.5rem, calc((100vw - 72rem) / 2));
+}
