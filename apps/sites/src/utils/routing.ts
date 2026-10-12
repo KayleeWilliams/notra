@@ -52,6 +52,21 @@ export function resolveFile(
   return null;
 }
 
+export function trailingSlashPagePath(
+  files: Map<string, SiteManifestFile>,
+  path: string
+): string | null {
+  if (path === "/" || !path.endsWith("/")) {
+    return null;
+  }
+  const bare = path.slice(0, -1);
+  const file = resolveFile(files, path);
+  if (!file?.path.endsWith(".html") || resolveFile(files, bare) !== file) {
+    return null;
+  }
+  return bare.split("/").map(encodeURIComponent).join("/");
+}
+
 export function matchRedirect(
   manifest: SiteManifest,
   path: string
