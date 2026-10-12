@@ -3997,7 +3997,11 @@
         "titleWithVisitors": "Traffic",
         "descriptionWithVisitors": "Menschen und AI-Agents auf deiner Website",
         "emptyRangeTitle": "Kein Traffic in diesem Zeitraum",
-        "emptyRangeDescription": "Wähle einen anderen Zeitraum oder eine andere Domain."
+        "emptyRangeDescription": "Wähle einen anderen Zeitraum oder eine andere Domain.",
+        "emptyPathTitle": "Keine Besuche auf {path}",
+        "emptyPathDescription": "Weder Menschen noch AI-Agents haben diese Seite im gewählten Zeitraum geöffnet.",
+        "emptyPathReset": "Alle Seiten anzeigen",
+        "emptyPathWiden": "Letzte 90 Tage anzeigen"
       },
       "write": {
         "metaTitle": "GEO Writer",
@@ -4171,6 +4175,15 @@
       "columnCountry": "Land",
       "columnDevice": "Gerät",
       "referrers": "Herkunft"
+    },
+    "trafficPathFilter": {
+      "label": "Filter",
+      "allPages": "Alle Seiten",
+      "search": "Pfade durchsuchen",
+      "noMatches": "Keine passenden Seiten"
+    },
+    "trafficExport": {
+      "label": "Als CSV exportieren"
     }
   },
   "integrations": {

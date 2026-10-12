@@ -37,6 +37,7 @@ export const siteAnalyticsInputSchema = siteScopeInputSchema.extend({
   days: z.number().int().min(1).max(365).optional(),
   from: analyticsDay.optional(),
   to: analyticsDay.optional(),
+  path: z.string().trim().max(2048).optional(),
 });
 
 const suggestionRef = z.string().trim().max(250).optional();

@@ -13,10 +13,17 @@ import { buttonVariants } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import Link from "@/components/framework/link";
 import { GeoRangePicker } from "@/components/geo/geo-range-picker";
+import { TrafficExportButton } from "@/components/geo/traffic-export-button";
+import { TrafficPathFilter } from "@/components/geo/traffic-path-filter";
 import { WebVisitorsSection } from "@/components/geo/web-visitors-section";
 import { useSite } from "@/components/sites/site-context";
 import { useGeoRange } from "@/lib/hooks/use-geo-range";
 import { useSiteAnalytics } from "@/lib/hooks/use-sites";
+import {
+  useKnownTrafficPaths,
+  useTrafficPathQuery,
+} from "@/lib/hooks/use-traffic-path";
+import { trafficPathOptions } from "@/utils/ai-traffic-pages";
 import { siteHref } from "@/utils/site-links";
 
 export function SiteAnalyticsPage() {
@@ -25,13 +32,24 @@ export function SiteAnalyticsPage() {
     useSite();
   const analyticsOn = detail.site.analyticsEnabled;
   const geoRange = useGeoRange();
-  const query = useSiteAnalytics(organizationId, siteId, geoRange.query);
+  const [pathQuery] = useTrafficPathQuery();
+  const query = useSiteAnalytics(organizationId, siteId, {
+    ...geoRange.query,
+    ...(pathQuery ? { path: pathQuery } : {}),
+  });
   const data = query.data;
   const hasVisits =
     data !== undefined &&
     (data.web.totals.views > 0 ||
       data.traffic.sources.some((source) => source.visits > 0));
-  const canShowAnalytics = data?.web.configured && (hasVisits || analyticsOn);
+  const knownPaths = useKnownTrafficPaths(
+    trafficPathOptions(data?.web.pages ?? []),
+    siteId
+  );
+  // A path filter that matches nothing must still show the filter to clear it.
+  const isFiltered = pathQuery !== "";
+  const canShowAnalytics =
+    data?.web.configured && (hasVisits || analyticsOn || isFiltered);
   const settingsLink = (
     <Link
       className={buttonVariants({ variant: "outline" })}
@@ -61,7 +79,7 @@ export function SiteAnalyticsPage() {
           <Skeleton className="h-64 w-full rounded-2xl" />
         </div>
       ) : null}
-      {data !== undefined && !hasVisits && !analyticsOn ? (
+      {data !== undefined && !hasVisits && !analyticsOn && !isFiltered ? (
         <EmptyState
           action={settingsLink}
           description={t("offDescription")}
@@ -75,12 +93,23 @@ export function SiteAnalyticsPage() {
         </Alert>
       ) : null}
       {data !== undefined && canShowAnalytics ? (
-        <WebVisitorsSection
-          engagement={data.engagement}
-          range={geoRange.query}
-          traffic={data.traffic}
-          web={data.web}
-        />
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <TrafficPathFilter paths={knownPaths} />
+            <TrafficExportButton
+              path={pathQuery}
+              range={geoRange.query}
+              traffic={data.traffic}
+              web={data.web}
+            />
+          </div>
+          <WebVisitorsSection
+            engagement={data.engagement}
+            range={geoRange.query}
+            traffic={data.traffic}
+            web={data.web}
+          />
+        </div>
       ) : null}
     </div>
   );

@@ -438,7 +438,7 @@ export const sitesRouter = {
     .handler(async ({ context, input }) => {
       const { site } = await requireSite(context, input);
       return runOrpcEffect(
-        loadSiteAnalytics(site, geoWindow(input)).pipe(
+        loadSiteAnalytics(site, geoWindow(input), input.path).pipe(
           Effect.provide(geoCoreDashboardLayer)
         ),
         toGeoOrpcError

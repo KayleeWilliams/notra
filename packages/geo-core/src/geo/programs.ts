@@ -1218,12 +1218,14 @@ export const loadAiTraffic = Effect.fn("geo.aiTraffic")(function* (
   input: GeoScopeInput,
   window: GeoWindowInput,
   hosts: readonly string[] = [],
-  siteId = ""
+  siteId = "",
+  path = ""
 ) {
   const scope = yield* resolveGeoScope(input);
   const windowParams = {
     ...geoTrafficWindowParams(window, AI_TRAFFIC_DEFAULT_DAYS),
     hosts: hosts.join(","),
+    path,
     ...(siteId
       ? { site_id: siteId, project_id: "", include_unassigned: 0 }
       : {}),
@@ -1318,7 +1320,8 @@ export const loadGeoTrafficLog = Effect.fn("geo.trafficLog")(function* (
   limit: number | undefined,
   visitorTypes: readonly string[] | undefined,
   categories: readonly string[] | undefined,
-  host: string | undefined
+  host: string | undefined,
+  path = ""
 ) {
   const scope = yield* resolveGeoScope(input);
   const rows = yield* geoQuery("traffic log query failed", () =>
@@ -1329,6 +1332,7 @@ export const loadGeoTrafficLog = Effect.fn("geo.trafficLog")(function* (
       visitor_type: visitorTypes?.join(",") ?? "",
       category: categories?.join(",") ?? "",
       host: trafficLogHostFilter(host),
+      path,
     })
   );
   const data = rows?.data ?? [];
@@ -1485,7 +1489,8 @@ export const loadGeoTrafficPages = Effect.fn("geo.trafficPages")(function* (
   window: GeoWindowInput,
   limit: number | undefined,
   visitorType: string | undefined,
-  host: string | undefined
+  host: string | undefined,
+  path = ""
 ) {
   const scope = yield* resolveGeoScope(input);
   const pages = yield* geoQuery("traffic pages query failed", () =>
@@ -1496,6 +1501,7 @@ export const loadGeoTrafficPages = Effect.fn("geo.trafficPages")(function* (
       limit: limit ?? AI_TRAFFIC_DEFAULT_PAGES_LIMIT,
       visitor: visitorType ?? "",
       host: trafficLogHostFilter(host),
+      path,
     })
   );
 

@@ -166,6 +166,8 @@ export interface TrafficPageViewProps {
   traffic: AiTrafficResponse | undefined;
   isTrafficPending: boolean;
   knownHosts: readonly string[];
+  knownPaths: readonly string[];
+  pathQuery: string;
   isPagesPending: boolean;
   trafficPages: readonly GeoTrafficPage[];
   ingestSetup: GeoIngestSetupResponse | undefined;
@@ -413,6 +415,7 @@ export type GeoBrandSearchHandlerInput = GeoScopeInput & GeoBrandSearchInput;
 
 export interface GeoTrafficLogQueryOptions {
   host?: string;
+  path?: string;
 }
 
 export interface GeoJourneyPathNode {
@@ -1951,4 +1954,19 @@ export interface WebBreakdownTableProps {
 
 export interface TrafficDomainSelectProps {
   hosts: readonly string[];
+}
+
+export interface TrafficPathEmptyProps {
+  geoRange: GeoRangeControl;
+}
+
+export interface TrafficPathFilterProps {
+  paths: readonly string[];
+}
+
+export interface TrafficExportButtonProps {
+  traffic: AiTrafficResponse | undefined;
+  web: WebAnalyticsResponse | undefined;
+  range: GeoRangeQuery;
+  path: string;
 }
