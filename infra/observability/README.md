@@ -128,6 +128,9 @@ Grafana volume, with mode 0600 and an atomic rename. Set the variable to
 `@/var/lib/grafana/organization-names.json`, then deploy only the Grafana Docker
 context. No new volume or volume configuration change is needed. Small mappings
 can instead use JSON directly, passed through stdin.
+File-backed mappings are copied into one private temporary snapshot per startup,
+so an atomic update cannot mix name versions across dashboards. That snapshot is
+removed after provisioning or on a rendering failure.
 Treat organization names as internal data; do not print or share the variable.
 The IaC definition preserves that variable; review a fresh plan before applying.
 Grafana gains no database credentials or database access.
