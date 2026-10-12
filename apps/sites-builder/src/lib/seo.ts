@@ -10,6 +10,7 @@ import type {
   SocialImage,
   ThemeColors,
 } from "../types/seo";
+import { mailtoAddress } from "../utils/mailto";
 import { generatedImage } from "./og";
 import {
   absoluteUrl,
@@ -48,6 +49,7 @@ function organization(): JsonLdNode {
         ? { "@type": "ImageObject", url: absoluteUrl(logo) }
         : undefined,
       sameAs: override.sameAs.length > 0 ? override.sameAs : undefined,
+      contactPoint: contactPoint(),
     };
   }
   const logo = logoFor("light");
@@ -63,7 +65,25 @@ function organization(): JsonLdNode {
     url: companyUrl,
     logo: logo ? { "@type": "ImageObject", url: absoluteUrl(logo) } : undefined,
     sameAs: sameAs.length > 0 ? sameAs : undefined,
+    contactPoint: contactPoint(),
   };
+}
+
+function contactPoint(): JsonLdNode | undefined {
+  const links = [
+    ...config.navbar.links,
+    ...(config.navbar.cta ? [config.navbar.cta] : []),
+    ...config.footer.links.flatMap((item) =>
+      "items" in item ? item.items : [item]
+    ),
+  ];
+  for (const link of links) {
+    const email = mailtoAddress(link.href);
+    if (email) {
+      return { "@type": "ContactPoint", email };
+    }
+  }
+  return undefined;
 }
 
 function socialUrls(): string[] {
