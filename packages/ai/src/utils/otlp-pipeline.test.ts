@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { mock, test } from "node:test";
+import { gunzipSync } from "node:zlib";
 
 import { TELEMETRY_TEST_EVENT } from "@notra/ai/constants/telemetry-test";
 
@@ -144,7 +145,12 @@ test("OTLP failures, resource grouping and permanent disablement remain isolated
     assert.equal(requests.length, beforeAxiom + 1);
     const axiomRequest = requests.at(-1);
     assert.ok(axiomRequest);
-    assert.match(await axiomRequest.text(), /private prompt/);
+    const axiomBytes = Buffer.from(await axiomRequest.arrayBuffer());
+    const axiomJson =
+      axiomRequest.headers.get("content-encoding") === "gzip"
+        ? gunzipSync(axiomBytes).toString()
+        : axiomBytes.toString();
+    assert.match(axiomJson, /private prompt/);
     assert.doesNotMatch(JSON.stringify(diagnostics), /private/);
 
     process.env.NOTRA_OTLP_ENDPOINT = "http://public.example.test";

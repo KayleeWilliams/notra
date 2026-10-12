@@ -3,9 +3,10 @@ import {
   LOG_PIPELINE_OPTIONS,
   LOG_TRANSPORT_TIMEOUT_MS,
 } from "@notra/ai/constants/evlog";
+import { sendAxiomBatch } from "@notra/ai/utils/send-axiom-batch";
 import { createShippingPipeline } from "@notra/ai/utils/shipping-pipeline";
 import type { DrainContext } from "evlog";
-import { type AxiomConfig, sendBatchToAxiom } from "evlog/axiom";
+import type { AxiomConfig } from "evlog/axiom";
 import type { DrainPipelineOptions } from "evlog/pipeline";
 
 export function createAxiomPipeline(
@@ -14,7 +15,7 @@ export function createAxiomPipeline(
 ) {
   return createShippingPipeline(
     (batch) =>
-      sendBatchToAxiom(
+      sendAxiomBatch(
         batch.map(({ event }) => event),
         {
           ...config,
