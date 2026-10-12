@@ -164,6 +164,29 @@ export async function writeOgImages(
         manifest[`${entry.area}/${entry.slug}`] = urlPath;
       })
     );
+    const areas = [...new Set(params.entries.map((entry) => entry.area))];
+    await Promise.all(
+      areas.map(async (area) => {
+        const title = configuredAreaTitle(config, area);
+        const png = await renderPng(
+          {
+            eyebrow: withSiteName(config.name, title, " · "),
+            title: config[area]?.description ?? config.description ?? title,
+            footer: config.name,
+            appearance,
+            accent,
+            background: background.dataUri,
+          },
+          fonts
+        );
+        const urlPath = `/${OG_IMAGES_DIR}/${area}.png`;
+        await writeFileEnsured(
+          join(params.workDir, "site", "public", urlPath),
+          png
+        );
+        manifest[area] = urlPath;
+      })
+    );
   }
   const sorted = Object.fromEntries(
     Object.entries(manifest).sort(([a], [b]) => a.localeCompare(b))

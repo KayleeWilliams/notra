@@ -19,8 +19,8 @@ function readManifest(): Record<string, string> {
 
 const manifest = readManifest();
 
-export function generatedImage(slug: string): string | undefined {
-  const path = manifest[`${params.area}/${slug}`];
+export function generatedImage(slug?: string): string | undefined {
+  const path = manifest[slug ? `${params.area}/${slug}` : params.area];
   return typeof path === "string" && path.startsWith("/")
     ? assetUrl(path)
     : undefined;

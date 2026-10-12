@@ -10,6 +10,7 @@ import type {
   SocialImage,
   ThemeColors,
 } from "../types/seo";
+import { generatedImage } from "./og";
 import {
   absoluteUrl,
   areaTitle,
@@ -120,7 +121,7 @@ export function structuredData(nodes: JsonLdNode[]): string {
 
 export function socialImage(
   image: string | undefined,
-  generated?: string
+  generated = generatedImage()
 ): SocialImage | undefined {
   if (image) {
     return { url: absoluteUrl(assetUrl(image) ?? image), large: true };

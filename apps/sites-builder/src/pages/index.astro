@@ -5,7 +5,7 @@ import Base from "../layouts/Base.astro";
 import { STRUCTURED_DATA_LIST_LIMIT } from "../constants/seo";
 import { getAreaEntries } from "../lib/entries";
 import { absoluteUrl, areaDescription, areaTitle, href, markdownHref, params } from "../lib/params";
-import { areaNodeId, pageTitle, publisherRef, websiteRef } from "../lib/seo";
+import { areaNodeId, pageTitle, publisherRef, socialImage, websiteRef } from "../lib/seo";
 
 const title = areaTitle(params.area);
 const url = absoluteUrl(href());
@@ -18,6 +18,7 @@ const area = {
   name: title,
   description: areaDescription(params.area),
   url,
+  image: socialImage(undefined)?.url,
   inLanguage: "en",
   publisher: publisherRef(),
   isPartOf: websiteRef(),
