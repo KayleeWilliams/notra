@@ -2,6 +2,7 @@
 
 import { ArrowUpRight01Icon, CloudIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { Badge } from "@notra/ui/components/ui/badge";
 import { CopyButton } from "@notra/ui/components/ui/copy-button";
 import { Cloudflare } from "@notra/ui/components/ui/svgs/cloudflare";
 import { Vercel } from "@notra/ui/components/ui/svgs/vercel";
@@ -64,7 +65,7 @@ export function SiteDnsRecordsTable({ records }: SiteDnsRecordsTableProps) {
     <Table className="min-w-[32rem] table-fixed">
       <colgroup>
         <col className="w-18" />
-        <col className="w-[25%]" />
+        <col className="w-[32%]" />
         <col />
         <col className="w-44" />
       </colgroup>
@@ -80,9 +81,9 @@ export function SiteDnsRecordsTable({ records }: SiteDnsRecordsTableProps) {
         {records.map((record) => (
           <TableRow key={`${record.type}:${record.name}:${record.value}`}>
             <TableCell>
-              <span className="font-mono text-xs font-medium">
+              <Badge shape="rounded" variant="secondary">
                 {record.type}
-              </span>
+              </Badge>
             </TableCell>
             <TableCell>
               <RecordValue label={t("name")} value={record.name} />
@@ -178,7 +179,7 @@ function ProviderButton({
     <a
       className={buttonVariants({
         size: "sm",
-        variant: oneClick ? "default" : "outline",
+        variant: "outline",
       })}
       href={href}
       rel={oneClick ? undefined : "noopener noreferrer"}
@@ -202,7 +203,6 @@ export function SiteDnsSetup({
   organizationId,
   siteId,
   domain,
-  checkAction,
 }: SiteDnsSetupProps) {
   const t = useTranslations("sites.domainsPage.dns");
   const connect = useSiteDomainConnect({ organizationId, siteId, domain });
@@ -210,6 +210,7 @@ export function SiteDnsSetup({
   const ready = result?.status === "ready" ? result : null;
   const provider =
     result && result.status !== "unavailable" ? result.providerName : undefined;
+  const zone = result?.status === "unsupported" ? result.zone : undefined;
   const dashboardUrl =
     result?.status === "unsupported"
       ? siteDnsProviderDashboardUrl(result.providerName, result.zone)
@@ -227,18 +228,20 @@ export function SiteDnsSetup({
     action = <ProviderButton href={dashboardUrl} providerName={provider} />;
   }
 
+  let intro = t("addRecords");
+  if (ready) {
+    intro = t("automaticDescription", { provider: ready.providerName });
+  } else if (zone) {
+    intro = t("addRecordsToZone", { zone });
+  }
+
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
-        {ready ? (
-          <p className="text-muted-foreground me-auto text-xs">
-            {t("automaticDescription", { provider: ready.providerName })}
-          </p>
-        ) : null}
-        <div className="flex items-center gap-2">
-          {action}
-          {checkAction}
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <p className="text-muted-foreground min-w-0 text-sm text-pretty">
+          {intro}
+        </p>
+        {action}
       </div>
       <SiteDnsRecordsTable records={domain.records} />
     </div>

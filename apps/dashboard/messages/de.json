@@ -7831,9 +7831,8 @@
     },
     "domainsPage": {
       "title": "Domains",
-      "description": "Stelle deine Site unter deiner eigenen Domain bereit. Eine verifizierte Domain wird zur primären Adresse.",
+      "description": "Verbinde eine eigene Domain. Sobald sie verifiziert ist, wird sie zur Hauptadresse deiner Seite.",
       "addDomain": "Domain hinzufügen",
-      "notraAddress": "Notra-Adresse",
       "primary": "Primär",
       "open": "Öffnen",
       "copyUrl": "URL kopieren",
@@ -7841,8 +7840,7 @@
         "subdomain": "Subdomain",
         "proxy": "Pfade auf deiner Website"
       },
-      "checked": "Geprüft",
-      "notChecked": "Noch nicht geprüft",
+      "notChecked": "Noch nicht geprüft.",
       "check": "Prüfen",
       "checking": "Wird geprüft…",
       "checkLabel": "{hostname} prüfen",
@@ -7880,13 +7878,14 @@
         "proxyRequirement": "Schalte die orange Wolke in Cloudflare aus, damit Notra dein HTTPS-Zertifikat ausstellen kann. Dies ist die erforderliche Einstellung, kein Live-Status.",
         "proxied": "Mit Proxy",
         "proxyNotApplicable": "Proxy nicht anwendbar",
-        "proxyNotApplicableDescription": "TXT-Einträge bestätigen den Domainbesitz. Cloudflare unterstützt den Proxy nur für A-, AAAA- und CNAME-Einträge."
+        "proxyNotApplicableDescription": "TXT-Einträge bestätigen den Domainbesitz. Cloudflare unterstützt den Proxy nur für A-, AAAA- und CNAME-Einträge.",
+        "addRecords": "Füge diese Einträge dort hinzu, wo du die DNS deiner Domain verwaltest.",
+        "addRecordsToZone": "Füge diese Einträge in den DNS von {zone} hinzu."
       },
       "proxy": {
         "agentPromptDescription": "Lass deinen Coding-Agent den Proxy einrichten.",
         "agentPromptLabel": "Agent-Prompt für das Proxy-Setup",
         "manualSetup": "Manuell einrichten",
-        "viewPrompt": "Prompt ansehen",
         "description": "Leite <code>{paths}</code> und alles darunter an <code>{origin}</code> weiter, der Pfad bleibt gleich.",
         "platform": "Plattform",
         "noCookies": "Leite keine Cookies oder Authorization-Header weiter. Die Site braucht sie nicht.",
@@ -7897,7 +7896,9 @@
           "tanstack": "TanStack Start",
           "cloudflare": "Cloudflare Worker",
           "nginx": "nginx"
-        }
+        },
+        "agentTab": "Coding-Agent",
+        "setupLabel": "Einrichtungsart"
       },
       "add": {
         "title": "Domain hinzufügen",
@@ -7923,12 +7924,10 @@
         "errorDescription": "Lege sie selbst an, siehe DNS-Konfiguration unten."
       },
       "setupErrorTitle": "Diese Domain lässt sich noch nicht verifizieren",
-      "columns": {
-        "domain": "Domain",
-        "status": "Status",
-        "checked": "Geprüft",
-        "actions": "Aktionen"
-      }
+      "connectTitle": "Domain verbinden",
+      "connectSubmit": "Weiter",
+      "lastChecked": "Geprüft <time></time>.",
+      "propagationHint": "DNS-Änderungen werden meist innerhalb weniger Minuten verifiziert."
     },
     "editorPage": {
       "title": "Editor",

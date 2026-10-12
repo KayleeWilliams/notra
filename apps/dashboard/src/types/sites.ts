@@ -198,10 +198,6 @@ export type SiteDomainChipStatus =
   | "verifying"
   | "failed";
 
-export type SiteDomainRow =
-  | { id: string; kind: "alias"; isPrimary: boolean }
-  | { id: string; kind: "domain"; domain: SiteDomain };
-
 export interface SiteChoiceOption<T extends string> {
   value: T;
   title: string;
