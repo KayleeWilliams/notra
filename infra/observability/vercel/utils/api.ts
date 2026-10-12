@@ -1,4 +1,6 @@
 import {
+  MAX_CATALOG_ITEMS,
+  MAX_CATALOG_PAGE_ITEMS,
   MAX_CATALOG_PAGES,
   REQUEST_TIMEOUT_MS,
   VERCEL_API,
@@ -9,6 +11,7 @@ import type {
   VercelApi,
   VercelRequest,
 } from "../types/metrics.ts";
+import { readJson } from "./read-json.ts";
 
 export function vercelApi(
   teamId: string | undefined,
@@ -30,21 +33,27 @@ export function vercelApi(
     }
     const url = new URL(path, VERCEL_API);
     url.searchParams.set("teamId", teamId);
-    const response = await request(url, {
-      method: body ? "POST" : "GET",
-      redirect: "error",
-      headers: {
-        authorization: `Bearer ${token}`,
-        "content-type": "application/json",
-      },
-      ...(body ? { body: JSON.stringify(body) } : {}),
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    });
+    let response: Response;
+    try {
+      response = await request(url, {
+        method: body ? "POST" : "GET",
+        redirect: "error",
+        headers: {
+          authorization: `Bearer ${token}`,
+          "content-type": "application/json",
+        },
+        ...(body ? { body: JSON.stringify(body) } : {}),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
+    } catch {
+      throw new Error("request_failed");
+    }
     // Never print provider bodies: they can contain sensitive metadata.
     if (!response.ok) {
+      await response.body?.cancel().catch(() => undefined);
       throw new Error(`http_${response.status}`);
     }
-    return response.json();
+    return readJson(response);
   };
 }
 
@@ -52,11 +61,17 @@ export async function metricCatalog(api: VercelApi): Promise<CatalogMetric[]> {
   const metrics: CatalogMetric[] = [];
   let cursor: string | undefined;
   for (let page = 0; page < MAX_CATALOG_PAGES; page++) {
-    const params = new URLSearchParams({ kind: "system", limit: "250" });
+    const params = new URLSearchParams({
+      kind: "system",
+      limit: String(MAX_CATALOG_PAGE_ITEMS),
+    });
     if (cursor) {
       params.set("cursor", cursor);
     }
     const response = catalogPage(await api(`/metrics/v1?${params}`));
+    if (metrics.length + response.metrics.length > MAX_CATALOG_ITEMS) {
+      throw new Error("catalog_limit");
+    }
     metrics.push(...response.metrics);
     if (!response.pagination?.hasMore) {
       if (

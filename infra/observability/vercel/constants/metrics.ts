@@ -6,8 +6,57 @@ export const REQUEST_TIMEOUT_MS = 30_000;
 export const SERIES_LIMIT = 500;
 export const SAFE_DIMENSIONS = ["projectId", "environment"];
 export const MAX_CATALOG_PAGES = 10;
+export const MAX_RESPONSE_BYTES = 1024 * 1024;
+export const MAX_CATALOG_PAGE_ITEMS = 250;
+export const MAX_CATALOG_ITEMS = 1000;
+export const MAX_SNAPSHOT_LINES = 10_000;
+export const MAX_SNAPSHOT_BYTES = 4 * 1024 * 1024;
 export const MAX_QUERY_OUTPUTS = 30;
+export const MAX_METADATA_LENGTH = 160;
+export const MAX_DIMENSION_NAMES = 64;
+export const METRIC_ID_PATTERN = /^vercel(?:\.[a-z0-9_]+){2,4}$/;
 export const SYSTEM_EVENT_PATTERN = /^vercel(?:\.[a-z0-9_]+){1,4}$/;
+export const METRIC_UNITS = [
+  "bytes",
+  "count",
+  "currency",
+  "gigabyte_hour",
+  "megabytes",
+  "milliseconds",
+  "percent",
+  "ratio",
+  "score",
+  "seconds",
+  "usd",
+];
+export const METRIC_AGGREGATIONS = [
+  "avg",
+  "count",
+  "max",
+  "min",
+  "p50",
+  "p75",
+  "p90",
+  "p95",
+  "p99",
+  "stddev",
+  "sum",
+  "unique",
+];
+export const ENVIRONMENTS = ["production", "preview", "development"];
+export const REQUEST_METHODS = [
+  "CONNECT",
+  "DELETE",
+  "GET",
+  "HEAD",
+  "OPTIONS",
+  "PATCH",
+  "POST",
+  "PUT",
+  "TRACE",
+];
+export const CACHE_RESULTS = ["BYPASS", "HIT", "MISS", "REVALIDATED", "STALE"];
+export const FUNCTION_START_TYPES = ["cold", "hot", "prewarmed"];
 export const PLATFORM_BREAKDOWNS = [
   {
     id: "vercel.request.count",
