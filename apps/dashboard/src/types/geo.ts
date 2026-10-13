@@ -179,6 +179,22 @@ export interface GeoTrafficSkeletonProps {
   geoRange?: GeoRangeControl;
 }
 
+export interface TrafficTableSkeletonProps {
+  columns: TableColumn<unknown>[];
+  rows: number;
+  rowHeight?: number;
+  flushTop?: boolean;
+  flushBottom?: boolean;
+}
+
+export interface TrafficSourceBandSkeletonProps {
+  band: GeoTrafficSourceBand;
+  columns: TableColumn<unknown>[];
+  rows: number;
+  stacked: boolean;
+  followedByStack: boolean;
+}
+
 export interface GeoProjectScopeProps {
   slug: string;
   children: ReactNode;
