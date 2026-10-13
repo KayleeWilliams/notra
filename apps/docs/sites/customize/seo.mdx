@@ -35,9 +35,11 @@ Every site comes with sitemaps, RSS feeds, canonical URLs, Open Graph tags and s
 
 | Setting | What it does |
 | --- | --- |
-| `metatags` | Adds `<meta>` tags to every page, where keys starting with `og:`, `article:`, `fb:`, `profile:` or `book:` become `property` and the rest `name`. A tag the theme already sets, like `og:site_name`, `description` or `robots`, replaces the theme's value instead of adding a second tag, except `robots` on previews, which always stay `noindex` |
+| `metatags` | Adds `<meta>` tags to every page, where keys starting with `og:`, `article:`, `fb:`, `profile:` or `book:` become `property` and the rest `name`. A tag the theme already sets, like `og:site_name`, `description` or `robots`, replaces the theme's value instead of adding a second tag. Previews, drafts, hidden pages and posts with `noindex: true` always keep their `noindex` robots tag |
 | `indexing` | `navigable` (default) lets search engines index posts and index pages, while `all` also indexes author and tag pages |
 | `organization` | The publisher search engines and AI answers attribute your posts to, with a required `name` and up to 12 `sameAs` profiles. Without it, Notra uses `name`, `logo` and `footer.socials` |
+
+`seo.indexing: "all"` does not make [hidden pages](/sites/posts#hidden-pages) discoverable. They stay out of public listings, sitemaps and generated AI indexes, even with a custom `robots` tag.
 
 ## Share images
 

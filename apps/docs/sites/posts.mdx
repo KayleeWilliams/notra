@@ -1,6 +1,6 @@
 ---
 title: "Posts and changelog entries"
-description: "Write blog posts and changelog entries with frontmatter, and add authors, cover images, tags, drafts and variables."
+description: "Write blog posts and changelog entries with frontmatter, and manage authors, cover images, tags, drafts, hidden pages and variables."
 authors:
   - handle: jan
 
@@ -167,7 +167,23 @@ Drafts you write in the [Notra editor](/sites/publishing#the-editor) work differ
 
 Set `hidden: true` on a blog post or changelog entry to publish an unlisted page. Its HTML URL and Markdown version still work, but Notra leaves it out of indexes, featured posts, tag and author listings, previous/next links, RSS, sitemaps, structured-data lists, Markdown indexes, `llms.txt` and `llms-full.txt`. Hidden pages always use `noindex`, even with `seo.indexing: "all"`. This also applies in previews.
 
+```mdx blog/early-access.mdx
+---
+title: "Early access announcement"
+date: 2026-10-13
+hidden: true
+---
+
+Details for readers with the link.
+```
+
+With the blog mounted at `/blog`, readers can open this page at `/blog/early-access` or `/blog/early-access.md`. You can also enable **Unlisted** in the [content editor](/sites/publishing#publish-an-unlisted-post-from-content).
+
 Unlike `hidden`, a blog post's `noindex: true` only controls indexing: the post remains in public lists, RSS and the Markdown index. Hidden pages are not private; anyone with the URL can read or share them. A page with both `draft: true` and `hidden: true` still stays off the live site until you remove `draft`.
+
+To list the page again, remove `hidden` or set it to `false`, then deploy the change. A separate `noindex: true` still keeps the blog post out of search engines, sitemaps and generated AI indexes.
+
+Hidden-only tags and authors appear as text on the article instead of linking to missing listing pages. Tags and authors shared with listed posts keep their links.
 
 ## Variables
 

@@ -65,6 +65,20 @@ The site's **Editor** edits your repository's files from the browser. Notra save
 
 You can't publish while there are errors. If a file changed on GitHub after you started editing, the editor shows **These files changed on GitHub**, and **Keep my edits on the latest version** moves your drafts onto the new version.
 
+### Publish an unlisted post from Content
+
+For a blog post or changelog written in **Content**, use its metadata controls:
+
+1. Open the post, choose **Details** if the side panel is closed, and select **Overview**.
+2. Turn on **Unlisted**. The page stays reachable by its direct HTML and Markdown URLs, but disappears from public listings, feeds, sitemaps and generated AI indexes.
+3. Publish the post to your site's GitHub repository, or choose **Update pull request** to update its linked pull request. Merge the change into the production branch and wait for the new deployment to go live.
+
+Changing the toggle saves the setting in Notra; it does not change an already deployed page until you publish and deploy the update. Unlisted pages are not private: anyone with the URL can read them.
+
+For blog posts, **Visible in search** is off and disabled while **Unlisted** is on. Turning **Unlisted** off restores your previous search setting; publish and deploy again to make the change live.
+
+If the post contains handwritten frontmatter in Notra, its `hidden` field takes precedence over the toggle. Edit or remove that field in the post itself. For files edited in the site's repository editor, set [`hidden: true` in frontmatter](/sites/posts#hidden-pages).
+
 ## Restore an earlier deployment
 
 Open **Deployments**, open the menu of an earlier production deployment and choose **Restore to production**. The switch is instant and doesn't rebuild, and the next push to the production branch goes live as usual.
