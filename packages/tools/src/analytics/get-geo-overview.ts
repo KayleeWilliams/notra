@@ -4,6 +4,7 @@ import { projects } from "@notra/db/schema";
 import {
   queryGeoCheckCompetitorShare,
   queryGeoCheckOverview,
+  queryGeoCheckTimeseries,
   toGeoCheckWindow,
 } from "@notra/db/utils/geo-checks";
 import { and, asc, eq } from "drizzle-orm";
@@ -18,7 +19,7 @@ const COMPETITOR_LIMIT = 10;
 export function createGetGeoOverviewTool() {
   return defineTool({
     description:
-      "Get one GEO project's AI visibility status. Supply projectId for a specific project; otherwise uses the organization's oldest project. Returns the project ID and name alongside per-engine mention rates and competitor brands. Never combines different projects.",
+      "Get one GEO project's AI visibility status. Supply projectId for a specific project; otherwise uses the organization's oldest project. Returns the project ID and name alongside per-engine mention rates, competitor brands, and daily per-engine counts for trend charts. Never combines different projects.",
     inputSchema: getGeoOverviewInputSchema,
     async execute({ days, projectId }, ctx) {
       const organizationId = requireOrganizationId(ctx);
@@ -39,13 +40,16 @@ export function createGetGeoOverviewTool() {
         }
         const scope = { organizationId, projectId: project.id };
         const window = toGeoCheckWindow({ days });
-        const [overview, competitors] = await Promise.all([
+        const [overview, competitors, timeseries] = await Promise.all([
           queryGeoCheckOverview(scope, window),
           queryGeoCheckCompetitorShare(scope, window, COMPETITOR_LIMIT),
+          queryGeoCheckTimeseries(scope, window),
         ]);
 
         return {
           project: { id: project.id, name: project.name },
+          days,
+          timeseries,
           engines: overview.map((row) => ({
             engine: row.engine,
             checks: row.checks,

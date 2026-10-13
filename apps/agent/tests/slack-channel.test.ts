@@ -27,6 +27,11 @@ import { createHmac } from "node:crypto";
 import { Effect } from "effect";
 const scenario = ${JSON.stringify(scenario)};
 const runtimePath = ${JSON.stringify(runtime)};
+if (scenario === "chart-failure-with-publish") {
+  mock.module(runtimePath + "/context/build-callback-context.js", () => ({
+    buildCallbackContext: () => ({ session: { id: "session-1", auth: { current: null, initiator: null } } }),
+  }));
+}
 process.env.SLACK_AGENT_SIGNING_SECRET = "fixture-signing-secret";
 const installations = [
   { slackTeamId: "T-install", organizationId: "org-install", enabled: true, allowedChannelIds: scenario === "owner-policy" ? ["C-other"] : null, botToken: "fixture-install" },
@@ -103,7 +108,29 @@ async function message(text, mention = false) {
   await request({ type: "event_callback", team_id: "T-install", api_app_id: "A-notra", event_id: "event-" + (++eventId), authorizations: [{ is_bot: true, team_id: "T-install", user_id: "U-notra" }],
     event: { type: mention ? "app_mention" : "message", channel: "C-room", thread_ts: "1.0", ts: "2." + eventId, user: "U-human", text } });
 }
-if (scenario === "owner-policy" || scenario === "external-actor") {
+if (scenario === "chart-failure-with-publish") {
+  for (const outcome of ["publish", "draft"]) {
+    const messages = [];
+    const state = {
+      teamId: "T-install",
+      notraChartFailureTurnId: "turn-1",
+      ...(outcome === "publish" ? {
+        notraPostToXTurnId: "turn-1",
+        notraPostToXOutcome: { turnId: "turn-1", postUrl: "https://x.com/example/status/123", failed: false, confirmed: true },
+      } : { notraDraftCompletion: { turnId: "turn-1", count: 1 } }),
+    };
+    await channel.adapter["message.completed"](
+      { turnId: "turn-1", finishReason: "stop", message: "Done" },
+      { state, thread: { post: async (text) => messages.push(text) } },
+    );
+    assert.equal(messages.length, 2);
+    assert(messages[0].includes("couldn't render or upload"));
+    assert(messages[1].includes(outcome === "publish" ? "Posted to X:" : "Saved as a draft."));
+    assert.equal(state.notraChartFailureTurnId, undefined);
+    assert.equal(state.notraPostToXTurnId, undefined);
+    assert.equal(state.notraDraftCompletion, undefined);
+  }
+} else if (scenario === "owner-policy" || scenario === "external-actor") {
   await request({ type: "block_actions", app_installed_team_id: "T-install", team: { id: "T-install" }, user: { id: "U-human", team_id: scenario === "external-actor" ? "T-unknown" : "T-actor" },
     channel: { id: "C-room" }, message: { ts: "card-1", thread_ts: "1.0" }, actions: [{ action_id: "notra_leave_thread", value: JSON.stringify({ sessionId: "original-session", turnId: "turn-0" }) }] }, true);
   await Promise.all(tasks);
@@ -155,6 +182,8 @@ if (scenario === "owner-policy" || scenario === "external-actor") {
 }
 
 describe("Slack native channel boundaries", () => {
+  test("a chart failure does not hide successful publishing or draft creation", () =>
+    runSlackChannel("chart-failure-with-publish"));
   test("Slack Connect checks the installation policy, not the actor policy", () =>
     runSlackChannel("owner-policy"));
   test("a valid installation's controls work for an external actor", () =>

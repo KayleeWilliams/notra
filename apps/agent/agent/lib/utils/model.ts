@@ -12,6 +12,7 @@ import { autoModel } from "eve/experimental/evaluate";
 import {
   ASSISTANT_AUTO_MODEL_OPTIONS,
   ASSISTANT_MODEL_ID,
+  ASSISTANT_MODEL_TIERS,
   ASSISTANT_TASK_MODEL_ID,
   AUTO_MODEL_DISABLED_VALUES,
   AUTO_MODEL_FLAG_ENV,
@@ -117,6 +118,12 @@ export function createAssistantModel() {
         }
 
         if (!isAutoModelEnabled()) {
+          if (typeof turnId === "string") {
+            assistantModelSelection.update(() => ({
+              turnId,
+              modelId: ASSISTANT_MODEL_ID,
+            }));
+          }
           return {
             model: fallbackModel,
             modelContextWindowTokens: SONNET_5_CONTEXT_WINDOW_TOKENS,
@@ -148,9 +155,27 @@ export function createAssistantModel() {
           throw new Error("autoModel no longer resolves on step.started");
         }
         const selection = await selectAutoModel(event, ctx);
-        const normalized = isModelSelection(selection)
+        let normalized = isModelSelection(selection)
           ? selection
           : { model: selection };
+        const previous = assistantModelSelection.get();
+        const retained = previous ? autoOptions[previous.modelId] : undefined;
+        const candidateTier = ASSISTANT_MODEL_TIERS.indexOf(
+          typeof normalized.model === "string"
+            ? normalized.model
+            : normalized.model.modelId
+        );
+        if (
+          previous &&
+          retained &&
+          candidateTier >= 0 &&
+          ASSISTANT_MODEL_TIERS.indexOf(previous.modelId) > candidateTier
+        ) {
+          normalized = {
+            model: retained.model,
+            reasoning: retained.reasoning,
+          };
+        }
         const { modelId } = normalized.model as { modelId?: unknown };
         if (typeof modelId === "string" && typeof turnId === "string") {
           assistantModelSelection.update(() => ({ turnId, modelId }));

@@ -86,6 +86,7 @@ The Slack app requests these bot scopes:
 | `channels:read`, `groups:read`     | Resolve channel names and visibility for the channel picker and mirroring     |
 | `im:history`                       | Read direct messages sent to the app                                           |
 | `files:read`                       | Read attachments shared with the agent                                         |
+| `files:write`                      | Upload chart images to the conversation                                        |
 | `assistant:write`                  | Enable Slack's assistant experience for the app                                |
 
 The agent only reads a thread once it is mentioned or messaged in it. It does not scan channels for keywords or emoji reactions, and it does not read other threads. Notra does not mirror private-channel or DM conversations into the dashboard.

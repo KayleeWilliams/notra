@@ -40,6 +40,7 @@ export interface PostToXOutcome {
 }
 
 export interface NotraSlackStateExtras {
+  notraChartFailureTurnId?: string;
   notraDraftCompletion?: DraftCompletionState;
   notraPostToXTurnId?: string;
   notraPostToXOutcome?: PostToXOutcome;

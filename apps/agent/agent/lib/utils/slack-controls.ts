@@ -120,7 +120,6 @@ export function buildSlackControlsPost(
   return {
     text,
     blocks: [
-      { type: "section", text: { type: "mrkdwn", text } },
       {
         type: "actions",
         elements: [

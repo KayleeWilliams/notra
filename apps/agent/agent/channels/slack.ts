@@ -1,4 +1,5 @@
 import { disableSlackIntegrationByTeamId } from "@notra/ai/integrations/slack-workspace";
+import { logError } from "@notra/ai/utils/server-log";
 import { getLinkedTwitterAccounts } from "@notra/tools/utils/social-accounts";
 import { Effect } from "effect";
 import {
@@ -29,6 +30,7 @@ import {
   isIrisInteraction,
 } from "../lib/utils/iris-interaction";
 import { buildNotraSlackAuth } from "../lib/utils/slack-auth";
+import { uploadSlackChart } from "../lib/utils/slack-chart";
 import { mirrorPublicSlackThread } from "../lib/utils/slack-chat-mirror";
 import {
   createSlackControlsRenderer,
@@ -230,10 +232,10 @@ export default slackChannel({
   credentials,
   activity: {
     renderers: [
-      experimental_slackActivityStatus(),
       experimental_slackActivityRenderer(
         createSlackControlsRenderer(credentials.botToken)
       ),
+      experimental_slackActivityStatus(),
     ],
   },
   events: {
@@ -269,6 +271,22 @@ export default slackChannel({
         return;
       }
 
+      if (result.toolName === "create_chart") {
+        try {
+          await uploadSlackChart(
+            channel.slack,
+            result.output,
+            JSON.stringify([ctx.session.id, data.turnId])
+          );
+        } catch (error) {
+          logError("Slack chart delivery failed", error, {
+            sessionId: ctx.session.id,
+          });
+          state.notraChartFailureTurnId = data.turnId;
+        }
+        return;
+      }
+
       if (!CREATE_POST_TOOL_NAMES.has(result.toolName)) {
         return;
       }
@@ -301,6 +319,12 @@ export default slackChannel({
         await mirrorSessionStatus(ctx, "idle");
         channel.state.pendingToolCallMessage = null;
         const state = getNotraSlackState(channel.state);
+        if (state.notraChartFailureTurnId === data.turnId) {
+          state.notraChartFailureTurnId = undefined;
+          await channel.thread.post(
+            "I couldn't render or upload the chart. Check that the Slack app has files:write permission, then try again."
+          );
+        }
         const completion = state.notraDraftCompletion;
         const postToXTurnId = state.notraPostToXTurnId;
         const referenceCompletionTurnId = state.notraReferenceCompletionTurnId;

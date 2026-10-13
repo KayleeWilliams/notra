@@ -8,9 +8,15 @@ export const CONTENT_WRITER_MODEL_ID = "openai/gpt-6-sol";
 export const GPT_6_SOL_CONTEXT_WINDOW_TOKENS = 1_050_000;
 export const SONNET_5_CONTEXT_WINDOW_TOKENS = 1_000_000;
 
+export const ASSISTANT_MODEL_TIERS: readonly string[] = [
+  ASSISTANT_FAST_MODEL_ID,
+  ASSISTANT_MODEL_ID,
+  ASSISTANT_DEEP_MODEL_ID,
+];
+
 /**
  * Choices for the eve `autoModel` evaluator, keyed by gateway model ID. The
- * descriptions are the whole routing policy: the evaluator sees only these
+ * descriptions guide task classification: the evaluator sees only these
  * plus recent message text, so each one has to cover its slice of the space.
  * Wording was tuned against labelled router cases — see the PR for numbers.
  */

@@ -4,9 +4,9 @@ export const SLACK_CONTROLS_RENDERER_ID = "notra.slack.controls";
 export const SLACK_CONTROLS_METADATA_TYPE = "notra_controls";
 
 export const SLACK_CONTROLS_TEXT = {
-  working: "Notra is working in this thread.",
-  waiting: "Notra is waiting for your input.",
-  idle: "Notra thread controls.",
+  working: "Stop request · Stop replying here",
+  waiting: "Stop replying here",
+  idle: "Stop replying here",
 } as const;
 
 export const SLACK_CONTROL_MENTION_REGEX =

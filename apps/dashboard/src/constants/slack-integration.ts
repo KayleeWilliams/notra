@@ -10,6 +10,7 @@ export const SLACK_BOT_SCOPES = [
   "groups:read",
   "im:history",
   "files:read",
+  "files:write",
 ].join(",");
 
 export const SLACK_CHANNEL_CACHE_TTL_SECONDS = 60 * 60;
