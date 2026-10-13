@@ -56,7 +56,7 @@
       "gridPos": { "x": 0, "y": 0, "w": 24, "h": 4 },
       "options": {
         "mode": "markdown",
-        "content": "**GEO history: selected-range intersection with the frozen 3–10 Oct 2026 snapshot.** [View the full snapshot](/d/notra-overview?from=2026-10-03T11:35:08.391Z&to=2026-10-10T11:35:08.391Z&var-environment=${environment}&var-organization=${organization:percentencode}). Live AI spend and API latency await telemetry activation. Costs are reported usage values, not invoices. Missing data is not zero. Click a customer bar to drill down; customer names are not collected."
+        "content": "**GEO history: selected-range intersection with the frozen 3–10 Oct 2026 snapshot.** [View the full snapshot](/d/notra-overview?from=2026-10-03T11:35:08.391Z&to=2026-10-10T11:35:08.391Z&var-environment=${environment}&var-organization=${organization:percentencode}). Live AI spend and API latency await telemetry activation. Costs are reported usage values, not invoices. Missing data is not zero. Click a customer bar to drill down; configured organization names are display-only, with IDs as fallback."
       }
     },
     {

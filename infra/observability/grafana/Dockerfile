@@ -1,8 +1,9 @@
 FROM grafana/grafana:13.0.2@sha256:b8f6abae513b839b2f3487343fa5e44d9c9d7871271fdd17689c4c452cb8098e
 USER root
-RUN apk add --no-cache su-exec
+RUN apk add --no-cache su-exec jq
 COPY provisioning /etc/grafana/provisioning
-COPY dashboards /etc/grafana/dashboards
+COPY dashboards /etc/grafana/dashboard-templates
+COPY utils /etc/grafana/utils
 COPY entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/bin/sh", "/entrypoint.sh"]
 ENV GF_SERVER_HTTP_ADDR=:: \

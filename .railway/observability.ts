@@ -26,6 +26,7 @@ export default defineRailway((ctx) => {
     env: {
       GF_SECURITY_ADMIN_PASSWORD: preserve(),
       GF_SECURITY_SECRET_KEY: preserve(),
+      NOTRA_ORGANIZATION_NAMES: preserve(),
       PORT: "3000",
       RAILWAY_RUN_UID: "0",
     },
