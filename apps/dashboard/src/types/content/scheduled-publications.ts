@@ -6,6 +6,7 @@ export interface ScheduledPublicationPost {
   slug: string | null;
   markdown: string | null;
   githubPublish: unknown;
+  sourceMetadata: unknown;
 }
 
 /** A pull request a scheduled GitHub destination pushed. */

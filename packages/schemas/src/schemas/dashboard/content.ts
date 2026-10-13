@@ -20,6 +20,7 @@ import {
   GITHUB_CONTENT_PATH_MAX_LENGTH,
   GITHUB_PUBLISH_CONTENT_TYPES,
 } from "../../constants/dashboard/github";
+import { ALLOWED_VIDEO_MIME_TYPES } from "../../constants/dashboard/upload";
 import { createPostFieldsSchema, postSlugSchema } from "../shared/post";
 import {
   contentAuthorFieldsSchema,
@@ -35,6 +36,13 @@ import {
 
 export const postStatusSchema = z.enum(["draft", "published"]);
 export type PostStatus = z.infer<typeof postStatusSchema>;
+
+export const socialVideoAttachmentSchema = z.object({
+  key: z.string().min(1),
+  url: z.url().max(2048),
+  mimeType: z.enum(ALLOWED_VIDEO_MIME_TYPES),
+  size: z.number().int().positive(),
+});
 
 export const sourceMetadataSchema = z
   .looseObject({
@@ -64,6 +72,8 @@ export const sourceMetadataSchema = z
     chatId: z.string().nullable().optional(),
     briefId: z.string().optional(),
     projectId: z.string().optional(),
+    /** Video posted with the X/LinkedIn post, now or from the calendar. */
+    socialVideo: socialVideoAttachmentSchema.nullable().optional(),
     sandbox: z
       .object({
         boxId: z.string().optional(),
@@ -373,13 +383,16 @@ export const updateContentSchema = z
     slug: postSlugSchema.nullable().optional(),
     markdown: z.string().max(POST_MARKDOWN_MAX_LENGTH).optional(),
     status: postStatusSchema.optional(),
+    /** Sets or clears the video posted with an X/LinkedIn post. */
+    socialVideo: socialVideoAttachmentSchema.nullable().optional(),
   })
   .refine(
     (data) =>
       data.title !== undefined ||
       data.slug !== undefined ||
       data.markdown !== undefined ||
-      data.status !== undefined,
+      data.status !== undefined ||
+      data.socialVideo !== undefined,
     {
       message: "At least one field must be provided",
     }

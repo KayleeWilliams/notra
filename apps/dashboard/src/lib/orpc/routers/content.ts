@@ -88,6 +88,7 @@ import {
   GITHUB_API_MAX_RESULTS,
   GITHUB_API_PAGE_SIZE,
 } from "@/constants/content-preview";
+import { SOCIAL_VIDEO } from "@/constants/social-video";
 import { trackServerEvent } from "@/lib/analytics/posthog-server";
 import { getEnabledDataPoints } from "@/lib/analytics/studio-events";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
@@ -107,6 +108,7 @@ import { getTranslations } from "@/lib/i18n/server";
 import { publishSavedContentToGitHub } from "@/lib/integrations/github/publish-saved-content";
 import { baseProcedure } from "@/lib/orpc/base";
 import { contentAuthorsRouter } from "@/lib/orpc/routers/content-authors";
+import { isOwnSocialVideo } from "@/lib/social-connect/media-urls";
 import { startOnDemandRun } from "@/lib/workflows/start";
 import type { PostMetadataColumns } from "@/types/content/overview";
 import type {
@@ -117,6 +119,10 @@ import type {
   RepositoryPreview,
   RepositoryPreviewFailure,
 } from "@/types/content/preview";
+import type {
+  ContentUpdateDataInput,
+  ContentUpdatePost,
+} from "@/types/content/update";
 import { resolveLookbackRange } from "@/utils/lookback";
 import { ratelimit } from "@/utils/ratelimit";
 
@@ -298,12 +304,8 @@ function formatFailureMessage(error: unknown): string {
 }
 
 export async function buildContentUpdateData(
-  existingPost: { title: string; status: "draft" | "published" },
-  input: {
-    markdown?: string;
-    status?: "draft" | "published";
-    title?: string;
-  }
+  existingPost: ContentUpdatePost,
+  input: ContentUpdateDataInput
 ) {
   const updateData: Record<string, unknown> = { updatedAt: new Date() };
 
@@ -333,6 +335,12 @@ export async function buildContentUpdateData(
     if (publishedAt !== undefined) {
       updateData.publishedAt = publishedAt;
     }
+  }
+
+  if (input.socialVideo !== undefined) {
+    // Merge in SQL so a concurrent write to another metadata key survives.
+    // SQL NULL, JSON null or a non-object would turn `||` into an array.
+    updateData.sourceMetadata = sql`(case when jsonb_typeof(${posts.sourceMetadata}) = 'object' then ${posts.sourceMetadata} else '{}'::jsonb end) || jsonb_build_object('socialVideo', ${JSON.stringify(input.socialVideo)}::jsonb)`;
   }
 
   return updateData;
@@ -834,6 +842,17 @@ export const contentRouter = {
 
       if (!existingPost) {
         throw notFound("Content not found");
+      }
+
+      if (
+        input.socialVideo &&
+        !(
+          SOCIAL_VIDEO.contentTypes.has(existingPost.contentType) &&
+          isOwnSocialVideo(input.socialVideo, input.organizationId)
+        )
+      ) {
+        const tErrors = await getTranslations("errors.content");
+        throw badRequest(tErrors("socialVideoNotAllowed"));
       }
 
       const updateData = await buildContentUpdateData(existingPost, input);

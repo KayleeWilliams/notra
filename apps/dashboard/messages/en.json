@@ -1152,6 +1152,7 @@
     },
     "content": {
       "slugNotSupported": "Slug can only be set for blog posts and changelogs",
+      "socialVideoNotAllowed": "This video can't be attached to this post",
       "slugTaken": "A post with this slug already exists",
       "tooManyPublishRequests": "Too many GitHub publish requests. Please try again shortly.",
       "contentTypeMismatch": "Content type does not match the saved post",
@@ -6385,7 +6386,14 @@
       "readDocs": "Read the {platform} docs",
       "reconnectPrompt": "Have you tried reconnecting?",
       "reconnectInSettings": "Reconnect in settings",
-      "addAsReference": "Add as reference"
+      "addAsReference": "Add as reference",
+      "attachVideo": "Attach video",
+      "attachVideoHint": "MP4 or WebM, up to {maxMb} MB",
+      "uploadingVideo": "Uploading video…",
+      "videoTooLarge": "Video must be {maxMb} MB or smaller",
+      "videoUploadFailed": "Video upload failed",
+      "removeVideo": "Remove video",
+      "attachmentSaveFailed": "Couldn't save the video to the post"
     },
     "collections": {
       "status": "{status, select, generating {Generating} published {Published} draft {Draft} other {Empty}}",
@@ -6519,7 +6527,7 @@
           "openOnlyHint": "Only updates the pull request. You merge it yourself."
         },
         "social": {
-          "hint": "Posts the saved text.",
+          "hint": "Posts the saved text and video, if one is attached.",
           "noAccounts": "No account connected yet. <link>Connect one</link> to post automatically.",
           "account": "Account",
           "accountMissing": "The account this post was scheduled from is no longer connected. Pick another account or turn this off.",

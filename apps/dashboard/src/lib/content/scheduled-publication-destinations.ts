@@ -39,6 +39,7 @@ import {
   classifyGitHubPublishFailure,
   hasGitHubStatus,
 } from "@/utils/github-publish-failure";
+import { getSocialVideoUrls } from "@/utils/social-video";
 
 // GitHub's 405 reasons that waiting won't fix: a required check that already
 // failed, and a branch protection rule that wants the branch up to date
@@ -489,6 +490,7 @@ async function publishToSocial(
         organizationId: attempt.organizationId,
         accountId,
         content,
+        mediaUrls: getSocialVideoUrls(post.sourceMetadata),
         resultPollAttempts: SCHEDULED_SOCIAL_RESULT_POLL_ATTEMPTS,
       }).pipe(
         Effect.catchDefect((defect) =>
@@ -557,6 +559,7 @@ export async function publishScheduledDestination(
       slug: true,
       markdown: true,
       githubPublish: true,
+      sourceMetadata: true,
     },
     where: and(
       eq(posts.id, attempt.postId),

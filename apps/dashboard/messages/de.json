@@ -1152,6 +1152,7 @@
     },
     "content": {
       "slugNotSupported": "Ein Slug kann nur für Blogbeiträge und Changelogs festgelegt werden",
+      "socialVideoNotAllowed": "Dieses Video kann nicht an diesen Beitrag angehängt werden",
       "slugTaken": "Ein Beitrag mit diesem Slug existiert bereits",
       "tooManyPublishRequests": "Zu viele GitHub-Veröffentlichungen. Bitte versuch es gleich nochmal.",
       "contentTypeMismatch": "Der Inhaltstyp passt nicht zum gespeicherten Beitrag",
@@ -6385,7 +6386,14 @@
       "readDocs": "Zur {platform}-Dokumentation",
       "reconnectPrompt": "Hast du versucht, das Konto neu zu verbinden?",
       "reconnectInSettings": "In den Einstellungen neu verbinden",
-      "addAsReference": "Als Referenz hinzufügen"
+      "addAsReference": "Als Referenz hinzufügen",
+      "attachVideo": "Video anhängen",
+      "attachVideoHint": "MP4 oder WebM, bis zu {maxMb} MB",
+      "uploadingVideo": "Video wird hochgeladen…",
+      "videoTooLarge": "Das Video darf höchstens {maxMb} MB groß sein",
+      "videoUploadFailed": "Video-Upload fehlgeschlagen",
+      "removeVideo": "Video entfernen",
+      "attachmentSaveFailed": "Das Video konnte nicht am Beitrag gespeichert werden"
     },
     "collections": {
       "status": "{status, select, generating {Wird erstellt} published {Veröffentlicht} draft {Entwurf} other {Leer}}",
@@ -6519,7 +6527,7 @@
           "openOnlyHint": "Aktualisiert nur den Pull Request. Mergen musst du selbst."
         },
         "social": {
-          "hint": "Postet den gespeicherten Text.",
+          "hint": "Postet den gespeicherten Text und das angehängte Video, falls vorhanden.",
           "noAccounts": "Noch kein Account verbunden. <link>Verbinde einen</link>, um automatisch zu posten.",
           "account": "Account",
           "accountMissing": "Der Account, über den dieser Beitrag geplant wurde, ist nicht mehr verbunden. Wähle einen anderen Account oder schalte dies aus.",
