@@ -123,6 +123,7 @@ if (!process.env.NOTRA_SOCIAL_VIDEO_LIFECYCLE_TEST_WORKER) {
     usePublishSocialPost: () => publish,
   }));
   mock.module("../src/lib/hooks/use-content", () => ({
+    useIsSavingSocialVideo: () => false,
     useSaveSocialVideo: () => save,
   }));
   let startUpload!: () => void;

@@ -16,6 +16,14 @@ export interface PostScheduleResponse {
   schedule: PostScheduleView | null;
 }
 
+export interface ScheduleVideoSectionProps {
+  organizationId: string;
+  contentId: string;
+  contentType: string;
+  destinations: ScheduleDestinationOptions;
+  disabled?: boolean;
+}
+
 export interface ScheduleContentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;

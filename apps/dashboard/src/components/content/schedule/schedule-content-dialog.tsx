@@ -17,6 +17,7 @@ import { ScheduleWhereSection } from "@/components/content/schedule/schedule-des
 import { ScheduleDestinationStatusList } from "@/components/content/schedule/schedule-destination-status-list";
 import { ScheduleDialogFooter } from "@/components/content/schedule/schedule-dialog-footer";
 import { ScheduleSlotField } from "@/components/content/schedule/schedule-slot-field";
+import { ScheduleVideoSection } from "@/components/content/schedule/schedule-video-section";
 import {
   SCHEDULE_DIALOG_MODES,
   SCHEDULE_SLOT_DATE_FORMAT,
@@ -28,11 +29,13 @@ import {
 } from "@/lib/hooks/use-content-calendar";
 import { useLocalDateFormat } from "@/lib/hooks/use-local-date-format";
 import { useScheduleDestinations } from "@/lib/hooks/use-schedule-destinations";
+import { useSocialVideoPending } from "@/lib/hooks/use-social-video-pending";
 import type {
   ScheduleContentDialogProps,
   ScheduleFormState,
 } from "@/types/content/schedule";
 import {
+  canSubmitSchedule,
   combineDateAndTime,
   getScheduleDialogMode,
   initialScheduleFormState,
@@ -67,6 +70,9 @@ function ScheduleContentForm({
     at: Date.now(),
     expectedScheduledIds: summarizePostSchedule(schedule).scheduledIds,
   }));
+  const videoPending = useSocialVideoPending(organizationId, contentId);
+  // A schedule and a publish both send the saved post and its saved video.
+  const sendBlocked = hasUnsavedChanges || videoPending;
   const timeZone = getLocalTimezone();
 
   const scheduleMutation = useSchedulePost(organizationId);
@@ -91,14 +97,14 @@ function ScheduleContentForm({
     scheduleMutation.isPending ||
     cancelMutation.isPending ||
     publishNowMutation.isPending;
-  // A schedule sends the saved post, so unsaved edits block changing it.
-  const canSubmit =
-    config.editable &&
-    Boolean(scheduledAt) &&
-    !inPast &&
-    !destinations.blocked &&
-    !isBusy &&
-    !hasUnsavedChanges;
+  const canSubmit = canSubmitSchedule({
+    editable: config.editable,
+    scheduledAt,
+    inPast,
+    destinationsBlocked: destinations.blocked,
+    busy: isBusy,
+    sendBlocked,
+  });
 
   const update = (patch: Partial<ScheduleFormState>) =>
     setForm((current) => ({ ...current, ...patch }));
@@ -167,6 +173,14 @@ function ScheduleContentForm({
               organizationSlug={organizationSlug}
             />
 
+            <ScheduleVideoSection
+              contentId={contentId}
+              contentType={contentType}
+              destinations={destinations}
+              disabled={isBusy}
+              organizationId={organizationId}
+            />
+
             {hasUnsavedChanges ? (
               <p className="text-muted-foreground text-xs" role="status">
                 {t("saveFirst")}
@@ -177,7 +191,7 @@ function ScheduleContentForm({
       </div>
 
       <ScheduleDialogFooter
-        canPublishNow={!hasUnsavedChanges}
+        canPublishNow={!sendBlocked}
         canSubmit={canSubmit}
         isBusy={isBusy}
         mode={mode}

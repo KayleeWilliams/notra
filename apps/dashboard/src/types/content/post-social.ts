@@ -32,6 +32,8 @@ export interface SocialVideoAttachmentProps {
   value: SocialVideoAttachment | null;
   onChange: (video: SocialVideoAttachment | null) => void;
   disabled?: boolean;
+  /** The post the video belongs to, so other dialogs see its upload. */
+  contentId?: string;
   onUploadingChange?: (uploading: boolean) => void;
 }
 

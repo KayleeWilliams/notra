@@ -32,6 +32,7 @@ import {
   usePublishScheduleNow,
 } from "@/lib/hooks/use-content-calendar";
 import { useLocalDateFormat } from "@/lib/hooks/use-local-date-format";
+import { useSocialVideoPending } from "@/lib/hooks/use-social-video-pending";
 import { cn } from "@/lib/utils";
 import type {
   ContentPublishButtonProps,
@@ -174,9 +175,11 @@ export function ContentPublishButton({
 }: ContentPublishButtonProps) {
   const t = useTranslations("content.calendar.schedule");
   const [open, setOpen] = useState(false);
+  const videoPending = useSocialVideoPending(organizationId, contentId);
   const { data } = usePostSchedule(organizationId, contentId);
   const schedule = data?.schedule ?? null;
   const { active, failed } = summarizePostSchedule(schedule);
+  const blocked = hasUnsavedChanges || videoPending;
 
   let controls = publishButton;
   // A schedule still going out, or one with failures to resolve.
@@ -184,7 +187,7 @@ export function ContentPublishButton({
     const statusControls = (
       <ScheduleStatusControls
         contentId={contentId}
-        hasUnsavedChanges={hasUnsavedChanges}
+        hasUnsavedChanges={blocked}
         onOpen={() => setOpen(true)}
         organizationId={organizationId}
         schedule={schedule}
@@ -207,7 +210,7 @@ export function ContentPublishButton({
           <DropdownMenuContent align="end" className="w-56">
             {/* Unsaved edits would not be part of what goes out. */}
             <GatedMenuItem
-              blocked={hasUnsavedChanges}
+              blocked={blocked}
               hint={t("saveFirstHint")}
               icon={Calendar03Icon}
               label={t("trigger")}

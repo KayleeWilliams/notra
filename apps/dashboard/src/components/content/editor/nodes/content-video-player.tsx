@@ -1,5 +1,6 @@
 "use client";
 
+import { Slider as SliderPrimitive } from "@base-ui/react/slider";
 import {
   FullScreenIcon,
   MinimizeScreenIcon,
@@ -81,9 +82,8 @@ export function ContentVideoPlayer({
     frame.requestFullscreen().catch(() => undefined);
   }
 
-  function seek(value: string) {
+  function seek(next: number) {
     const video = videoRef.current;
-    const next = Number(value);
     if (!video || !Number.isFinite(next)) {
       return;
     }
@@ -166,22 +166,29 @@ export function ContentVideoPlayer({
           <span className="px-1">/</span>
           {formatClock(duration)}
         </span>
-        <input
-          aria-label={t("seek")}
-          aria-valuemax={Number.isFinite(duration) ? duration : 0}
-          aria-valuemin={0}
-          aria-valuenow={current}
-          aria-valuetext={`${formatClock(current)} / ${formatClock(duration)}`}
-          className="accent-foreground h-6 min-w-0 flex-1 cursor-pointer disabled:cursor-not-allowed"
+        <SliderPrimitive.Root
+          className="min-w-0 flex-1"
           disabled={!Number.isFinite(duration) || duration <= 0}
-          max={Number.isFinite(duration) ? duration : 0}
+          max={Number.isFinite(duration) && duration > 0 ? duration : 1}
           min={0}
-          onChange={(event) => seek(event.target.value)}
-          onMouseDown={(event) => event.stopPropagation()}
-          step="0.1"
-          type="range"
+          onValueChange={(next) => seek(next)}
+          step={0.1}
+          thumbAlignment="edge"
           value={Number.isFinite(current) ? current : 0}
-        />
+        >
+          <SliderPrimitive.Control className="group/seek flex h-6 w-full cursor-pointer touch-none items-center select-none data-[disabled]:cursor-not-allowed">
+            <SliderPrimitive.Track className="bg-muted relative h-1 w-full rounded-full">
+              <SliderPrimitive.Indicator className="bg-foreground rounded-full" />
+              <SliderPrimitive.Thumb
+                aria-label={t("seek")}
+                className="bg-foreground focus-visible:ring-ring/50 size-3 rounded-full opacity-0 transition-opacity outline-none group-hover/seek:opacity-100 focus-visible:opacity-100 focus-visible:ring-4 data-[dragging]:opacity-100"
+                getAriaValueText={() =>
+                  `${formatClock(current)} / ${formatClock(duration)}`
+                }
+              />
+            </SliderPrimitive.Track>
+          </SliderPrimitive.Control>
+        </SliderPrimitive.Root>
         <Button
           aria-label={muted ? t("unmute") : t("mute")}
           aria-pressed={muted}

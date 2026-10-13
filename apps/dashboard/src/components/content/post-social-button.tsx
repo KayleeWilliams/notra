@@ -303,6 +303,7 @@ export function PostSocialButton({
         </div>
         {!published && (
           <SocialVideoAttachment
+            contentId={contentId}
             disabled={isLocked || videoPending}
             onChange={handleVideoChange}
             onUploadingChange={handleUploadingChange}

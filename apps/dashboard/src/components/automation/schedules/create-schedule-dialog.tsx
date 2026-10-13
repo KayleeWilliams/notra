@@ -66,6 +66,7 @@ import { FormatCard } from "@/components/content/create/format-card";
 import { AddRepositoryButton } from "@/components/integrations/add-repository-button";
 import { AddRepositoryDialog } from "@/components/integrations/add-repository-dialog";
 import { LegacyAddIntegrationDialog as AddIntegrationDialog } from "@/components/integrations/legacy/add-integration-dialog";
+import { TimeField } from "@/components/time-field";
 import { OUTPUT_TYPE_LABEL_KEYS } from "@/constants/automation-output-types";
 import { FORMAT_ORDER } from "@/constants/content-formats";
 import { LOOKBACK_WINDOW_COMMON_LABEL_KEYS } from "@/constants/schedule";
@@ -495,17 +496,16 @@ export function CreateScheduleDialog({
                     >
                       {t("dialog.time")}
                     </Label>
-                    <Input
-                      className="bg-background w-full appearance-none sm:w-40 [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+                    <TimeField
+                      className="sm:w-40"
                       id="schedule-time"
-                      onChange={(event) => {
-                        const parsed = parseTimeValue(event.target.value);
+                      onChange={(value) => {
+                        const parsed = parseTimeValue(value);
                         if (parsed) {
                           form.setFieldValue("schedule.hour", parsed.hour);
                           form.setFieldValue("schedule.minute", parsed.minute);
                         }
                       }}
-                      type="time"
                       value={formatTimeValue(hour, minute)}
                     />
                   </div>

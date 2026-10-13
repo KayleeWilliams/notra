@@ -392,3 +392,27 @@ export function groupCalendarItemsByDay(items: CalendarItem[]) {
   }
   return byDay;
 }
+
+/** Whether the schedule dialog can send: an editable slot, in the future, with nothing pending. */
+export function canSubmitSchedule({
+  editable,
+  scheduledAt,
+  inPast,
+  destinationsBlocked,
+  busy,
+  sendBlocked,
+}: {
+  editable: boolean;
+  scheduledAt: Date | undefined;
+  inPast: boolean;
+  destinationsBlocked: boolean;
+  busy: boolean;
+  /** Unsaved edits, or a video still uploading or saving. */
+  sendBlocked: boolean;
+}) {
+  return (
+    editable &&
+    Boolean(scheduledAt) &&
+    !(inPast || destinationsBlocked || busy || sendBlocked)
+  );
+}
