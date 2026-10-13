@@ -20,6 +20,7 @@ For an existing `hosted-site/blog.json`, choose root directory `hosted-site`, no
 
 ```text
 blog.json              # optional: settings, see the blog.json reference
+.notraignore           # optional: exclude files from production and previews
 blog/                  # blog posts, one file per post
   hello-world.mdx
   2026/launch.mdx
@@ -38,7 +39,7 @@ style.css              # optional: any .css file loads on every page
 script.js              # optional: custom JavaScript on every page
 ```
 
-Notra loads every `.css` file in the site root and its subfolders on every page. It also loads every `.js` file outside `blog/`, `changelog/`, `snippets/`, `public/`, `styles/` and `slots/` as a [custom script](/sites/custom-scripts). Notra ignores other files, such as a `README.md` or a `package.json`. If the repository also holds your app's code, put the site in its own folder and turn on **Site is in a subdirectory**.
+Notra loads every `.css` file in the site root and its subfolders on every page. It also loads every `.js` file outside `blog/`, `changelog/`, `snippets/`, `public/`, `styles/` and `slots/` as a [custom script](/sites/custom-scripts). Files excluded by [`.notraignore`](#exclude-files-with-notraignore) aren't loaded. Notra ignores other files, such as a `README.md` or a `package.json`. If the repository also holds your app's code, put the site in its own folder and turn on **Site is in a subdirectory**.
 
 ## What Notra builds
 
@@ -95,7 +96,7 @@ Without a `blog.json` at the selected site root on the production branch, the ho
 
 The source root chooses which files to build; the section path chooses where they appear on the deployed address. With root directory `hosted-site`, `hosted-site/blog/hello-world.mdx` becomes `/blog/hello-world` when Blog is `/blog`, or `/hello-world` when Blog is `/`. The folder name `hosted-site` isn't part of the URL.
 
-Every `.md` or `.mdx` file in an enabled `blog/` or `changelog/` section becomes a page, and the path of the file becomes the URL below the section path. With the default `/blog` and `/changelog` paths:
+Every `.md` or `.mdx` file in an enabled `blog/` or `changelog/` section that isn't excluded by [`.notraignore`](#exclude-files-with-notraignore) becomes a page, and the path of the file becomes the URL below the section path. With the default `/blog` and `/changelog` paths:
 
 | File | URL |
 | --- | --- |
