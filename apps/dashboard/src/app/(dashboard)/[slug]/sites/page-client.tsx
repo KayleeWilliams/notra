@@ -96,12 +96,8 @@ function ProjectSitesList({
     return (
       <Navigate
         replace
-        to={siteHref(
-          organizationSlug,
-          onlySite.id,
-          "overview",
-          onlySite.projectId
-        )}
+        search={{ project: onlySite.projectId }}
+        to={siteHref(organizationSlug, onlySite.id)}
       />
     );
   }

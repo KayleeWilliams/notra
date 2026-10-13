@@ -2,6 +2,7 @@
 
 import {
   ArrowRight01Icon,
+  Clock01Icon,
   FileEditIcon,
   GitBranchIcon,
   GithubIcon,
@@ -18,7 +19,11 @@ import { SiteOverviewDomains } from "@/components/sites/site-overview-domains";
 import { SiteOverviewExternalLink } from "@/components/sites/site-overview-external-link";
 import { SiteOverviewPreview } from "@/components/sites/site-overview-preview";
 import { SiteOverviewStatus } from "@/components/sites/site-overview-status";
-import type { SiteOverviewInfoRowProps } from "@/types/components/sites";
+import { SiteRelativeTime } from "@/components/sites/site-relative-time";
+import type {
+  SiteOverviewInfoRowProps,
+  SiteUpdatedLineProps,
+} from "@/types/components/sites";
 import {
   isDeploymentInProgress,
   pendingProductionDeployment,
@@ -47,6 +52,23 @@ function InfoRow({ icon, label, children }: SiteOverviewInfoRowProps) {
   );
 }
 
+function UpdatedLine({ deployment }: SiteUpdatedLineProps) {
+  const t = useTranslations("sites.overviewPage");
+  const tTriggers = useTranslations("sites.triggers");
+  if (!deployment) {
+    return t("notLiveYet");
+  }
+  const time = () => (
+    <SiteRelativeTime
+      date={deployment.liveSince ?? deployment.createdAt}
+      inline
+    />
+  );
+  return deployment.commitAuthor
+    ? t.rich("updatedBy", { author: deployment.commitAuthor, time })
+    : t.rich("updatedVia", { trigger: tTriggers(deployment.trigger), time });
+}
+
 export function SiteOverviewHero() {
   const t = useTranslations("sites.overviewPage");
   const { organizationSlug, siteId, detail, liveDeployment } = useSite();
@@ -71,7 +93,7 @@ export function SiteOverviewHero() {
         />
       }
       eyebrow={t("production")}
-      variant="table"
+      variant="table-compact"
     >
       <div className="grid gap-5 md:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] md:gap-6">
         <SiteOverviewPreview
@@ -108,6 +130,17 @@ export function SiteOverviewHero() {
               {site.productionBranch}
             </span>
           </InfoRow>
+          <li className="text-muted-foreground flex min-w-0 items-center gap-2.5 text-sm">
+            <HugeiconsIcon
+              aria-hidden="true"
+              className="size-4 shrink-0"
+              icon={Clock01Icon}
+              strokeWidth={1.5}
+            />
+            <span className="min-w-0 text-pretty wrap-anywhere">
+              <UpdatedLine deployment={liveDeployment} />
+            </span>
+          </li>
           {detail.draftCount > 0 ? (
             <InfoRow icon={FileEditIcon} label={t("drafts")}>
               <Link
