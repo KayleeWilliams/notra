@@ -80,6 +80,7 @@ function setup(previewPassword: SitePreviewPassword | null = password) {
     slug: "acme",
     status: "active",
     production: null,
+    productionRollback: false,
     trafficToken: null,
     previews: {
       "pr-7": {

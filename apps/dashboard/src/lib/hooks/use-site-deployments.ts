@@ -2,7 +2,10 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTranslations } from "use-intl";
 
-import { SITE_ACTIVE_POLL_INTERVAL_MS } from "@/constants/sites";
+import {
+  SITE_ACTIVE_POLL_INTERVAL_MS,
+  SITE_IDLE_POLL_INTERVAL_MS,
+} from "@/constants/sites";
 import { useInvalidateSites } from "@/lib/hooks/use-sites";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type {
@@ -25,7 +28,7 @@ export function useSiteDeployment({
       refetchInterval: (query: SitePollingQuery<SiteDeploymentDetail>) => {
         const status = query.state.data?.deployment.status;
         return status && !isDeploymentInProgress(status)
-          ? false
+          ? SITE_IDLE_POLL_INTERVAL_MS
           : SITE_ACTIVE_POLL_INTERVAL_MS;
       },
       refetchIntervalInBackground: false,
@@ -68,6 +71,22 @@ export function useRedeployDeployment({ organizationId, siteId }: SiteScope) {
     },
     onError: (error) => {
       toast.error(toErrorMessage(error, t("redeployFailed")));
+    },
+  });
+}
+
+export function usePromoteDeployment({ organizationId, siteId }: SiteScope) {
+  const t = useTranslations("sites.rollback");
+  const invalidateSites = useInvalidateSites();
+  return useMutation({
+    mutationFn: () =>
+      dashboardOrpc.sites.deployments.promote.call({ organizationId, siteId }),
+    onSuccess: async () => {
+      toast.success(t("promoted"));
+      await invalidateSites();
+    },
+    onError: (error) => {
+      toast.error(toErrorMessage(error, t("promoteFailed")));
     },
   });
 }

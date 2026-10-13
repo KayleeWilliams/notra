@@ -22,17 +22,24 @@ import { useTranslations } from "use-intl";
 
 import { Button } from "@/components/button";
 import { useRouter } from "@/lib/navigation";
-import type { SiteDeploymentMenuProps } from "@/types/components/sites";
+import type {
+  SiteDeploymentMenuProps,
+  SiteDeploymentProductionActionsProps,
+} from "@/types/components/sites";
 import { copyTextToClipboard } from "@/utils/copy-to-clipboard";
 import { isDeploymentInProgress, shortSha } from "@/utils/site-deployments";
 
 export function SiteDeploymentMenu({
   deployment,
   canRollback,
+  canPromote,
+  canUndoRollback,
   detailHref,
   redeployPending,
   onRedeploy,
   onRollback,
+  promotePending,
+  onPromote,
   preview,
   onOpenPreview,
   onCopyShareLink,
@@ -110,16 +117,14 @@ export function SiteDeploymentMenu({
             {t("redeploy")}
           </DropdownMenuItem>
         ) : null}
-        {canRollback ? (
-          <DropdownMenuItem onClick={onRollback}>
-            <HugeiconsIcon
-              icon={ArrowTurnBackwardIcon}
-              size={14}
-              strokeWidth={1.75}
-            />
-            {t("rollback")}
-          </DropdownMenuItem>
-        ) : null}
+        <ProductionActions
+          canRollback={canRollback}
+          canPromote={canPromote}
+          canUndoRollback={canUndoRollback}
+          onRollback={onRollback}
+          onPromote={onPromote}
+          promotePending={promotePending}
+        />
         {preview?.served && onDeletePreview ? (
           <>
             <DropdownMenuSeparator />
@@ -131,5 +136,40 @@ export function SiteDeploymentMenu({
         ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+function ProductionActions({
+  canRollback,
+  canPromote,
+  canUndoRollback,
+  onRollback,
+  onPromote,
+  promotePending,
+}: SiteDeploymentProductionActionsProps) {
+  const t = useTranslations("sites.deployments.actions");
+  return (
+    <>
+      {canRollback ? (
+        <DropdownMenuItem onClick={onRollback}>
+          <HugeiconsIcon
+            icon={ArrowTurnBackwardIcon}
+            size={14}
+            strokeWidth={1.75}
+          />
+          {t("rollback")}
+        </DropdownMenuItem>
+      ) : null}
+      {canPromote || canUndoRollback ? (
+        <DropdownMenuItem disabled={promotePending} onClick={onPromote}>
+          <HugeiconsIcon
+            icon={ArrowTurnBackwardIcon}
+            size={14}
+            strokeWidth={1.75}
+          />
+          {t(canUndoRollback ? "undoRollback" : "promote")}
+        </DropdownMenuItem>
+      ) : null}
+    </>
   );
 }

@@ -74,8 +74,8 @@ if (!databaseUrl) {
         catch: (error) => error,
       }),
   }));
-  const { activateDeployment, restoreProductionDeployment } =
-    await import("../src/activation");
+  const { activateDeployment } = await import("../src/activation");
+  const { rollbackToDeployment } = await import("../src/deploy");
   const { enqueueSiteDeployment, getSite } = await import("../src/deployments");
   const { updateSiteSettings } = await import("../src/sites");
   const { runSiteJob } = await import("../src/runner");
@@ -124,6 +124,10 @@ if (!databaseUrl) {
       commitSha: "a".repeat(40),
     });
     objects.set(SITE_R2_KEYS.manifest(siteId, old.id), "{}");
+    await db
+      .update(siteDeployments)
+      .set({ status: "ready", finishedAt: new Date() })
+      .where(eq(siteDeployments.id, old.id));
     expect(await activateDeployment(site, old)).toBe("live");
     expect((await getSite(siteId))?.activeProductionDeploymentId).toBe(old.id);
     const desired = await updateSiteSettings(
@@ -153,11 +157,19 @@ if (!databaseUrl) {
       commitSha: "c".repeat(40),
     });
     objects.set(SITE_R2_KEYS.manifest(siteId, next.id), "{}");
+    await db
+      .update(siteDeployments)
+      .set({ status: "ready", finishedAt: new Date() })
+      .where(eq(siteDeployments.id, next.id));
     expect(await activateDeployment(desired.site, next)).toBe("live");
     expect((await getSite(siteId))?.activeProductionDeploymentId).toBe(next.id);
     expect(await activateDeployment(site, old)).toBe("not_live");
     expect((await getSite(siteId))?.activeProductionDeploymentId).toBe(next.id);
-    expect(await restoreProductionDeployment(site, old)).toBe("live");
+    await db
+      .update(sites)
+      .set({ publicOrigin: site.publicOrigin, mounts: site.mounts })
+      .where(eq(sites.id, siteId));
+    await rollbackToDeployment(site, old.id);
     expect((await getSite(siteId))?.activeProductionDeploymentId).toBe(old.id);
     expect(invalidate).toHaveBeenCalledWith(siteId, organizationId);
     expect(invalidate.mock.calls.length).toBe(4);

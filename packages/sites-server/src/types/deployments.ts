@@ -39,10 +39,11 @@ export interface EnqueuedDeployment {
 export type DeploymentOutcome =
   | { kind: "live" }
   | { kind: "not_live" }
+  | { kind: "held" }
   | { kind: "skipped"; reason: string }
   | { kind: "failed"; summary: string; diagnostics: SiteDiagnostic[] };
 
-export type ActivationOutcome = "live" | "not_live";
+export type ActivationOutcome = "live" | "not_live" | "held";
 
 export interface LiveDeployments {
   previews: SiteServingState["previews"];

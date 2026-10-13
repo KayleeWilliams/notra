@@ -19,6 +19,7 @@ export function createInitialServingState(
     slug: params.slug,
     status: "active",
     production: null,
+    productionRollback: false,
     previews: {},
     removedPreviews: {},
     previewPassword: null,
@@ -31,25 +32,42 @@ export function createInitialServingState(
 export function activateProductionInState(
   state: SiteServingState,
   pointer: ProductionPointerInput,
-  now: Date
+  now: Date,
+  productionRollback?: boolean
 ): ProductionActivationResult {
   const current = state.production;
   if (
     current?.deploymentId === pointer.deploymentId &&
-    current.generation === pointer.generation
+    (productionRollback === undefined ||
+      productionRollback === state.productionRollback)
   ) {
     return { outcome: "already_active", state };
   }
+  if (productionRollback === undefined && state.productionRollback) {
+    return { outcome: "held", state };
+  }
   if (current && current.generation >= pointer.generation) {
+    return { outcome: "superseded", activeGeneration: current.generation };
+  }
+  if (
+    productionRollback === undefined &&
+    current &&
+    (current.buildGeneration ?? current.generation) >=
+      (pointer.buildGeneration ?? pointer.generation)
+  ) {
     return { outcome: "superseded", activeGeneration: current.generation };
   }
   return {
     outcome: "activated",
     state: {
       ...state,
+      productionRollback: productionRollback ?? false,
       production: {
         deploymentId: pointer.deploymentId,
         generation: pointer.generation,
+        ...(pointer.buildGeneration === undefined
+          ? {}
+          : { buildGeneration: pointer.buildGeneration }),
         activatedAt: now.toISOString(),
       },
       updatedAt: now.toISOString(),

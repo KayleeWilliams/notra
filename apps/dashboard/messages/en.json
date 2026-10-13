@@ -7467,6 +7467,7 @@
       "title": "Deployments",
       "empty": "No deployments yet",
       "current": "Currently live",
+      "live": "Live",
       "noCommitMessage": "No commit message",
       "redeployQueued": "Redeploy queued",
       "redeployFailed": "Couldn't redeploy",
@@ -7480,16 +7481,22 @@
         "view": "View details",
         "visit": "Visit",
         "redeploy": "Redeploy",
-        "rollback": "Restore to production"
+        "rollback": "Rollback",
+        "promote": "Promote",
+        "undoRollback": "Undo rollback"
       }
     },
     "rollback": {
-      "title": "Restore this deployment?",
-      "description": "It goes live right away. Notra serves the files from this deployment as they are, without a rebuild.",
+      "title": "Roll back to this deployment?",
+      "description": "This deployment goes live immediately without a rebuild. Automatic publishing pauses: new builds continue, but won't go live until you promote the latest successful build or undo the rollback.",
+      "pausedTitle": "Automatic publishing paused",
+      "pausedDescription": "New builds continue, but aren't live. Undo rollback to publish the latest successful build and resume automatic publishing.",
+      "promoted": "Latest successful deployment is live. Automatic publishing resumed.",
+      "promoteFailed": "Couldn't promote the latest successful deployment",
       "noCommitMessage": "No commit message",
-      "confirm": "Restore",
-      "done": "Deployment restored",
-      "failed": "Couldn't restore the deployment"
+      "confirm": "Roll back",
+      "done": "Rolled back. Automatic publishing paused.",
+      "failed": "Couldn't roll back the deployment"
     },
     "deployment": {
       "title": "Deployment {sha}",

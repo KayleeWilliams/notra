@@ -123,6 +123,9 @@ export async function compareSmartDeployment(
       return comparison;
     }
     const serving = await readServingState(site.id);
+    if (deployment.kind === "production" && serving?.state.productionRollback) {
+      return comparison;
+    }
     const baseline =
       serving?.state.status === "active"
         ? servingBaseline(serving.state, deployment)
@@ -246,6 +249,7 @@ export async function skipUnchangedDeployment(
         const live = servingBaseline(state, current);
         if (
           state.status !== "active" ||
+          (current.kind === "production" && state.productionRollback) ||
           !live ||
           live.deploymentId !== baseline.deploymentId ||
           live.generation !== baseline.generation ||
@@ -264,6 +268,7 @@ export async function skipUnchangedDeployment(
               production: {
                 ...state.production,
                 generation: current.generation,
+                buildGeneration: current.generation,
               },
               updatedAt: now,
             },

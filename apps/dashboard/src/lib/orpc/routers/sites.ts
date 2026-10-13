@@ -43,15 +43,18 @@ import {
   SITE_CONFIG_FILENAME,
   SITE_R2_KEYS,
 } from "@notra/sites-core/constants/sites";
+import type { SiteServingState } from "@notra/sites-core/types/deployment";
 import { hashBuildTarget } from "@notra/sites-core/utils/build-target";
 import { getBuildTelemetry } from "@notra/sites-server/build-telemetry";
 import {
   deployBranchHead,
+  promoteLatestDeployment,
   redeploy,
   rollbackToDeployment,
 } from "@notra/sites-server/deploy";
 import {
   getDeployment,
+  getProductionDeploymentHistory,
   getSite,
   listSiteDeployments,
 } from "@notra/sites-server/deployments";
@@ -151,11 +154,15 @@ import {
 import type { SiteScope } from "@/types/sites";
 import type {
   CreateSitesResult,
-  SiteAccess,
+  SiteDeploymentAccess,
   SiteAccessOptions,
   SiteRequestContext,
 } from "@/types/sites-server";
 import { toGitHubOperationOrpcError } from "@/utils/github-operation-error";
+import {
+  canUndoSiteRollback,
+  siteDeploymentActions,
+} from "@/utils/site-deployment-actions";
 
 const sitesAccessProcedure = authorizedProcedure.use(
   async ({ context, next }, input) => {
@@ -189,7 +196,7 @@ async function requireSite(
   context: SiteRequestContext,
   input: SiteScope,
   options: SiteAccessOptions = {}
-): Promise<SiteAccess> {
+): Promise<SiteDeploymentAccess> {
   const access = await assertOrganizationAccess({
     headers: context.headers,
     organizationId: input.organizationId,
@@ -201,7 +208,11 @@ async function requireSite(
   if (!site || site.organizationId !== input.organizationId) {
     throw notFound("Site not found");
   }
-  return { site, userId: access.user.id };
+  return {
+    site,
+    userId: access.user.id,
+    canManageDeployments: SITE_ADMIN_ROLES.has(access.membership.role),
+  };
 }
 
 async function servingState(siteId: string) {
@@ -211,19 +222,36 @@ async function servingState(siteId: string) {
 async function serializeDeploymentList(
   site: Site,
   deployments: Awaited<ReturnType<typeof listSiteDeployments>>,
-  live: ReturnType<typeof liveDeploymentsFromState>
+  state: SiteServingState | null,
+  canManageDeployments: boolean
 ) {
-  const currentHash = await hashBuildTarget(
-    buildTargetForDeployment({ site, kind: "production", previewKey: null })
-  );
-  return deployments.map((deployment) => ({
-    ...serializeDeployment(deployment, live),
-    canRollback:
-      deployment.kind === "production" &&
-      deployment.status === "ready" &&
-      !live.has(deployment.id) &&
-      deployment.configHash === currentHash,
-  }));
+  const [currentHash, history] = await Promise.all([
+    hashBuildTarget(
+      buildTargetForDeployment({ site, kind: "production", previewKey: null })
+    ),
+    getProductionDeploymentHistory(site.id),
+  ]);
+  const actionsContext = {
+    history,
+    currentHash,
+    liveDeploymentId: state?.production?.deploymentId ?? null,
+    rollbackActive: state?.productionRollback ?? false,
+    canManageDeployments,
+    siteActive: site.status === "active",
+  };
+  const live = liveDeploymentsFromState(state);
+  const listedIds = new Set(deployments.map((deployment) => deployment.id));
+  const retainedDeployments = [
+    ...deployments,
+    ...history.filter((deployment) => !listedIds.has(deployment.id)),
+  ];
+  return {
+    canUndoRollback: canUndoSiteRollback(actionsContext),
+    deployments: retainedDeployments.map((deployment) => ({
+      ...serializeDeployment(deployment, live),
+      ...siteDeploymentActions(deployment, actionsContext),
+    })),
+  };
 }
 
 export const sitesRouter = {
@@ -402,7 +430,7 @@ export const sitesRouter = {
   get: sitesProcedure
     .input(siteScopeInputSchema)
     .handler(async ({ context, input }) => {
-      const { site } = await requireSite(context, input);
+      const { site, canManageDeployments } = await requireSite(context, input);
       const [domains, state, drafts] = await Promise.all([
         db.select().from(siteDomains).where(eq(siteDomains.siteId, site.id)),
         servingState(site.id),
@@ -418,7 +446,12 @@ export const sitesRouter = {
         site: serializeSite(site, state),
         cnameTarget: siteCnameTarget(),
         domains: domains.map((domain) => serializeDomain(site, domain)),
-        deployments: await serializeDeploymentList(site, deployments, live),
+        ...(await serializeDeploymentList(
+          site,
+          deployments,
+          state,
+          canManageDeployments
+        )),
         previews: serializePreviews(site, state, deployments),
         draftCount: drafts.length,
       };
@@ -567,19 +600,32 @@ export const sitesRouter = {
     list: sitesProcedure
       .input(listSiteDeploymentsInputSchema)
       .handler(async ({ context, input }) => {
-        const { site } = await requireSite(context, input);
+        const { site, canManageDeployments } = await requireSite(
+          context,
+          input
+        );
         const state = await servingState(site.id);
         const live = liveDeploymentsFromState(state);
         const deployments = await listSiteDeployments(site.id, input.limit, [
           ...live.keys(),
         ]);
-        return await serializeDeploymentList(site, deployments, live);
+        return (
+          await serializeDeploymentList(
+            site,
+            deployments,
+            state,
+            canManageDeployments
+          )
+        ).deployments;
       }),
 
     get: sitesProcedure
       .input(siteDeploymentInputSchema)
       .handler(async ({ context, input }) => {
-        const { site } = await requireSite(context, input);
+        const { site, canManageDeployments } = await requireSite(
+          context,
+          input
+        );
         const deployment = await getDeployment(input.deploymentId);
         if (!deployment || deployment.siteId !== site.id) {
           throw notFound("Deployment not found");
@@ -591,11 +637,19 @@ export const sitesRouter = {
           servingState(site.id),
           getBuildTelemetry(deployment.id),
         ]);
+        const {
+          deployments: [serializedDeployment],
+        } = await serializeDeploymentList(
+          site,
+          [deployment],
+          state,
+          canManageDeployments
+        );
+        if (!serializedDeployment) {
+          throw notFound("Deployment not found");
+        }
         return {
-          deployment: serializeDeployment(
-            deployment,
-            liveDeploymentsFromState(state)
-          ),
+          deployment: serializedDeployment,
           log:
             deployment.status === "building" ||
             deployment.status === "uploading"
@@ -622,6 +676,15 @@ export const sitesRouter = {
         assertNotDemo();
         const { site, userId } = await requireSite(context, input);
         dispatchLater([await redeploy(site, input.deploymentId, userId)]);
+        return { ok: true };
+      }),
+
+    promote: sitesProcedure
+      .input(siteScopeInputSchema)
+      .handler(async ({ context, input }) => {
+        assertNotDemo();
+        const { site } = await requireSite(context, input, { admin: true });
+        await promoteLatestDeployment(site);
         return { ok: true };
       }),
 

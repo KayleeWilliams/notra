@@ -147,6 +147,13 @@ if (process.env.NOTRA_SITES_GET_READ_ONLY_TEST_WORKER !== "1") {
           return [];
         }
         if (table === siteDeployments) {
+          if (params[1] === "production") {
+            return deployments.filter(
+              (deployment) =>
+                deployment.kind === "production" &&
+                deployment.status === "ready"
+            );
+          }
           if (params.length > 1) {
             references.push(params);
             return deployments.filter((deployment) =>
@@ -277,7 +284,7 @@ if (process.env.NOTRA_SITES_GET_READ_ONLY_TEST_WORKER !== "1") {
         { organizationId: site.organizationId, siteId: site.id },
         { context }
       );
-      expect(limits).toEqual([100]);
+      expect(limits).toEqual([100, 10]);
       expect(references).toEqual([[site.id, "production-old", "preview-old"]]);
       expect(result.deployments).toHaveLength(102);
       expect(

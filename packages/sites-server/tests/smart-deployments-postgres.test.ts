@@ -774,6 +774,7 @@ if (!databaseUrl) {
       }
       const state = JSON.parse(object.text);
       state.production.generation = candidate.generation + 1;
+      state.production.buildGeneration = candidate.generation + 1;
       objects.set(key, {
         text: JSON.stringify(state),
         etag: String(++version),

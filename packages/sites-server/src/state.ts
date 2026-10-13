@@ -208,12 +208,20 @@ function writeIfActivated<
 export async function activateProductionDeployment(
   site: ServingSiteRef,
   pointer: ProductionPointerInput,
-  executor: SiteStorageTransaction
+  executor: SiteStorageTransaction,
+  productionRollback?: boolean
 ) {
   const outcome = await mutateServingState(
     site,
     (state) =>
-      writeIfActivated(activateProductionInState(state, pointer, new Date())),
+      writeIfActivated(
+        activateProductionInState(
+          state,
+          pointer,
+          new Date(),
+          productionRollback
+        )
+      ),
     executor
   );
   if (outcome.outcome === "activated" || outcome.outcome === "already_active") {

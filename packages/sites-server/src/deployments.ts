@@ -19,6 +19,7 @@ import {
   sql,
 } from "drizzle-orm";
 
+import { ROLLBACK_HISTORY } from "./constants/deployments";
 import { SiteNotBuildableError } from "./errors";
 import type {
   DeploymentExecutor,
@@ -34,6 +35,24 @@ import type { Site } from "./types/sites";
 import { prefixedId } from "./utils/ids";
 import { lockSiteOrganization } from "./utils/site-organization-lock";
 import { buildTargetForDeployment } from "./utils/urls";
+
+export async function getProductionDeploymentHistory(
+  siteId: string,
+  executor: Pick<SiteStorageTransaction, "select"> = db
+): Promise<SiteDeployment[]> {
+  return await executor
+    .select()
+    .from(siteDeployments)
+    .where(
+      and(
+        eq(siteDeployments.siteId, siteId),
+        eq(siteDeployments.kind, "production"),
+        eq(siteDeployments.status, "ready")
+      )
+    )
+    .orderBy(desc(siteDeployments.generation))
+    .limit(ROLLBACK_HISTORY);
+}
 
 export async function allocateGeneration(
   executor: DeploymentExecutor,

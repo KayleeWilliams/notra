@@ -30,6 +30,7 @@ import { SkeletonCrossfade } from "@/components/skeleton-crossfade";
 import { SITE_DEPLOYMENT_LOG_SURFACE_CLASS } from "@/constants/sites";
 import {
   useRedeployDeployment,
+  usePromoteDeployment,
   useSiteDeployment,
 } from "@/lib/hooks/use-site-deployments";
 import { useSitePreviewLinks } from "@/lib/hooks/use-site-preview-links";
@@ -112,8 +113,6 @@ function DeploymentDetail({
   const invalidateSites = useInvalidateSites();
   const inProgress = isDeploymentInProgress(deployment.status);
   const live = deployment.live;
-  const listEntry: SiteDeployment | null =
-    detail.deployments.find((entry) => entry.id === deployment.id) ?? null;
   const [rollbackTarget, setRollbackTarget] = useState<SiteDeployment | null>(
     null
   );
@@ -158,10 +157,9 @@ function DeploymentDetail({
         <DeploymentActions
           deployment={deployment}
           live={live}
-          onRollback={() => setRollbackTarget(listEntry)}
+          onRollback={() => setRollbackTarget(deployment)}
           organizationId={organizationId}
           primaryUrl={primaryUrl}
-          rollbackEntry={listEntry}
           siteId={siteId}
         />
       </PageHeading>
@@ -218,12 +216,12 @@ function DeploymentActions({
   deployment,
   live,
   primaryUrl,
-  rollbackEntry,
   onRollback,
 }: SiteDeploymentActionsProps) {
   const t = useTranslations("sites.deployments.actions");
   const tPage = useTranslations("sites.deploymentPage");
   const redeploy = useRedeployDeployment({ organizationId, siteId });
+  const promote = usePromoteDeployment({ organizationId, siteId });
   const { detail, organizationSlug } = useSite();
   const router = useRouter();
   const { openPreview, copyShareLink } = useSitePreviewLinks({
@@ -238,7 +236,7 @@ function DeploymentActions({
   const inProgress = isDeploymentInProgress(deployment.status);
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-2">
-      {rollbackEntry?.canRollback ? (
+      {deployment.canRollback ? (
         <Button onClick={onRollback} variant="outline">
           <HugeiconsIcon
             aria-hidden="true"
@@ -247,6 +245,15 @@ function DeploymentActions({
             strokeWidth={1.5}
           />
           {t("rollback")}
+        </Button>
+      ) : null}
+      {deployment.canPromote || deployment.canUndoRollback ? (
+        <Button
+          loading={promote.isPending}
+          onClick={() => promote.mutate()}
+          variant="outline"
+        >
+          {t(deployment.canUndoRollback ? "undoRollback" : "promote")}
         </Button>
       ) : null}
       {inProgress ? null : (

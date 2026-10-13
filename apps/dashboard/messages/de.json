@@ -7467,6 +7467,7 @@
       "title": "Deployments",
       "empty": "Noch keine Deployments",
       "current": "Aktuell live",
+      "live": "Live",
       "noCommitMessage": "Keine Commit-Nachricht",
       "redeployQueued": "Redeploy eingereiht",
       "redeployFailed": "Redeploy fehlgeschlagen",
@@ -7480,16 +7481,22 @@
         "view": "Details ansehen",
         "visit": "Öffnen",
         "redeploy": "Redeploy",
-        "rollback": "Als Produktion wiederherstellen"
+        "rollback": "Rollback",
+        "promote": "Promoten",
+        "undoRollback": "Rollback rückgängig machen"
       }
     },
     "rollback": {
-      "title": "Dieses Deployment wiederherstellen?",
-      "description": "Es geht sofort live. Notra liefert die Dateien dieses Deployments unverändert aus, ohne neuen Build.",
+      "title": "Auf dieses Deployment zurückrollen?",
+      "description": "Dieses Deployment geht sofort ohne neuen Build live. Automatisches Veröffentlichen wird pausiert: Neue Builds laufen weiter, gehen aber erst live, wenn du den neuesten erfolgreichen Build promotest oder den Rollback rückgängig machst.",
+      "pausedTitle": "Automatisches Veröffentlichen pausiert",
+      "pausedDescription": "Neue Builds laufen weiter, sind aber nicht live. Mache den Rollback rückgängig, um den neuesten erfolgreichen Build zu veröffentlichen und automatisches Veröffentlichen fortzusetzen.",
+      "promoted": "Das neueste erfolgreiche Deployment ist live. Automatisches Veröffentlichen fortgesetzt.",
+      "promoteFailed": "Das neueste erfolgreiche Deployment konnte nicht promotet werden",
       "noCommitMessage": "Keine Commit-Nachricht",
-      "confirm": "Wiederherstellen",
-      "done": "Deployment wiederhergestellt",
-      "failed": "Deployment konnte nicht wiederhergestellt werden"
+      "confirm": "Zurückrollen",
+      "done": "Rollback abgeschlossen. Automatisches Veröffentlichen pausiert.",
+      "failed": "Rollback fehlgeschlagen"
     },
     "deployment": {
       "title": "Deployment {sha}",

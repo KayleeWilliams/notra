@@ -340,10 +340,14 @@ export interface SiteDeploymentMenuProps {
     "id" | "kind" | "live" | "status" | "url" | "commitSha"
   >;
   canRollback: boolean;
+  canPromote: boolean;
+  canUndoRollback: boolean;
   detailHref?: string;
   redeployPending: boolean;
   onRedeploy: () => void;
   onRollback: () => void;
+  promotePending: boolean;
+  onPromote: () => void;
   preview?: SitePreviewRow;
   onOpenPreview?: () => void;
   onCopyShareLink?: () => void;
@@ -363,6 +367,16 @@ export interface SiteDeploymentsTableProps {
   previewRows?: SitePreviewRow[];
 }
 
+export type SiteDeploymentProductionActionsProps = Pick<
+  SiteDeploymentMenuProps,
+  | "canRollback"
+  | "canPromote"
+  | "canUndoRollback"
+  | "onRollback"
+  | "onPromote"
+  | "promotePending"
+>;
+
 export interface SiteDeploymentDetailPageProps {
   deploymentId: string;
 }
@@ -377,7 +391,6 @@ export interface SiteDeploymentActionsProps extends SiteScope {
   deployment: SiteDeploymentRecord;
   live: boolean;
   primaryUrl: string;
-  rollbackEntry: SiteDeployment | null;
   onRollback: () => void;
 }
 
