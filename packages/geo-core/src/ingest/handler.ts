@@ -57,6 +57,18 @@ function describeFailure(failure: GeoIngestError): IngestLogFields {
   }
   if (failure._tag === "GeoIngestFailed") {
     fields.errorMessage = errorMessage(failure.cause);
+    fields.stage = failure.stage;
+  }
+  if (
+    failure._tag === "GeoIngestInvalidToken" ||
+    failure._tag === "GeoIngestFailed"
+  ) {
+    fields.organizationId = failure.organizationId;
+    fields.projectId = failure.projectId;
+    fields.siteId = failure.siteId;
+  }
+  if (failure._tag === "GeoIngestInvalidToken") {
+    fields.authReason = failure.authReason;
   }
   return fields;
 }

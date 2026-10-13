@@ -49,7 +49,7 @@ import {
 } from "./errors";
 import { buildGeoTrafficEvent, toCapturedDate } from "./event";
 import { loadIngestAllowedHosts } from "./hosts";
-import { isGeoIngestIdentityActive } from "./identity";
+import { assertGeoIngestIdentityActive } from "./identity";
 import { resolveJourneyId } from "./journey";
 import { announceGeoTrafficEvent, expediteForLiveViewers } from "./live";
 import {
@@ -69,14 +69,19 @@ const readSiteIdentity = Effect.fn("geoIngest.readSiteIdentity")(function* (
 ) {
   const siteId = verifyGeoIngestSiteToken(token);
   if (!siteId) {
-    return yield* Effect.fail(new GeoIngestInvalidTokenError({}));
+    return yield* Effect.fail(
+      new GeoIngestInvalidTokenError({ authReason: "invalid_signature" })
+    );
   }
   const site = yield* Effect.tryPromise({
     try: () => loadIngestSite(siteId),
-    catch: (cause) => new GeoIngestFailedError({ cause }),
+    catch: (cause) =>
+      new GeoIngestFailedError({ cause, stage: "site_lookup", siteId }),
   });
   if (!site) {
-    return yield* Effect.fail(new GeoIngestInvalidTokenError({}));
+    return yield* Effect.fail(
+      new GeoIngestInvalidTokenError({ authReason: "site_inactive", siteId })
+    );
   }
   return {
     organizationId: site.organizationId,
@@ -103,7 +108,9 @@ export const readBearerIdentity = Effect.fn("geoIngest.readBearerIdentity")(
 
     const identity = verifyGeoIngestToken(token);
     if (!identity) {
-      return yield* Effect.fail(new GeoIngestInvalidTokenError({}));
+      return yield* Effect.fail(
+        new GeoIngestInvalidTokenError({ authReason: "invalid_signature" })
+      );
     }
 
     return identity;
@@ -243,12 +250,7 @@ const failWithAuthPrecedence = Effect.fn("geoIngest.failWithAuthPrecedence")(
       identity.organizationId,
       geoIngestAdmissionKey(identity)
     );
-    const active = yield* Effect.promise(() =>
-      isGeoIngestIdentityActive(identity)
-    );
-    if (!active) {
-      return yield* Effect.fail(new GeoIngestInvalidTokenError({}));
-    }
+    yield* assertGeoIngestIdentityActive(identity);
     return yield* Effect.fail(error);
   }
 );
@@ -338,16 +340,13 @@ const runWebEngagementIngest = Effect.fn("geoIngest.engagement")(function* (
   if (!(yield* admitWebPageView(geoIngestAdmissionKey(identity)))) {
     return droppedResult(identity, "human", "web_rate_limited");
   }
-  const [active, allowedHosts] = yield* Effect.all(
+  const [, allowedHosts] = yield* Effect.all(
     [
-      Effect.promise(() => isGeoIngestIdentityActive(identity)),
+      assertGeoIngestIdentityActive(identity),
       Effect.promise(() => loadIngestAllowedHosts(identity)),
     ],
     { concurrency: "unbounded" }
   );
-  if (!active) {
-    return yield* Effect.fail(new GeoIngestInvalidTokenError({}));
-  }
   if (
     !acceptsIngestHost(url.hostname, allowedHosts) ||
     isOutsideSiteMounts(identity, url)
@@ -412,9 +411,9 @@ export const runGeoEnvelopeIngest = Effect.fn("geoIngest.envelope")(function* (
       "web_rate_limited"
     );
   }
-  const [active, allowedHosts, sitePrefixes] = yield* Effect.all(
+  const [, allowedHosts, sitePrefixes] = yield* Effect.all(
     [
-      Effect.promise(() => isGeoIngestIdentityActive(identity)),
+      assertGeoIngestIdentityActive(identity),
       Effect.promise(() => loadIngestAllowedHosts(identity)),
       identity.site
         ? Effect.succeed(null)
@@ -424,9 +423,6 @@ export const runGeoEnvelopeIngest = Effect.fn("geoIngest.envelope")(function* (
     ],
     { concurrency: "unbounded" }
   );
-  if (!active) {
-    return yield* Effect.fail(new GeoIngestInvalidTokenError({}));
-  }
   // A legacy token has no project in its signature. On a host-lookup outage,
   // failing open could accept a sibling project's traffic as unassigned.
   if (!identity.projectId && allowedHosts === null) {

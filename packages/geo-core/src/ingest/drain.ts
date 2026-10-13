@@ -34,7 +34,7 @@ import {
   GeoIngestInvalidTokenError,
   GeoIngestPayloadTooLargeError,
 } from "./errors";
-import { isGeoIngestIdentityActive } from "./identity";
+import { assertGeoIngestIdentityActive } from "./identity";
 import { announceGeoTrafficRows } from "./live";
 import {
   readBearerIdentity,
@@ -47,12 +47,17 @@ const readDrainIdentity = Effect.fn("geoDrain.readIdentity")(function* (
   request: Request
 ) {
   const identity = yield* readBearerIdentity(request);
-  const active =
-    !identity.site &&
-    (yield* Effect.promise(() => isGeoIngestIdentityActive(identity)));
-  if (!active) {
-    return yield* Effect.fail(new GeoIngestInvalidTokenError({}));
+  if (identity.site) {
+    return yield* Effect.fail(
+      new GeoIngestInvalidTokenError({
+        authReason: "site_token_not_allowed",
+        organizationId: identity.organizationId,
+        projectId: identity.projectId,
+        siteId: identity.site.id,
+      })
+    );
   }
+  yield* assertGeoIngestIdentityActive(identity);
   return identity;
 });
 
