@@ -1,5 +1,6 @@
 import { SITE_SOURCE_ROOTS } from "@notra/sites-core/constants/sites";
 import {
+  SITE_IGNORE_FILENAME,
   SITE_SOURCE_ALLOWED_EXTENSIONS,
   SITE_SOURCE_SAFE_SEGMENT,
 } from "@notra/sites-core/constants/source";
@@ -15,6 +16,7 @@ export function isSiteStylesheet(path: string): boolean {
 
 export function isSiteSourcePath(path: string): boolean {
   return (
+    path === SITE_IGNORE_FILENAME ||
     isSiteContentPath(path) ||
     isSiteStylesheet(path) ||
     isCustomScriptPath(path)

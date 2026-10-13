@@ -4,6 +4,10 @@ import {
   SITE_SLOTS_DIR,
 } from "@notra/sites-core/constants/site-layout";
 import { SITE_CONFIG_FILENAME } from "@notra/sites-core/constants/sites";
+import {
+  SITE_IGNORE_FILENAME,
+  SITE_IGNORE_MAX_BYTES,
+} from "@notra/sites-core/constants/source";
 import { siteConfigSchema } from "@notra/sites-core/schemas/site-config";
 import {
   siteBlogSchema,
@@ -13,6 +17,7 @@ import {
 import type { SiteDiagnostic } from "@notra/sites-core/types/build";
 import type { SiteConfig } from "@notra/sites-core/types/site-config";
 import { isCustomScriptPath } from "@notra/sites-core/utils/custom-scripts";
+import { filterSiteFiles } from "@notra/sites-core/utils/site-ignore";
 import { Parser } from "acorn";
 
 import {
@@ -285,32 +290,54 @@ function validateCustomScript(path: string, source: string): SiteDiagnostic[] {
 }
 
 export function validateSite(input: SiteValidationInput): SiteValidationResult {
+  const ignoreContent = input.files.get(SITE_IGNORE_FILENAME);
+  if (
+    ignoreContent === null ||
+    (ignoreContent !== undefined &&
+      new TextEncoder().encode(ignoreContent).length > SITE_IGNORE_MAX_BYTES)
+  ) {
+    return {
+      ok: false,
+      config: null,
+      entries: [],
+      outputs: new Map(),
+      diagnostics: [
+        {
+          severity: "error",
+          file: SITE_IGNORE_FILENAME,
+          code: "ignore_file_invalid",
+          message: `${SITE_IGNORE_FILENAME} must be readable and at most ${SITE_IGNORE_MAX_BYTES / 1024} KB`,
+        },
+      ],
+    };
+  }
+  const files = filterSiteFiles(input.files);
   const outputs = new Map<string, string>();
   const paths = new Set(
-    [...input.files.keys()].filter((path) => !isCustomScriptPath(path))
+    [...files.keys()].filter((path) => !isCustomScriptPath(path))
   );
 
   const usesDefaultConfig =
-    !input.files.has(SITE_CONFIG_FILENAME) && input.defaultConfig !== undefined;
+    !files.has(SITE_CONFIG_FILENAME) && input.defaultConfig !== undefined;
   const { config, diagnostics } = parseSiteConfig(
     usesDefaultConfig
       ? JSON.stringify(input.defaultConfig)
-      : input.files.get(SITE_CONFIG_FILENAME)
+      : files.get(SITE_CONFIG_FILENAME)
   );
   if (usesDefaultConfig && config) {
     outputs.set(SITE_CONFIG_FILENAME, JSON.stringify(config));
   }
 
   const { sources, diagnostics: variableDiagnostics } = config
-    ? applyVariables(input.files, config.variables)
-    : { sources: new Map(input.files), diagnostics: [] };
+    ? applyVariables(files, config.variables)
+    : { sources: new Map(files), diagnostics: [] };
   diagnostics.push(...variableDiagnostics);
-  for (const path of input.files.keys()) {
+  for (const path of files.keys()) {
     diagnostics.push(...validateSlotFile(path));
   }
 
   const componentExports = new Map<string, readonly string[]>();
-  for (const [path, content] of input.files) {
+  for (const [path, content] of files) {
     if (!SCRIPT_FILE.test(path) || content === null) {
       continue;
     }
@@ -326,9 +353,7 @@ export function validateSite(input: SiteValidationInput): SiteValidationResult {
     }
   }
 
-  const mdxPaths = [...input.files.keys()].filter((path) =>
-    MDX_FILE.test(path)
-  );
+  const mdxPaths = [...files.keys()].filter((path) => MDX_FILE.test(path));
   const analyses = new Map<string, MdxAnalysis>();
   const analyze = (path: string, isEntry: boolean) => {
     analyses.set(
@@ -373,7 +398,7 @@ export function validateSite(input: SiteValidationInput): SiteValidationResult {
   const entries: SiteEntry[] = [];
   const seenSlugs = new Map<string, string>();
   let unreadEntries = 0;
-  for (const [path, content] of input.files) {
+  for (const [path, content] of files) {
     const candidate = entryCandidate(path);
     if (!candidate || importedPaths.has(path)) {
       continue;

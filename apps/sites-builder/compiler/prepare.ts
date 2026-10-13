@@ -6,6 +6,7 @@ import { hasErrors } from "@notra/sites-compiler/utils/diagnostics";
 import { isTextSourceFile } from "@notra/sites-compiler/utils/paths";
 import { validateSite } from "@notra/sites-compiler/validate";
 import { SITE_AREAS, SITE_ASSETS_DIR } from "@notra/sites-core/constants/sites";
+import { SITE_IGNORE_FILENAME } from "@notra/sites-core/constants/source";
 import { sortCustomScriptPaths } from "@notra/sites-core/utils/custom-scripts";
 import { isSiteStylesheet } from "@notra/sites-core/utils/source-files";
 
@@ -33,6 +34,9 @@ export async function readSiteFiles(siteRoot: string): Promise<SiteFiles> {
   const files = new Map<string, string | null>(
     collected.files.map((file, index) => [file.path, texts[index] ?? null])
   );
+  if (collected.ignoreContent !== null) {
+    files.set(SITE_IGNORE_FILENAME, collected.ignoreContent);
+  }
   return { collected, files };
 }
 

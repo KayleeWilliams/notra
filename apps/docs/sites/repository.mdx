@@ -53,6 +53,31 @@ You can add client-side experiences with [custom components](/sites/custom-compo
 - Set Blog and Changelog URL paths separately from the source folder. Leave a section path empty to disable it.
 - Use the [blog.json reference](/sites/reference/blog-json), [custom components](/sites/custom-components) and [custom scripts](/sites/custom-scripts) for the supported format, rather than adding a repository build command.
 
+## Exclude files with .notraignore
+
+Add an optional `.notraignore` at the selected site root to keep files out of both production builds and previews. Patterns follow `.gitignore` syntax and are relative to that root, not to the repository root:
+
+```text .notraignore
+# Internal posts and unfinished content
+blog/internal/
+blog/work-in-progress/*
+
+# Keep one finished post in the build
+!blog/work-in-progress/ready.mdx
+
+# Assets and scripts that should not be published
+public/private/
+scripts/experimental.js
+```
+
+Matched files aren't validated, compiled or copied into the output. Ignored posts have no page URL and don't appear in indexes, feeds, sitemaps or Markdown exports. Imports of an ignored file fail with a file-not-found error, and links to ignored pages or assets no longer have a published target.
+
+Patterns are case-sensitive. As with `.gitignore`, you can't re-include a file inside an excluded directory without re-including the directory first. Existing file-type, hidden-file and `node_modules` exclusions still apply; `!` can't override them. `blog.json` always remains active, and `.notraignore` itself is never published. The ignore file must be a regular file no larger than 512 KB.
+
+The editor keeps ignored files in its file tree so you can still edit them. **Check for problems** applies the rules, including unpublished edits to `.notraignore`. Changes to the ignore file are included in deployment comparisons.
+
+Use [`draft: true`](/sites/posts#drafts) when a post should still appear in previews. Use `.notraignore` when it should be absent from all new builds. This isn't access control: files remain in Git, and already-created deployments aren't changed retroactively.
+
 ## blog.json is optional
 
 Without a `blog.json` at the selected site root on the production branch, the hosted site builds with the standard layout and the site name from the dashboard. A config elsewhere in the repository isn't used. Add one when you want your own colors, logo, navigation, authors or analytics. See the [blog.json reference](/sites/reference/blog-json).

@@ -8,6 +8,7 @@ export interface SiteSourceFile {
 }
 
 export interface CollectedSource {
+  ignoreContent: string | null;
   files: SiteSourceFile[];
   totalBytes: number;
   diagnostics: SiteDiagnostic[];

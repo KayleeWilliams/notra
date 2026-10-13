@@ -4,8 +4,16 @@ import { db } from "@notra/db/drizzle";
 import { siteDrafts, sites } from "@notra/db/schema";
 import { validateSite } from "@notra/sites-compiler/validate";
 import { SITE_CONFIG_FILENAME } from "@notra/sites-core/constants/sites";
+import {
+  SITE_IGNORE_FILENAME,
+  SITE_IGNORE_MAX_BYTES,
+} from "@notra/sites-core/constants/source";
 import { createDefaultSiteConfig } from "@notra/sites-core/utils/default-config";
-import { isSiteSourcePath } from "@notra/sites-core/utils/source-files";
+import { createSiteIgnore } from "@notra/sites-core/utils/site-ignore";
+import {
+  isCollectedSiteSourcePath,
+  isSiteSourcePath,
+} from "@notra/sites-core/utils/source-files";
 import { and, eq, sql } from "drizzle-orm";
 
 import {
@@ -16,6 +24,7 @@ import {
   MAX_PUBLISH_HEADLINE_LENGTH,
   PULL_REQUEST_RULE_TYPES,
   SITE_EDIT_BRANCH_PREFIX,
+  SITE_EDITOR_READ_CONCURRENCY,
   VALIDATED_SOURCE_FILE,
 } from "./constants/editor";
 import { GITHUB_API_VERSION_HEADER } from "./constants/github";
@@ -40,11 +49,15 @@ import type {
 import type { SiteRepository } from "./types/github";
 import type { Site } from "./types/sites";
 import { timestampedBranchName } from "./utils/branch-name";
+import { mapWithConcurrency } from "./utils/concurrency";
 import { errorMessage, isNotFoundError } from "./utils/errors";
 import { prefixedId } from "./utils/ids";
 import { repositoryPath } from "./utils/root-directory";
 
 function assertEditablePath(path: string): void {
+  if (path === SITE_IGNORE_FILENAME) {
+    return;
+  }
   const editable =
     isSiteSourcePath(path) &&
     EDITABLE_TEXT_FILE.test(path) &&
@@ -79,18 +92,38 @@ export async function listSiteSourceFiles(
     }
   );
   const prefix = site.rootDirectory ? `${site.rootDirectory}/` : "";
+  if (tree.truncated) {
+    throw new SiteInputError(
+      "The repository file listing is incomplete. Choose a smaller site repository before validating or publishing."
+    );
+  }
   const files: SiteSourceEntry[] = [];
   for (const entry of tree.tree) {
-    if (
-      entry.type !== "blob" ||
-      !entry.path ||
-      !entry.sha ||
-      !entry.path.startsWith(prefix)
-    ) {
+    if (!entry.path || !entry.path.startsWith(prefix)) {
       continue;
     }
     const path = entry.path.slice(prefix.length);
-    if (!isSiteSourcePath(path)) {
+    if (path === SITE_IGNORE_FILENAME) {
+      if (
+        entry.type !== "blob" ||
+        !entry.sha ||
+        !["100644", "100755"].includes(entry.mode ?? "") ||
+        entry.size === undefined ||
+        !Number.isSafeInteger(entry.size) ||
+        entry.size < 0 ||
+        entry.size > SITE_IGNORE_MAX_BYTES
+      ) {
+        throw new SiteInputError(
+          `${SITE_IGNORE_FILENAME} must be a regular file of at most ${SITE_IGNORE_MAX_BYTES / 1024} KB`
+        );
+      }
+    } else if (
+      entry.type !== "blob" ||
+      !entry.sha ||
+      (entry.mode !== undefined &&
+        !["100644", "100755"].includes(entry.mode)) ||
+      !isCollectedSiteSourcePath(path)
+    ) {
       continue;
     }
     files.push({ path, sha: entry.sha, size: entry.size ?? 0 });
@@ -103,13 +136,14 @@ export async function listSiteSourceFiles(
 
 export async function readSiteSourceFile(
   site: Site,
-  path: string
+  path: string,
+  ref = site.productionBranch
 ): Promise<SiteSourceFileContent | null> {
   assertEditablePath(path);
   const { repository, token } = await readAccess(site);
   return await readRepositoryFile(repository, token, {
     path: repositoryPath(site.rootDirectory, path),
-    ref: site.productionBranch,
+    ref,
   });
 }
 
@@ -377,20 +411,41 @@ export async function discardSiteDraft(
 }
 
 async function validateWithDrafts(site: Site, drafts: SiteDraft[]) {
-  const { files: tree } = await listSiteSourceFiles(site);
+  const { files: tree, commitSha } = await listSiteSourceFiles(site);
   const files = new Map<string, string | null>();
   for (const entry of tree) {
     files.set(entry.path, null);
   }
   const draftPaths = new Set(drafts.map((draft) => draft.path));
+  const ignoreDraft = drafts.find(
+    (draft) => draft.path === SITE_IGNORE_FILENAME
+  );
+  if (ignoreDraft) {
+    if (ignoreDraft.deleted) {
+      files.delete(SITE_IGNORE_FILENAME);
+    } else {
+      files.set(SITE_IGNORE_FILENAME, ignoreDraft.content);
+    }
+  } else if (files.has(SITE_IGNORE_FILENAME)) {
+    const ignoreFile = await readSiteSourceFile(
+      site,
+      SITE_IGNORE_FILENAME,
+      commitSha
+    );
+    files.set(SITE_IGNORE_FILENAME, ignoreFile?.content ?? null);
+  }
+  const isIgnored = createSiteIgnore(files.get(SITE_IGNORE_FILENAME) ?? "");
   const needsContent = tree.filter(
     (entry) =>
       (VALIDATED_SOURCE_FILE.test(entry.path) ||
         entry.path === SITE_CONFIG_FILENAME) &&
-      !draftPaths.has(entry.path)
+      !draftPaths.has(entry.path) &&
+      !isIgnored(entry.path)
   );
-  const contents = await Promise.all(
-    needsContent.map((entry) => readSiteSourceFile(site, entry.path))
+  const contents = await mapWithConcurrency(
+    needsContent,
+    SITE_EDITOR_READ_CONCURRENCY,
+    (entry) => readSiteSourceFile(site, entry.path, commitSha)
   );
   for (const [index, entry] of needsContent.entries()) {
     files.set(entry.path, contents[index]?.content ?? null);

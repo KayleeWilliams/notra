@@ -77,7 +77,8 @@ export const SITE_NEW_FILE_FOLDERS = ["blog", "changelog"] as const;
 export const SITE_NEW_FILE_EXTENSION = ".mdx";
 export const SITE_NEW_FILE_SLUG_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
 
-export const SITE_EDITABLE_FILE_PATTERN = /\.(?:mdx?|jsx?|json|css)$/i;
+export const SITE_EDITABLE_FILE_PATTERN =
+  /(?:^\.notraignore$|\.(?:mdx?|jsx?|json|css)$)/i;
 
 export const SITE_PROXY_RECIPES = [
   "vercel",

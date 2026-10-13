@@ -9,6 +9,7 @@ export interface SiteGitTreeEntry {
 }
 
 export interface SiteInputFingerprintParams {
+  ignoreContent?: string | null;
   tree: readonly SiteGitTreeEntry[];
   truncated: boolean;
   rootDirectory: string;
