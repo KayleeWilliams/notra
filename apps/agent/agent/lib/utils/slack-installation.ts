@@ -141,7 +141,16 @@ export async function runWithSlackTeam<T>(
   return runWithSlackInstallation(installation, run);
 }
 
-export async function resolveSlackOutboundBotToken(): Promise<string> {
+export async function resolveSlackOutboundBotToken(
+  teamId?: string
+): Promise<string> {
+  if (teamId) {
+    const installation = await resolveSlackInstallation(teamId);
+    if (!installation) {
+      throw new Error("No enabled Slack installation for this workspace");
+    }
+    return installation.botToken;
+  }
   const current = installationStorage.getStore();
   if (current) {
     return current.botToken;
