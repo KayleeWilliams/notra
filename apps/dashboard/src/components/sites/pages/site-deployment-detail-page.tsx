@@ -8,7 +8,6 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PageHeading } from "@notra/ui/components/shared/page-heading";
-import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { TABLE_FRAME_CLASS } from "@notra/ui/constants/table";
 import { ORPCError } from "@orpc/client";
 import { useEffect, useRef, useState } from "react";
@@ -22,10 +21,12 @@ import { useSite } from "@/components/sites/site-context";
 import { SiteDeploymentFailure } from "@/components/sites/site-deployment-failure";
 import { SiteDeploymentSummary } from "@/components/sites/site-deployment-summary";
 import { SiteDeploymentTimeline } from "@/components/sites/site-deployment-timeline";
+import { SiteDeploymentSkeleton } from "@/components/sites/site-page-skeleton";
 import { SitePreviewDeleteDialog } from "@/components/sites/site-preview-delete-dialog";
 import { SitePreviewRowMenu } from "@/components/sites/site-preview-row-menu";
 import { SiteRelativeTime } from "@/components/sites/site-relative-time";
 import { SiteRollbackDialog } from "@/components/sites/site-rollback-dialog";
+import { SkeletonCrossfade } from "@/components/skeleton-crossfade";
 import { SITE_DEPLOYMENT_LOG_SURFACE_CLASS } from "@/constants/sites";
 import {
   useRedeployDeployment,
@@ -60,37 +61,41 @@ export function SiteDeploymentDetailPage({
   const t = useTranslations("sites.deployment");
   const query = useSiteDeployment({ organizationId, siteId, deploymentId });
 
-  if (!query.data) {
-    if (query.error) {
-      const notFound =
-        query.error instanceof ORPCError && query.error.code === "NOT_FOUND";
-      return (
-        <EmptyState
-          action={
-            <Link
-              className={buttonVariants({ variant: "outline" })}
-              href={siteHref(organizationSlug, siteId, "deployments")}
-            >
-              {t("back")}
-            </Link>
-          }
-          description={notFound ? t("notFound.description") : t("loadFailed")}
-          title={notFound ? t("notFound.title") : t("loadFailedTitle")}
-        />
-      );
-    }
-    return <DeploymentDetailSkeleton />;
+  if (!query.data && query.error) {
+    const notFound =
+      query.error instanceof ORPCError && query.error.code === "NOT_FOUND";
+    return (
+      <EmptyState
+        action={
+          <Link
+            className={buttonVariants({ variant: "outline" })}
+            href={siteHref(organizationSlug, siteId, "deployments")}
+          >
+            {t("back")}
+          </Link>
+        }
+        description={notFound ? t("notFound.description") : t("loadFailed")}
+        title={notFound ? t("notFound.title") : t("loadFailedTitle")}
+      />
+    );
   }
 
   return (
-    <DeploymentDetail
-      deployment={query.data.deployment}
-      detail={detail}
-      key={deploymentId}
-      log={query.data.log}
-      organizationId={organizationId}
-      siteId={siteId}
-    />
+    <SkeletonCrossfade
+      loading={!query.data}
+      skeleton={<SiteDeploymentSkeleton />}
+    >
+      {query.data ? (
+        <DeploymentDetail
+          deployment={query.data.deployment}
+          detail={detail}
+          key={deploymentId}
+          log={query.data.log}
+          organizationId={organizationId}
+          siteId={siteId}
+        />
+      ) : null}
+    </SkeletonCrossfade>
   );
 }
 
@@ -332,21 +337,5 @@ function DeploymentNote({ deployment }: SiteDeploymentRecordProps) {
       />
       {t(deployment.status)}
     </span>
-  );
-}
-
-function DeploymentDetailSkeleton() {
-  return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-6">
-        <div className="min-w-0 flex-1 space-y-3">
-          <Skeleton className="h-9 w-80 max-w-full" />
-          <Skeleton className="h-5 w-64 max-w-full" />
-        </div>
-        <Skeleton className="h-9 w-48 rounded-lg" />
-      </div>
-      <Skeleton className="h-64 rounded-2xl" />
-      <Skeleton className="h-96 rounded-2xl" />
-    </div>
   );
 }

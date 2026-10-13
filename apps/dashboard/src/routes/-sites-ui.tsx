@@ -6,7 +6,14 @@ import {
   redirect,
 } from "@tanstack/react-router";
 
+import { NewSitePageSkeleton as NewSiteLoading } from "@/app/(dashboard)/[slug]/sites/new/skeleton";
+import { SitesPageSkeleton as SitesLoading } from "@/app/(dashboard)/[slug]/sites/skeleton";
 import { SiteLayout } from "@/components/sites/site-layout";
+import {
+  SitePageSkeleton as SiteLoading,
+  SiteSectionSkeleton as SiteSectionLoading,
+  SiteDeploymentSkeleton as SiteDeploymentLoading,
+} from "@/components/sites/site-page-skeleton";
 import { SITE_SECTION_PAGES } from "@/constants/site-ui-pages";
 import { lazyPage } from "@/utils/lazy-page";
 import { sitePreviewDeploymentsHref } from "@/utils/site-links";
@@ -20,21 +27,7 @@ const Sites = lazyPage(
 const NewSite = lazyPage(
   () => import("@/app/(dashboard)/[slug]/sites/new/page-client")
 );
-const SitesLoading = lazyPage(() =>
-  import("@/app/(dashboard)/[slug]/sites/skeleton").then((module) => ({
-    default: module.SitesPageSkeleton,
-  }))
-);
-const NewSiteLoading = lazyPage(() =>
-  import("@/app/(dashboard)/[slug]/sites/new/skeleton").then((module) => ({
-    default: module.NewSitePageSkeleton,
-  }))
-);
-const SiteLoading = lazyPage(() =>
-  import("@/components/sites/site-page-skeleton").then((module) => ({
-    default: module.SitePageSkeleton,
-  }))
-);
+// Child routes render only the body; SiteLayout owns the page shell.
 const Overview = lazyPage(() =>
   import("@/components/sites/pages/site-overview-page").then((module) => ({
     default: module.SiteOverviewPage,
@@ -91,7 +84,7 @@ export function createSitesUiRoutes(organization: AnyRoute) {
       parent: site,
       path: "/",
       title: { namespace: "sites.detail.tabs", key: "overview" },
-      pendingComponent: SiteLoading,
+      pendingComponent: SiteSectionLoading,
       preload: Overview.preload,
       component: () => <Overview />,
     }),
@@ -100,7 +93,7 @@ export function createSitesUiRoutes(organization: AnyRoute) {
         parent: site,
         path: section,
         title: { namespace: "sites.detail.tabs", key: section },
-        pendingComponent: SiteLoading,
+        pendingComponent: SiteSectionLoading,
         preload: Page.preload,
         component: () => <Page />,
       })
@@ -109,7 +102,7 @@ export function createSitesUiRoutes(organization: AnyRoute) {
       parent: site,
       path: "deployments/$deploymentId",
       title: { namespace: "sites.deploymentPage", key: "title" },
-      pendingComponent: SiteLoading,
+      pendingComponent: SiteDeploymentLoading,
       preload: DeploymentDetail.preload,
       component: ({ params }) => (
         <DeploymentDetail deploymentId={params.deploymentId} />

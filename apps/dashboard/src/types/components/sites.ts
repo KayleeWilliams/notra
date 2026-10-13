@@ -42,6 +42,7 @@ import type {
 
 export interface SitesPageShellProps {
   children: ReactNode;
+  className?: string;
 }
 
 export interface ProjectSitesListProps {

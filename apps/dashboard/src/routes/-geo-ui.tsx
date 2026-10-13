@@ -1,6 +1,16 @@
 import { HydrationBoundary } from "@tanstack/react-query";
 import { type AnyRoute, redirect } from "@tanstack/react-router";
 
+import ReadinessLoading from "@/app/(dashboard)/[slug]/geo/agent-readiness/loading";
+import CompetitorLoading from "@/app/(dashboard)/[slug]/geo/competitors/[competitor]/loading";
+import { GeoCompetitorsSkeleton as CompetitorsLoading } from "@/app/(dashboard)/[slug]/geo/competitors/skeleton";
+import GapsLoading from "@/app/(dashboard)/[slug]/geo/gaps/loading";
+import PersonasLoading from "@/app/(dashboard)/[slug]/geo/personas/loading";
+import PromptsLoading from "@/app/(dashboard)/[slug]/geo/prompts/loading";
+import ShelfLoading from "@/app/(dashboard)/[slug]/geo/shelf-space/loading";
+import { GeoPageSkeleton } from "@/app/(dashboard)/[slug]/geo/skeleton";
+import TrafficLoading from "@/app/(dashboard)/[slug]/geo/traffic/loading";
+import WriteLoading from "@/app/(dashboard)/[slug]/geo/write/loading";
 import { PageContainer } from "@/components/layout/container";
 import { lazyPage } from "@/utils/lazy-page";
 import { geoSettingsPath } from "@/utils/settings-path";
@@ -43,40 +53,6 @@ const Shelf = lazyPage(
 const Write = lazyPage(
   () => import("@/app/(dashboard)/[slug]/geo/write/page-client")
 );
-const OverviewLoading = lazyPage(() =>
-  import("@/app/(dashboard)/[slug]/geo/skeleton").then((module) => ({
-    default: module.GeoPageSkeleton,
-  }))
-);
-const TrafficLoading = lazyPage(
-  () => import("@/app/(dashboard)/[slug]/geo/traffic/loading")
-);
-const CompetitorsLoading = lazyPage(() =>
-  import("@/app/(dashboard)/[slug]/geo/competitors/skeleton").then(
-    (module) => ({ default: module.GeoCompetitorsSkeleton })
-  )
-);
-const CompetitorLoading = lazyPage(
-  () => import("@/app/(dashboard)/[slug]/geo/competitors/[competitor]/loading")
-);
-const ReadinessLoading = lazyPage(
-  () => import("@/app/(dashboard)/[slug]/geo/agent-readiness/loading")
-);
-const GapsLoading = lazyPage(
-  () => import("@/app/(dashboard)/[slug]/geo/gaps/loading")
-);
-const PersonasLoading = lazyPage(
-  () => import("@/app/(dashboard)/[slug]/geo/personas/loading")
-);
-const PromptsLoading = lazyPage(
-  () => import("@/app/(dashboard)/[slug]/geo/prompts/loading")
-);
-const ShelfLoading = lazyPage(
-  () => import("@/app/(dashboard)/[slug]/geo/shelf-space/loading")
-);
-const WriteLoading = lazyPage(
-  () => import("@/app/(dashboard)/[slug]/geo/write/loading")
-);
 
 export function createGeoUiRoutes(parent: AnyRoute) {
   return [
@@ -84,11 +60,11 @@ export function createGeoUiRoutes(parent: AnyRoute) {
       parent,
       path: "/",
       title: { namespace: "common", key: "labels.geo" },
-      pendingComponent: OverviewLoading,
+      pendingComponent: GeoPageSkeleton,
       loaderSearchKeys: ["project", "range"],
       loader: (input) => loadGeoPage({ data: { ...input, kind: "overview" } }),
       gate: (input) => gateGeoPage({ data: { ...input, kind: "overview" } }),
-      stream: true,
+      stream: "ssr",
       preload: Overview.preload,
       component: ({ data, params }) => (
         <HydrationBoundary state={data.state}>
@@ -104,7 +80,7 @@ export function createGeoUiRoutes(parent: AnyRoute) {
       loaderSearchKeys: ["project", "range", "host"],
       loader: (input) => loadGeoPage({ data: { ...input, kind: "traffic" } }),
       gate: (input) => gateGeoPage({ data: { ...input, kind: "traffic" } }),
-      stream: true,
+      stream: "ssr",
       preload: Traffic.preload,
       component: ({ data, params }) => (
         <HydrationBoundary state={data.state}>
@@ -154,7 +130,7 @@ export function createGeoUiRoutes(parent: AnyRoute) {
       parent,
       path: "directions",
       title: { namespace: "geo.shared", key: "geoDirections" },
-      pendingComponent: OverviewLoading,
+      pendingComponent: GeoPageSkeleton,
       preload: Directions.preload,
       component: () => <Directions />,
     }),

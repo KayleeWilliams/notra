@@ -193,6 +193,15 @@ export interface GeoOverviewPageEmpty {
   organizationId: string;
 }
 
+export interface GeoOverviewLoadingState {
+  settingsPending: boolean;
+  queriesEnabled: boolean;
+  overviewPending: boolean;
+  timeseriesPending: boolean;
+  visibilityEnabled: boolean;
+  visibilityPending: readonly boolean[];
+}
+
 export interface GeoOverviewPageReady {
   status: "ready";
   organizationId: string;
@@ -200,7 +209,6 @@ export interface GeoOverviewPageReady {
   companyName: string;
   geoRange: GeoRangeControl;
   isScanning: boolean;
-  revealActive: boolean;
   tabs: GeoTabsProps;
   scanMenu: GeoScanModelMenuProps;
 }
@@ -470,7 +478,6 @@ export interface JourneysTabProps {
   loading: boolean;
   organizationId: string;
   organizationSlug: string;
-  revealActive: boolean;
 }
 
 export interface JourneysCardProps {
@@ -861,7 +868,6 @@ export interface GeoTabsProps {
   activeTab: GeoTab;
   onActiveTabChange: (tab: GeoTab) => void;
   organizationSlug: string;
-  revealActive: boolean;
   settings: GeoSettings;
   engines: GeoOverviewEngine[];
   timeseriesPoints: GeoTimeseriesPoint[];
