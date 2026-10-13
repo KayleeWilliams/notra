@@ -1,5 +1,6 @@
 ---
 import type { EntryPageProps as Props } from "../types/entries";
+import type { JsonLdNode } from "../types/seo";
 import BlogPost from "../components/BlogPost.astro";
 import ChangelogEntry from "../components/ChangelogEntry.astro";
 import BackLink from "../components/BackLink.astro";
@@ -12,6 +13,7 @@ import { slotChangelogEntry } from "../lib/slot-data";
 import { absoluteUrl, areaTitle, config, href, markdownHref, params } from "../lib/params";
 import { areaNodeId, breadcrumbs, pageTitle, publisherRef, socialImage } from "../lib/seo";
 import { excerpt } from "../utils/excerpt";
+import { faqEntries } from "../utils/faq";
 
 export async function getStaticPaths() {
   if (params.area === "blog") {
@@ -35,7 +37,7 @@ const modified = updated ?? entry.data.date;
 const authors = props.kind === "blog" ? authorsOf(props.entry, entry.data.hidden ? await getBlogEntries() : undefined) : [];
 const thumbnail = generatedImage(entry.id);
 const image = socialImage(entry.data.image, thumbnail, entry.data.imageAlt);
-const jsonLd = [
+const jsonLd: JsonLdNode[] = [
   {
     "@type": props.kind === "blog" ? "BlogPosting" : "TechArticle",
     "@id": `${url}#article`,
@@ -56,9 +58,23 @@ const jsonLd = [
   },
   breadcrumbs(entry.data.title, url),
 ];
+const faq = props.kind === "blog" ? faqEntries(entry.body) : [];
+if (faq.length > 0) {
+  jsonLd.push({
+    "@type": "FAQPage",
+    "@id": `${url}#faq`,
+    url,
+    mainEntity: faq.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: { "@type": "Answer", text: item.answer },
+    })),
+  });
+}
 ---
 
 <Base
+  page="entry"
   title={pageTitle(entry.data.title)}
   description={description}
   image={entry.data.image}

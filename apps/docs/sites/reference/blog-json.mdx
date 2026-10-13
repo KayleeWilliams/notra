@@ -39,7 +39,7 @@ curl -s https://usenotra.com/schemas/blog.json | npx json-schema-to-typescript >
 Every build checks `blog.json` before it builds anything, and mistakes stop the build, with the deployment log and the GitHub check naming the setting and what to change:
 
 ```text
-✖ blog.json  blog.layout: Invalid option: expected one of "grid"|"list"|"magazine"
+✖ blog.json  blog.layout: Invalid option: expected one of "grid"|"list"|"magazine"|"cards"
 ```
 
 - Notra ignores an unknown top-level setting with a warning that suggests the closest match, like `Unknown setting "navBar" is ignored. Did you mean "navbar"?`.
@@ -75,7 +75,8 @@ See [Design and CSS](/sites/customize/design).
 | `colors.primary` | Color | `#8B5CF6` | Links, highlights and active states |
 | `colors.light` | Color | `primary` | The accent in dark mode |
 | `colors.dark` | Color | `primary` | Button color |
-| `appearance` | `"light" \| "dark" \| "system"` or `{ default, strict }` | `"system"` | Starting mode, and `strict: true` hides the toggle |
+| `appearance` | `"light" \| "dark" \| "system"` or `{ default, strict, storageKey }` | `"system"` | Starting mode, and `strict: true` hides the toggle |
+| `appearance.storageKey` | Letters, digits, `.`, `_` and `-`, up to 64 characters | `"notra-theme"` | The `localStorage` key that stores the reader's choice. See [details](/sites/customize/design#light-and-dark-mode) |
 | `fonts.family` | string | Inter | A Google Font, or the name of your own font with `source` |
 | `fonts.weight` | 100 to 900 | `400` | Body text weight |
 | `fonts.source` | Path | | Your own font file |
@@ -116,7 +117,7 @@ See [Layouts](/sites/customize/layouts#blog).
 | --- | --- | --- | --- |
 | `blog.title` | string, 1 to 120 characters | `"Blog"` | Index heading |
 | `blog.description` | string, up to 400 characters | Site `description` | Line under the heading |
-| `blog.layout` | `"grid" \| "list" \| "magazine"` | `"grid"` | Index layout |
+| `blog.layout` | `"grid" \| "list" \| "magazine" \| "cards"` | `"grid"` | Index layout |
 | `blog.hero.style` | `"wash" \| "plain" \| "image" \| "none"` | `"plain"` | Index hero |
 | `blog.hero.eyebrow` | string, up to 60 characters | | Line above the heading |
 | `blog.hero.image` | Path | | Image for the `image` style |
@@ -126,11 +127,14 @@ See [Layouts](/sites/customize/layouts#blog).
 | `blog.card.author` | boolean | `true` | First author on cards |
 | `blog.card.date` | boolean | `true` | Date on cards |
 | `blog.card.readingTime` | boolean | `false` | Reading time on cards |
+| `blog.authorPage` | `"inline" \| "stacked"` | `"inline"` | Author page layout |
 | `blog.post.toc` | boolean | `true` | "On this page" |
 | `blog.post.authorCard` | boolean | `true` | Author list beside the post, or under the title |
 | `blog.post.readingTime` | boolean | `true` | Reading time next to the date |
 | `blog.post.pagination` | boolean | `true` | Previous and next post |
 | `blog.post.width` | `"wide" \| "narrow"` | `"wide"` | Post layout |
+| `blog.post.header` | `"stacked" \| "compact"` | `"stacked"` | Post header style. `compact` moves the authors into the sidebar |
+| `blog.post.cover` | boolean | `true` | The post's `image` above the text. Share images still use it |
 
 ## Changelog
 
@@ -153,7 +157,7 @@ See [Layouts](/sites/customize/layouts#blog).
 | `title` | string, up to 80 characters | Role, like "Engineer" |
 | `avatar` | `/path` or `https://` URL | Profile picture |
 | `bio` | string, up to 300 characters | Short bio on the author page |
-| `url`, `x`, `linkedin`, `github` | URL | Profile links |
+| `url`, `x`, `linkedin`, `github`, `youtube` | URL | Profile links |
 
 ## SEO
 
@@ -167,10 +171,13 @@ See [SEO, share images and redirects](/sites/customize/seo).
 | `thumbnails.enabled` | boolean | `true` | Generated share images |
 | `thumbnails.appearance` | `"light" \| "dark"` | `"light"` | Share image colors |
 | `thumbnails.background` | Path to a PNG, JPEG or SVG | | Share image background |
+| `thumbnails.layout` | `"default" \| "author"` | `"default"` | `author` shows logo, label, title, the first author and your domain, see [Share images](/sites/customize/seo#author-layout) |
+| `thumbnails.label` | string, up to 40 characters | Section title | Top-right label in the `author` layout |
 | `errors.404.title` | string, up to 120 characters | "This page doesn't exist" | 404 heading |
 | `errors.404.description` | string, up to 300 characters | | 404 text |
 | `errors.404.redirect` | boolean | `false` | Send readers to the section home instead |
 | `metadata.timestamp` | boolean | `true` | Show "Updated" dates |
+| `metadata.dateFormat` | `"short" \| "long"` | `"short"` | Dates like "Oct 12, 2026" or "October 12, 2026" |
 | `markdown.instructions` | string of up to 2000 characters, or up to 20 strings of up to 500 characters each | | Instructions for AI agents in `llms.txt` and every Markdown page |
 
 ## Redirects

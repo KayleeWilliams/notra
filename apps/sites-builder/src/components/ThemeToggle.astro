@@ -33,7 +33,7 @@ import Icon from "./Icon.astro";
   const choose = (mode: string) => {
     apply(mode);
     try {
-      localStorage.setItem("notra-theme", mode);
+      localStorage.setItem(root.dataset.themeStorageKey ?? "notra-theme", mode);
     } catch {
       // Blocked storage only loses the saved preference, not the switch.
     }

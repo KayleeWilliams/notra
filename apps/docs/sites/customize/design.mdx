@@ -42,6 +42,14 @@ Colors are hex values with 3 or 6 digits, like `#0D9373`.
 
 `appearance.default` is `"system"` (follows the reader's device), `"light"` or `"dark"`. Readers pick light, dark or system with the switch in the footer, and the site remembers their choice. `"strict": true` hides the toggle and always uses the default, and the short form `"appearance": "dark"` sets only the default, so readers can still switch.
 
+The site saves the choice in `localStorage` under `notra-theme`, as `light`, `dark` or `system`. When the site runs [under a path of your website](/sites/domains/subpath), like `acme.com/blog`, set `storageKey` to the key your main site uses so both share one choice, for example `"theme"` for a Next.js site with next-themes:
+
+```json blog.json
+"appearance": { "default": "system", "storageKey": "theme" }
+```
+
+The key uses letters, digits, `.`, `_` and `-`, up to 64 characters. This only works when your main site stores the same three values and serves the blog from the same domain, since a subdomain like `blog.acme.com` has its own storage.
+
 ## Fonts
 
 `fonts.family` selects a [Google Font](https://fonts.google.com) by name, while `heading` and `body` set a different font for each. Notra downloads the fonts and their licenses during the build and serves them from your site, so visitors don't make requests to Google. If a download fails, the build reports a warning and the site uses system fonts:
@@ -122,3 +130,14 @@ The navbar IDs only exist in the built-in header and `#footer` only in the built
 | `code-block`, `code-block-copy-button`, `code-group` | [Code](/sites/components/code) |
 | `frame` | [Frame](/sites/components/media#frame) |
 | `update` | [Update](/sites/components/badges-and-updates#update) |
+| `blog-index` | The blog index page |
+| `blog-cards` | The grid in the `cards` [layout](/sites/customize/layouts#the-index-page) |
+| `post-card-box`, `post-card-title`, `post-card-excerpt`, `post-card-meta` | A card in the `cards` layout, its title, excerpt and author and date row |
+| `post-compact` | A post with the [compact header](/sites/customize/layouts#compact-post-header) |
+| `author-card`, `author-card-label`, `author-card-name`, `author-card-title` | The "Written by" card in the compact header, its label and each author's name and title |
+| `author-stacked`, `author-title`, `author-post-count`, `author-social` | A `stacked` [author page](/sites/customize/layouts#author-pages), the author's title, the post count and each profile button |
+
+| Attribute | Element |
+| --- | --- |
+| `[data-post-card="<path>"]` | Every post card, with the post's path like `2026/launch`, which also helps [scripts](/sites/custom-scripts) find a card |
+| `[data-slot="<name>"]` | The wrapper of every [slot](/sites/match-your-website#slots), like `[data-slot="after-post"]` |

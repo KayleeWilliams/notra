@@ -5,9 +5,11 @@ import { COMPONENT_NAME, NODE_ONLY_GLOBALS } from "../constants/builtins";
 import type {
   ForbiddenSyntax,
   IdentifierReference,
+  JsxElementName,
   JsxReferenceNode,
   SourceRange,
 } from "../types/estree";
+import type { ClientDirectiveElement } from "../types/mdx";
 
 export function nodeRange(node: EstreeNode): SourceRange {
   const ranged = node as EstreeNode & Partial<SourceRange>;
@@ -214,4 +216,49 @@ export function forbiddenUsage(
   declared: ReadonlySet<string> = new Set()
 ): ForbiddenSyntax[] {
   return [...findForbiddenSyntax(root), ...findNodeApiUsage(root, declared)];
+}
+
+function jsxElementName(name: JsxElementName): string {
+  if (name.type === "JSXIdentifier") {
+    return name.name;
+  }
+  if (name.type === "JSXMemberExpression") {
+    return `${jsxElementName(name.object)}.${name.property.name}`;
+  }
+  return `${name.namespace.name}:${name.name.name}`;
+}
+
+export function jsxClientDirectives(
+  root: EstreeNode
+): ClientDirectiveElement[] {
+  const elements: ClientDirectiveElement[] = [];
+  visitEstree(root, (node) => {
+    if (node.type !== "JSXOpeningElement") {
+      return;
+    }
+    const directives = node.attributes.flatMap((attribute) => {
+      if (
+        attribute.type !== "JSXAttribute" ||
+        attribute.name.type !== "JSXNamespacedName" ||
+        attribute.name.namespace.name !== "client"
+      ) {
+        return [];
+      }
+      return [
+        {
+          ...nodeRange(attribute),
+          name: `client:${attribute.name.name.name}`,
+          hasValue: attribute.value !== null,
+        },
+      ];
+    });
+    if (directives.length > 0) {
+      elements.push({
+        name: jsxElementName(node.name),
+        start: nodeRange(node).start,
+        directives,
+      });
+    }
+  });
+  return elements;
 }

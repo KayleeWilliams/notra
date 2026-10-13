@@ -5,9 +5,9 @@ import type {
   SlotPost,
   SlotSite,
 } from "../types/site-files";
-import { formatDate } from "../utils/dates";
 import { excerpt } from "../utils/excerpt";
 import { authorsOf } from "./authors";
+import { formatDate } from "./dates";
 import {
   absoluteUrl,
   areaDescription,

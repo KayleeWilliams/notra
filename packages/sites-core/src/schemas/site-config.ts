@@ -1,6 +1,8 @@
 import {
+  SITE_APPEARANCE_STORAGE_KEY,
   SITE_AUTHOR_AVATAR,
   SITE_AUTHOR_ID,
+  SITE_DEFAULT_APPEARANCE_STORAGE_KEY,
   SITE_DEFAULT_PRIMARY_COLOR,
   SITE_HEX_COLOR,
   SITE_LINK_HREF,
@@ -52,6 +54,7 @@ const siteAuthorSchema = z.strictObject({
   x: z.url().optional(),
   linkedin: z.url().optional(),
   github: z.url().optional(),
+  youtube: z.url().optional(),
 });
 const imageByModeSchema = z.object({
   light: sitePathSchema,
@@ -71,11 +74,25 @@ const appearanceSchema = z
     z.object({
       default: z.enum(["light", "dark", "system"]).default("system"),
       strict: z.boolean().default(false),
+      storageKey: z
+        .string()
+        .trim()
+        .regex(
+          SITE_APPEARANCE_STORAGE_KEY,
+          "Use letters, digits, dashes, underscores or dots"
+        )
+        .default(SITE_DEFAULT_APPEARANCE_STORAGE_KEY),
     }),
   ])
   .default("system")
   .transform((value) =>
-    typeof value === "string" ? { default: value, strict: false } : value
+    typeof value === "string"
+      ? {
+          default: value,
+          strict: false,
+          storageKey: SITE_DEFAULT_APPEARANCE_STORAGE_KEY,
+        }
+      : value
   );
 
 const shikiThemeName = z
@@ -197,6 +214,7 @@ export const frontmatterAuthorSchema = z.object({
   x: frontmatterLinkSchema.optional(),
   linkedin: frontmatterLinkSchema.optional(),
   github: frontmatterLinkSchema.optional(),
+  youtube: frontmatterLinkSchema.optional(),
 });
 
 const frontmatterAuthorRefSchema = z.union([

@@ -26,7 +26,7 @@ function htmlText(node: HastContent): string {
   return node.children.map(htmlText).join("");
 }
 
-function plainText(node: Nodes): string {
+export function plainText(node: Nodes): string {
   switch (node.type) {
     case "text":
     case "inlineCode":
@@ -55,19 +55,23 @@ function plainText(node: Nodes): string {
   }
 }
 
-function summary(body: string): string | undefined {
-  let tree: Root;
+/** Parses a post body as MDX, falling back to plain Markdown when the MDX is invalid. */
+export function parseBody(body: string): Root {
   try {
-    tree = fromMarkdown(body, {
+    return fromMarkdown(body, {
       extensions: [gfm(), mdxjs()],
       mdastExtensions: [gfmFromMarkdown(), mdxFromMarkdown()],
     });
   } catch {
-    tree = fromMarkdown(body, {
+    return fromMarkdown(body, {
       extensions: [gfm()],
       mdastExtensions: [gfmFromMarkdown()],
     });
   }
+}
+
+function summary(body: string): string | undefined {
+  const tree = parseBody(body);
   for (const node of tree.children) {
     if (node.type !== "paragraph") {
       continue;

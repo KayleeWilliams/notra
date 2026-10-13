@@ -44,4 +44,5 @@ export const SITE_SLOT_NAMES = [
   "after-post",
   "sidebar",
   "after-changelog-entry",
+  "before-footer",
 ] as const;

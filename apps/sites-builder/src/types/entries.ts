@@ -36,7 +36,7 @@ export interface CardImages {
 export interface PostCardProps {
   entry: BlogEntry;
   headingLevel?: "h2" | "h3";
-  variant?: "card" | "feature" | "row";
+  variant?: "card" | "feature" | "row" | "box";
   featured?: boolean;
   images?: CardImages;
   showAuthor?: boolean;

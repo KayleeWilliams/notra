@@ -1,7 +1,7 @@
 ---
 import type { TocProps as Props, TocSection } from "../types/toc";
 
-const { inline = false } = Astro.props;
+const { inline = false, minItems = 2 } = Astro.props;
 const sections: TocSection[] = [];
 for (const heading of Astro.props.headings) {
   if (heading.depth === 2 || (heading.depth === 3 && sections.length === 0)) {
@@ -14,7 +14,7 @@ const count = sections.reduce((total, section) => total + 1 + section.children.l
 ---
 
 {
-  count > 1 && (
+  count >= minItems && (
     <nav id={inline ? undefined : "table-of-contents"} aria-label="On this page" class="toc" data-toc data-toc-inline={inline ? "" : undefined}>
       {!inline && <p class="post-meta mb-3">On this page</p>}
       <ol class="toc-tree">

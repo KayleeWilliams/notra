@@ -112,6 +112,11 @@
             "strict": {
               "default": false,
               "type": "boolean"
+            },
+            "storageKey": {
+              "default": "notra-theme",
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._-]{1,64}$"
             }
           }
         }
@@ -776,6 +781,10 @@
           "github": {
             "type": "string",
             "format": "uri"
+          },
+          "youtube": {
+            "type": "string",
+            "format": "uri"
           }
         },
         "required": ["name"],
@@ -797,7 +806,7 @@
         "layout": {
           "default": "grid",
           "type": "string",
-          "enum": ["grid", "list", "magazine"]
+          "enum": ["grid", "list", "magazine", "cards"]
         },
         "hero": {
           "default": {
@@ -878,13 +887,20 @@
             }
           }
         },
+        "authorPage": {
+          "default": "inline",
+          "type": "string",
+          "enum": ["inline", "stacked"]
+        },
         "post": {
           "default": {
             "toc": true,
             "authorCard": true,
             "readingTime": true,
             "pagination": true,
-            "width": "wide"
+            "width": "wide",
+            "header": "stacked",
+            "cover": true
           },
           "type": "object",
           "properties": {
@@ -908,6 +924,15 @@
               "default": "wide",
               "type": "string",
               "enum": ["narrow", "wide"]
+            },
+            "header": {
+              "default": "stacked",
+              "type": "string",
+              "enum": ["stacked", "compact"]
+            },
+            "cover": {
+              "default": true,
+              "type": "boolean"
             }
           }
         }
@@ -1116,7 +1141,8 @@
     "thumbnails": {
       "default": {
         "enabled": true,
-        "appearance": "light"
+        "appearance": "light",
+        "layout": "default"
       },
       "type": "object",
       "properties": {
@@ -1137,18 +1163,34 @@
         "font": {
           "type": "string",
           "maxLength": 80
+        },
+        "layout": {
+          "default": "default",
+          "type": "string",
+          "enum": ["default", "author"]
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
         }
       }
     },
     "metadata": {
       "default": {
-        "timestamp": true
+        "timestamp": true,
+        "dateFormat": "short"
       },
       "type": "object",
       "properties": {
         "timestamp": {
           "default": true,
           "type": "boolean"
+        },
+        "dateFormat": {
+          "default": "short",
+          "type": "string",
+          "enum": ["short", "long"]
         }
       }
     },

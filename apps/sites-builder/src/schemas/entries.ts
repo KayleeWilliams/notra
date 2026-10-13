@@ -26,6 +26,7 @@ export const entryAuthorSchema = z.object({
   x: linkSchema.optional(),
   linkedin: linkSchema.optional(),
   github: linkSchema.optional(),
+  youtube: linkSchema.optional(),
 });
 
 const authorRefSchema = z.union([z.string(), entryAuthorSchema]);

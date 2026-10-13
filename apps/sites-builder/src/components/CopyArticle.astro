@@ -4,7 +4,7 @@ import { contextualActions } from "../lib/contextual";
 import Icon from "./Icon.astro";
 import LinkIcon from "./LinkIcon.astro";
 
-const { markdownHref, pagePath, title } = Astro.props;
+const { markdownHref, pagePath, title, label = "Copy page" } = Astro.props;
 const { copy, menu } = contextualActions({ title, pagePath, markdownHref });
 const hasActions = copy || menu.length > 0;
 ---
@@ -14,10 +14,10 @@ const hasActions = copy || menu.length > 0;
 <div class="split-button" role="group" aria-label="Page actions">
   {
     copy && (
-      <button type="button" data-copy-article={markdownHref} class="btn btn-secondary btn-sm">
+      <button type="button" data-copy-article={markdownHref} data-copy-idle-label={label} class="btn btn-secondary btn-sm">
         <Icon name="copy" size={14} class="[[data-copied]_&]:hidden" />
         <Icon name="check" size={14} class="hidden [[data-copied]_&]:block" />
-        <span data-copy-label>Copy page</span>
+        <span data-copy-label>{label}</span>
       </button>
     )
   }
@@ -93,7 +93,7 @@ const hasActions = copy || menu.length > 0;
         fallback.hidden = true;
       }
       if (label) {
-        label.textContent = "Copy page";
+        label.textContent = button.dataset.copyIdleLabel ?? "Copy page";
       }
       if (status) {
         status.textContent = "";
@@ -114,7 +114,7 @@ const hasActions = copy || menu.length > 0;
         resetTimer = setTimeout(() => {
           button.removeAttribute("data-copied");
           if (label) {
-            label.textContent = "Copy page";
+            label.textContent = button.dataset.copyIdleLabel ?? "Copy page";
           }
           if (status?.textContent === "Page copied as Markdown.") {
             status.textContent = "";

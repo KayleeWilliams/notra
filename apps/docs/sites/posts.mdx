@@ -41,7 +41,7 @@ Today we're launching **Acme Flow**.
 | `description` | string | | Summary for cards, search results and link previews, and without it Notra uses the first paragraph |
 | `updated` | date | | Shown as "Updated" next to the date, and used in the sitemap and for search engines |
 | `author` | string, object or list | | Author ids from [`authors`](#authors) in `blog.json`, plain names, or [author objects](#authors-in-the-frontmatter) |
-| `image` | path or URL | | Cover image and social preview, as PNG or JPEG at 1200×630 |
+| `image` | path or URL | | Cover image and social preview, as PNG or JPEG at 1200×630. [`blog.post.cover`](/sites/customize/layouts#posts) set to `false` keeps it off the post page |
 | `imageAlt` | string | | Describes the cover for screen readers and link previews |
 | `tags` | list | | Shown as links under the post and on cards, each with its own [tag page](#tags), and used in the RSS feed, search engine metadata and the Markdown version |
 | `featured` | boolean | | `true` pins the post on top of the blog index while `blog.featured` is `"none"` |
@@ -105,9 +105,9 @@ Describe the people who write for you once in `blog.json`, then name them by id 
 | `title` | Up to 80 characters |
 | `avatar` | A path like `/images/team/jan.jpg` or an `https://` URL |
 | `bio` | Up to 300 characters |
-| `url`, `x`, `linkedin`, `github` | Full URLs |
+| `url`, `x`, `linkedin`, `github`, `youtube` | Full URLs |
 
-Notra lists a known author with avatar and title under "Written by", beside the post in the wide layout or under the title otherwise, and gives them an author page at `/blog/author/jan` listing their posts. Search engines and AI answers get a schema.org `Person` with the profile links, which ties the post to a real person. Notra shows any other value in `author`, like `author: Guest Writer`, as a plain name.
+Notra lists a known author with avatar and title under "Written by", beside the post in the wide layout or under the title otherwise (in the sidebar with the [compact header](/sites/customize/layouts#compact-post-header)), and gives them an author page at `/blog/author/jan` listing their posts. Search engines and AI answers get a schema.org `Person` with the profile links, which ties the post to a real person. Notra shows any other value in `author`, like `author: Guest Writer`, as a plain name.
 
 ### Authors in the frontmatter
 
@@ -132,7 +132,7 @@ An author object takes the same fields as an entry in `authors`, and only `name`
 - With an `id` that isn't in `authors`, the author still gets an author page at `/blog/author/<id>` that lists their posts. When several posts describe the same id, the newest post's details win.
 - Without an `id`, Notra shows the name and avatar, but there's no author page.
 
-Notra hides author pages from search engines unless you set `"seo": { "indexing": "all" }`.
+`blog.authorPage` switches author pages to a [stacked layout](/sites/customize/layouts#author-pages). Notra hides author pages from search engines unless you set `"seo": { "indexing": "all" }`.
 
 ## Tags
 

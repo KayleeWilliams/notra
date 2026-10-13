@@ -133,6 +133,7 @@ export async function buildSite(
     entries: prepared.validation.entries,
     publicFiles: prepared.publicFiles,
     includeDrafts: options.target.includeDrafts,
+    publicOrigin: options.target.publicOrigin,
   });
   diagnostics.push(...ogImages.diagnostics);
   const ogImagePaths = Object.values(ogImages.manifest);

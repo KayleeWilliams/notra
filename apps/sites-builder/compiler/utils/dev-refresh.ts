@@ -58,6 +58,7 @@ export function createDevRefresh(options: DevRefreshOptions) {
       entries: prepared.validation.entries,
       publicFiles: prepared.publicFiles,
       includeDrafts: options.params.includeDrafts,
+      publicOrigin: options.params.publicOrigin,
     });
     if (closed || current !== revision) {
       return;
