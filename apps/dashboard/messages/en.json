@@ -2740,7 +2740,8 @@
       "seriesLabel": "Brand visibility",
       "brandsHint": "How often each brand shows up in this engine's answers to your prompts",
       "resultHeader": "Result",
-      "emptyPrompts": "No prompts scanned yet"
+      "emptyPrompts": "No prompts scanned yet",
+      "visiblePrompts": "Visible in prompts"
     },
     "engineRateTable": {
       "columns": {

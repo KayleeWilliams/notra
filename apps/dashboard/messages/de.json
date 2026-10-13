@@ -2740,7 +2740,8 @@
       "seriesLabel": "Markensichtbarkeit",
       "brandsHint": "Wie oft jede Marke in den Antworten dieser KI-Engine auf deine Prompts auftaucht",
       "resultHeader": "Ergebnis",
-      "emptyPrompts": "Noch keine Prompts gescannt"
+      "emptyPrompts": "Noch keine Prompts gescannt",
+      "visiblePrompts": "Sichtbar in Prompts"
     },
     "engineRateTable": {
       "columns": {

@@ -14,6 +14,7 @@ import { useTranslations } from "use-intl";
 
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useGeoActiveProject } from "@/lib/hooks/use-geo-active-project";
+import { useGeoPromptsDb } from "@/lib/hooks/use-geo-db";
 import type { WriteDialogInitialState } from "@/types/components/geo-writer";
 import type {
   EngineFamilyBrandScope,
@@ -26,6 +27,7 @@ import {
 } from "@/utils/geo-competitors";
 import { resolveOrganizationId } from "@/utils/geo-overview-organization";
 import {
+  engineFamilyPromptCoverage,
   engineFamilyPromptHits,
   promptTableRowForId,
 } from "@/utils/geo-prompts";
@@ -56,6 +58,10 @@ export function useEngineFamilySheet({
       )
     : "";
   const { domain: projectDomain } = useGeoActiveProject(organizationId);
+  const { prompts: trackedPrompts, isLoading: isPromptsLoading } =
+    useGeoPromptsDb(organizationId, {
+      enabled: Boolean(organizationId),
+    });
   const ownDomain = projectDomain ?? findOwnBrandDomain(aliases ?? []);
   const canWrite = Boolean(organizationSlug) && Boolean(organizationId);
   const name = engineFamilyLabel(family.family);
@@ -67,6 +73,15 @@ export function useEngineFamilySheet({
       (result) => engineFamilyOf(result.engine) === family.family
     )?.engine ?? null;
   const promptHits = engineFamilyPromptHits(family.family, promptResults);
+  // A disabled live query reports loading forever, so only an org's prompt
+  // list can hold the stat back.
+  const promptCoverage =
+    organizationId && isPromptsLoading
+      ? null
+      : engineFamilyPromptCoverage(
+          promptHits,
+          organizationId ? trackedPrompts : null
+        );
   const brandScope: EngineFamilyBrandScope = {
     companyName,
     aliases,
@@ -98,6 +113,7 @@ export function useEngineFamilySheet({
     selectedRow,
     selectedEngine,
     promptHits,
+    promptCoverage,
     brandScope,
     brandRows,
     writeOpen,

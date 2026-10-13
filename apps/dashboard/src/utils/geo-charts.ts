@@ -139,8 +139,15 @@ export function toShareOfVoiceDonutSlices(
   }));
 }
 
+// Below this a rate would round to "0%" even though the brand showed up.
+const MIN_ROUNDED_RATE_PERCENT = 0.5;
+
 export function formatMentionRate(rate: number): string {
-  return `${Math.round(rate * CHART_PERCENT_SCALE)}%`;
+  const percent = rate * CHART_PERCENT_SCALE;
+  if (percent > 0 && percent < MIN_ROUNDED_RATE_PERCENT) {
+    return "<1%";
+  }
+  return `${Math.round(percent)}%`;
 }
 
 export function formatChartPercent(value: number): string {
