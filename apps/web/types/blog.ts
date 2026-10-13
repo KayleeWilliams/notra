@@ -146,11 +146,14 @@ export interface BlogPostTocProps {
   toc: TOCItemType[];
 }
 
-export interface TocPosition {
+interface TocEntry {
   id: string;
-  depth: number;
-  top: number;
-  height: number;
+  url: string;
+  title: ReactNode;
+}
+
+export interface TocSection extends TocEntry {
+  children: TocEntry[];
 }
 
 export interface BlogPostSidebarProps {
