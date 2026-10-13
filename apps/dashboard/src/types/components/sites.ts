@@ -501,12 +501,10 @@ export interface SiteProxySetupProps {
   hostname: string;
   aliasOrigin: string;
   mounts: SiteMounts;
-  checkAction?: ReactNode;
 }
 
 export interface SiteDnsSetupProps extends SiteScope {
   domain: SiteDomain;
-  checkAction: ReactNode;
 }
 
 export interface SiteDnsRecordValueProps {
@@ -524,13 +522,14 @@ export interface SiteDnsProviderButtonProps {
   oneClick?: boolean;
 }
 
-export interface SiteDomainSetupProps extends SiteScope {
+export interface SiteDomainCardProps extends SiteScope {
   domain: SiteDomain;
   aliasOrigin: string;
   mounts: SiteMounts;
+  onRemove: (domain: SiteDomain) => void;
 }
 
-export interface SiteDomainStatusDotProps {
+export interface SiteDomainStatusBadgeProps {
   status: SiteDomainChipStatus;
 }
 
@@ -540,18 +539,18 @@ export interface SiteDomainCheckButtonProps {
   variant?: "ghost" | "outline";
 }
 
-export interface SiteDomainRowMenuProps {
+export interface SiteDomainMenuProps {
   hostname: string;
   url: string;
   canOpen: boolean;
-  onRemove?: () => void;
+  onRemove: () => void;
 }
 
-export interface SiteDomainsTableProps extends SiteScope {
-  aliasOrigin: string;
+export interface SiteDomainAddFormProps extends SiteScope {
   mounts: SiteMounts;
-  domains: SiteDomain[];
-  onRemove: (domain: SiteDomain) => void;
+  autoFocus?: boolean;
+  onAdded?: () => void;
+  renderActions: (state: { canSubmit: boolean; pending: boolean }) => ReactNode;
 }
 
 export interface SiteDomainAddDialogProps extends SiteScope {

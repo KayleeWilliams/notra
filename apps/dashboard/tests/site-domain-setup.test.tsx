@@ -1,17 +1,14 @@
 import { describe, expect, mock, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { Script } from "node:vm";
 
 import type { DomainConnectResult } from "@notra/sites-server/types/domain-connect";
-import type { DataTableProps } from "@notra/ui/types/data-table";
 import { renderToStaticMarkup } from "react-dom/server";
 import { IntlProvider } from "use-intl";
 
 import de from "../messages/de.json";
 import en from "../messages/en.json";
-import type { SiteDomain, SiteDomainRow } from "../src/types/sites";
+import type { SiteDomain } from "../src/types/sites";
 
 if (!process.env.NOTRA_DOMAIN_SETUP_TEST_WORKER) {
   test("compact domain setup UI", () => {
@@ -40,30 +37,10 @@ if (!process.env.NOTRA_DOMAIN_SETUP_TEST_WORKER) {
   mock.module("../src/lib/hooks/use-site-domain-connect", () => ({
     useSiteDomainConnect: () => ({ data: connection }),
   }));
-  mock.module("@notra/ui/components/ui/data-table", () => ({
-    DataTable: ({
-      columns,
-      data,
-      renderRowDetail,
-    }: DataTableProps<SiteDomainRow>) => (
-      <div>
-        {data.map((row) => (
-          <div key={row.id}>
-            {columns.map((column) => (
-              <div key={column.key}>{column.cell?.(row)}</div>
-            ))}
-            {renderRowDetail?.(row)}
-          </div>
-        ))}
-      </div>
-    ),
-  }));
-  const { SiteDomainSetup } =
-    await import("../src/components/sites/site-domain-setup");
+  const { SiteDomainCard } =
+    await import("../src/components/sites/site-domain-card");
   const { SiteDnsRecordsTable } =
     await import("../src/components/sites/site-domain-dns");
-  const { SiteDomainsTable } =
-    await import("../src/components/sites/site-domains-table");
   const domain = {
     id: "domain",
     hostname: "blog.example.com",
@@ -102,10 +79,11 @@ if (!process.env.NOTRA_DOMAIN_SETUP_TEST_WORKER) {
       };
       const html = renderToStaticMarkup(
         <IntlProvider locale={locale} messages={messages} timeZone="UTC">
-          <SiteDomainSetup
+          <SiteDomainCard
             aliasOrigin="https://alias.example.com"
             domain={domain}
             mounts={{ blog: "/" }}
+            onRemove={() => {}}
             organizationId="organization"
             siteId="site"
           />
@@ -128,11 +106,14 @@ if (!process.env.NOTRA_DOMAIN_SETUP_TEST_WORKER) {
           "Cloudflare"
         )
       );
-      expect(html).not.toContain(messages.sites.domainsPage.status.dnsRequired);
-      expect(html).not.toContain(messages.sites.domainsPage.status.verifying);
-      expect(html).not.toContain("<ol");
+      expect(html).toContain(messages.sites.domainsPage.status.dnsRequired);
+      expect(html).toContain(
+        messages.sites.domainsPage.dns.addRecordsToZone.replace(
+          "{zone}",
+          "example.com"
+        )
+      );
       expect(html).not.toContain(messages.sites.domainsPage.verifyNow);
-      expect(html).toContain("justify-end gap-x-4");
       expect(html).toContain(
         'href="https://dash.cloudflare.com/?to=/:account/example.com/dns/records"'
       );
@@ -188,7 +169,7 @@ if (!process.env.NOTRA_DOMAIN_SETUP_TEST_WORKER) {
       (status) => {
         const html = renderToStaticMarkup(
           <IntlProvider locale={locale} messages={messages} timeZone="UTC">
-            <SiteDomainSetup
+            <SiteDomainCard
               aliasOrigin="https://alias.example.com"
               domain={{
                 ...domain,
@@ -197,13 +178,13 @@ if (!process.env.NOTRA_DOMAIN_SETUP_TEST_WORKER) {
                 lastCheckedAt: new Date("2026-10-07T00:00:00Z"),
               }}
               mounts={{ blog: "/" }}
+              onRemove={() => {}}
               organizationId="organization"
               siteId="site"
             />
           </IntlProvider>
         );
         expect(html).not.toContain('data-slot="alert"');
-        expect(html).not.toContain("<details");
         if (status === "failed") {
           expect(html).toContain("DNS record is not visible yet");
           expect(html).toContain('role="alert"');
@@ -216,12 +197,12 @@ if (!process.env.NOTRA_DOMAIN_SETUP_TEST_WORKER) {
       }
     );
 
-    test("domain names have no kind subtext and retain primary designation", () => {
+    test("cards show the hostname, primary designation and status badge", () => {
       const html = renderToStaticMarkup(
         <IntlProvider locale={locale} messages={messages} timeZone="UTC">
-          <SiteDomainsTable
+          <SiteDomainCard
             aliasOrigin="https://alias.example.com"
-            domains={[domain]}
+            domain={{ ...domain, status: "active", isPrimary: true }}
             mounts={{ blog: "/" }}
             onRemove={() => {}}
             organizationId="organization"
@@ -231,12 +212,9 @@ if (!process.env.NOTRA_DOMAIN_SETUP_TEST_WORKER) {
       );
       expect(html).toContain(domain.hostname);
       expect(html).toContain(messages.sites.domainsPage.primary);
-      expect(html).toContain('data-slot="badge"');
-      expect(html).not.toContain(messages.sites.domainsPage.notraAddress);
+      expect(html).toContain(messages.sites.domainsPage.status.active);
+      expect(html).not.toContain("alias.example.com");
       expect(html).not.toContain(messages.sites.domainsPage.kinds.subdomain);
-      expect(html).not.toContain(" · ");
-      expect(html).not.toContain("verification-token");
-      expect(html).not.toContain("<details");
     });
   });
 
@@ -250,10 +228,11 @@ if (!process.env.NOTRA_DOMAIN_SETUP_TEST_WORKER) {
       };
       const html = renderToStaticMarkup(
         <IntlProvider locale="en" messages={en} timeZone="UTC">
-          <SiteDomainSetup
+          <SiteDomainCard
             aliasOrigin="https://alias.example.com"
             domain={domain}
             mounts={{ blog: "/" }}
+            onRemove={() => {}}
             organizationId="organization"
             siteId="site"
           />
@@ -283,21 +262,22 @@ if (!process.env.NOTRA_DOMAIN_SETUP_TEST_WORKER) {
   test("proxy domains keep their rewrite recipe and verification action", () => {
     const html = renderToStaticMarkup(
       <IntlProvider locale="en" messages={en} timeZone="UTC">
-        <SiteDomainSetup
+        <SiteDomainCard
           aliasOrigin="https://alias.example.com"
           domain={{ ...domain, kind: "proxy" }}
           mounts={{ blog: "/blog" }}
+          onRemove={() => {}}
           organizationId="organization"
           siteId="site"
         />
       </IntlProvider>
     );
-    expect(html).not.toContain(en.sites.domainsPage.status.proxyRequired);
+    expect(html).toContain(en.sites.domainsPage.status.proxyRequired);
     expect(html).not.toContain("<details open");
-    expect(html).toContain("vercel.json");
-    expect(html.replaceAll("&#x27;", "'")).toContain(
-      en.sites.domainsPage.proxy.noCookies
-    );
+    expect(html).not.toContain("<details");
+    expect(html).toContain(en.sites.domainsPage.proxy.agentTab);
+    expect(html).toContain(en.sites.domainsPage.proxy.manualSetup);
+    expect(html).toContain(en.sites.domainsPage.proxy.agentPromptLabel);
     expect(html).toContain('aria-label="Check blog.example.com"');
     expect(html).not.toContain("<ol");
   });
@@ -305,58 +285,19 @@ if (!process.env.NOTRA_DOMAIN_SETUP_TEST_WORKER) {
   test("active domains keep DNS records without a connection offer", () => {
     const html = renderToStaticMarkup(
       <IntlProvider locale="en" messages={en} timeZone="UTC">
-        <SiteDomainSetup
+        <SiteDomainCard
           aliasOrigin="https://alias.example.com"
           domain={{ ...domain, status: "active", isPrimary: true }}
           mounts={{ blog: "/" }}
+          onRemove={() => {}}
           organizationId="organization"
           siteId="site"
         />
       </IntlProvider>
     );
-    expect(html).not.toContain(en.sites.domainsPage.status.active);
+    expect(html).toContain(en.sites.domainsPage.status.active);
     expect(html).toContain(en.sites.domainsPage.dns.dnsOnly);
     expect(html).not.toContain("Connect with Vercel");
     expect(html).toContain('aria-label="Check blog.example.com"');
-  });
-
-  test("domain details default closed and opening another row closes the first", () => {
-    const source = readFileSync(
-      new URL(
-        "../src/components/sites/site-domains-table.tsx",
-        import.meta.url
-      ),
-      "utf8"
-    );
-    const handlers = source
-      .slice(
-        source.indexOf("  const isExpanded ="),
-        source.indexOf("  const columns:")
-      )
-      .replaceAll(": SiteDomainRow", "");
-    let expandedId: string | null = null;
-    const { isExpanded, toggle } = new Script(
-      `${handlers}\n({ isExpanded, toggle });`
-    ).runInNewContext({
-      get expandedId() {
-        return expandedId;
-      },
-      setExpandedId: (update: (current: string | null) => string | null) => {
-        expandedId = update(expandedId);
-      },
-    });
-    const first = { id: "first", kind: "domain", domain };
-    const second = { id: "second", kind: "domain", domain };
-    expect(isExpanded(first)).toBe(false);
-    expect(isExpanded(second)).toBe(false);
-    toggle(first);
-    expect(isExpanded(first)).toBe(true);
-    toggle(second);
-    expect(isExpanded(first)).toBe(false);
-    expect(isExpanded(second)).toBe(true);
-    toggle({ id: "alias", kind: "alias" });
-    expect(isExpanded(second)).toBe(true);
-    toggle(second);
-    expect(isExpanded(second)).toBe(false);
   });
 }

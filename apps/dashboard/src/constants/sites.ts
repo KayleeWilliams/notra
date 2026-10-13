@@ -1,4 +1,5 @@
 import {
+  Alert02Icon,
   Analytics01Icon,
   DashboardSquare01Icon,
   FileEditIcon,
@@ -95,12 +96,15 @@ export const SITE_DOMAIN_CONNECT_OUTCOMES = [
   "error",
 ] as const;
 
-export const SITE_DOMAIN_STATUS_DOTS: Record<SiteDomainChipStatus, string> = {
-  active: "bg-success",
-  dnsRequired: "bg-warning",
-  proxyRequired: "bg-warning",
-  verifying: "bg-warning motion-safe:animate-pulse",
-  failed: "bg-destructive",
+export const SITE_DOMAIN_STATUS_BADGES: Record<
+  SiteDomainChipStatus,
+  SiteStatusBadgeConfig
+> = {
+  active: { variant: "success", icon: Tick02Icon, square: true },
+  dnsRequired: { variant: "warning", icon: Alert02Icon },
+  proxyRequired: { variant: "warning", icon: Alert02Icon },
+  verifying: { variant: "info", icon: Loading03Icon },
+  failed: { variant: "destructive", icon: Cancel01Icon, square: true },
 };
 
 export const SITE_MANUAL_TRIGGER_ICONS: Partial<

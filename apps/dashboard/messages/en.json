@@ -7831,9 +7831,8 @@
     },
     "domainsPage": {
       "title": "Domains",
-      "description": "Serve your site on your own domain. A verified domain becomes the primary address.",
+      "description": "Connect a domain you own. Once it's verified, it becomes your site's primary address.",
       "addDomain": "Add domain",
-      "notraAddress": "Notra address",
       "primary": "Primary",
       "open": "Open",
       "copyUrl": "Copy URL",
@@ -7841,8 +7840,7 @@
         "subdomain": "Subdomain",
         "proxy": "Paths on your site"
       },
-      "checked": "Checked",
-      "notChecked": "Not checked yet",
+      "notChecked": "Not checked yet.",
       "check": "Check",
       "checking": "Checking…",
       "checkLabel": "Check {hostname}",
@@ -7880,13 +7878,14 @@
         "proxyRequirement": "Turn off the orange cloud in Cloudflare so Notra can issue your HTTPS certificate. This is the required setting, not a live status.",
         "proxied": "Proxied",
         "proxyNotApplicable": "Proxy not applicable",
-        "proxyNotApplicableDescription": "TXT records verify domain ownership. Cloudflare only proxies A, AAAA and CNAME records."
+        "proxyNotApplicableDescription": "TXT records verify domain ownership. Cloudflare only proxies A, AAAA and CNAME records.",
+        "addRecords": "Add these records where you manage your domain's DNS.",
+        "addRecordsToZone": "Add these records to the DNS of {zone}."
       },
       "proxy": {
         "agentPromptDescription": "Let your coding agent set up the proxy.",
         "agentPromptLabel": "Proxy setup agent prompt",
         "manualSetup": "Manual setup",
-        "viewPrompt": "View prompt",
         "description": "Forward <code>{paths}</code> and everything below them to <code>{origin}</code>, keeping the path.",
         "platform": "Platform",
         "noCookies": "Don't forward cookies or authorization headers. The site doesn't need them.",
@@ -7897,7 +7896,9 @@
           "tanstack": "TanStack Start",
           "cloudflare": "Cloudflare Worker",
           "nginx": "nginx"
-        }
+        },
+        "agentTab": "Coding agent",
+        "setupLabel": "Setup method"
       },
       "add": {
         "title": "Add domain",
@@ -7923,12 +7924,10 @@
         "errorDescription": "Add them yourself from the DNS configuration below."
       },
       "setupErrorTitle": "Can't verify this domain yet",
-      "columns": {
-        "domain": "Domain",
-        "status": "Status",
-        "checked": "Checked",
-        "actions": "Actions"
-      }
+      "connectTitle": "Connect your domain",
+      "connectSubmit": "Continue",
+      "lastChecked": "Checked <time></time>.",
+      "propagationHint": "DNS changes usually verify within a few minutes."
     },
     "editorPage": {
       "title": "Editor",
