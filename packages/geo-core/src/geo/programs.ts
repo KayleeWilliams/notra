@@ -1361,7 +1361,13 @@ export const loadAiTraffic = Effect.fn("geo.aiTraffic")(function* (
       ? {}
       : { previousVisits: Number(row.previous_visits) }),
     markdownVisits: Number(row.markdown_visits),
+    ...(row.previous_markdown_visits == null
+      ? {}
+      : { previousMarkdownVisits: Number(row.previous_markdown_visits) }),
     paths: Number(row.paths),
+    ...(row.previous_paths == null
+      ? {}
+      : { previousPaths: Number(row.previous_paths) }),
     lastSeenAt: row.last_seen_at,
   }));
 

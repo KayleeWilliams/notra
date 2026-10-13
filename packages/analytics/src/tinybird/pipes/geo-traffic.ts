@@ -141,7 +141,9 @@ export const geoTrafficOverview = defineEndpoint("geo_traffic_overview", {
           countMergeIf(visits_state, (${GEO_DAY_PREVIOUS_CONDITION})) AS previous_visits,
           countIfMergeIf(markdown_visits_state, (${GEO_DAY_CURRENT_CONDITION})) AS markdown_visits,
           uniqExactMergeIf(paths_state, (${GEO_DAY_CURRENT_CONDITION})) AS paths,
-          maxMergeIf(last_seen_state, (${GEO_DAY_CURRENT_CONDITION})) AS last_seen_at
+          maxMergeIf(last_seen_state, (${GEO_DAY_CURRENT_CONDITION})) AS last_seen_at,
+          countIfMergeIf(markdown_visits_state, (${GEO_DAY_PREVIOUS_CONDITION})) AS previous_markdown_visits,
+          uniqExactMergeIf(paths_state, (${GEO_DAY_PREVIOUS_CONDITION})) AS previous_paths
         FROM geo_traffic_daily
         WHERE organization_id = {{String(organization_id)}}
           ${GEO_PROJECT_SCOPE_SQL}
@@ -164,7 +166,9 @@ export const geoTrafficOverview = defineEndpoint("geo_traffic_overview", {
           h.previous_visits AS previous_visits,
           toUInt64(0) AS markdown_visits,
           h.paths AS paths,
-          h.last_seen_at AS last_seen_at
+          h.last_seen_at AS last_seen_at,
+          toUInt64(0) AS previous_markdown_visits,
+          h.previous_paths AS previous_paths
         FROM (
           SELECT
             source,
@@ -172,7 +176,8 @@ export const geoTrafficOverview = defineEndpoint("geo_traffic_overview", {
             countMergeIf(visits_state, (${GEO_DAY_CURRENT_CONDITION})) AS visits,
             countMergeIf(visits_state, (${GEO_DAY_PREVIOUS_CONDITION})) AS previous_visits,
             uniqExactIf(path, (${GEO_DAY_CURRENT_CONDITION})) AS paths,
-            maxMergeIf(last_seen_state, (${GEO_DAY_CURRENT_CONDITION})) AS last_seen_at
+            maxMergeIf(last_seen_state, (${GEO_DAY_CURRENT_CONDITION})) AS last_seen_at,
+            uniqExactIf(path, (${GEO_DAY_PREVIOUS_CONDITION})) AS previous_paths
           FROM geo_traffic_pages_by_host_daily
           WHERE ${GEO_PAGE_FILTER_SET}
             AND organization_id = {{String(organization_id)}}
@@ -213,6 +218,8 @@ export const geoTrafficOverview = defineEndpoint("geo_traffic_overview", {
     markdown_visits: t.uint64(),
     paths: t.uint64(),
     last_seen_at: t.dateTime(),
+    previous_markdown_visits: t.uint64(),
+    previous_paths: t.uint64(),
   },
 });
 

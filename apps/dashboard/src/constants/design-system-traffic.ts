@@ -6,19 +6,30 @@ import type {
 } from "@notra/geo-core/types/geo";
 import { toGeoTrafficTotals } from "@notra/geo-core/utils/ai-traffic";
 
+// Fixture comparison period, so the drawers show the trend badges.
+const PREVIOUS_VISITS_RATIO = 0.72;
+const MARKDOWN_SHARE = 0.12;
+const PREVIOUS_MARKDOWN_SHARE = 0.07;
+
 function trafficSource(
   source: string,
   visitorType: GeoVisitorType,
   category: string,
   visits: number
 ): GeoTrafficSource {
+  const previousVisits = Math.round(visits * PREVIOUS_VISITS_RATIO);
   return {
     agent: source,
     category,
     confidence: "verified",
     lastSeenAt: "2026-09-12 14:30:00",
-    markdownVisits: 0,
-    paths: 1,
+    markdownVisits: Math.round(visits * MARKDOWN_SHARE),
+    previousMarkdownVisits: Math.round(
+      previousVisits * PREVIOUS_MARKDOWN_SHARE
+    ),
+    paths: 3,
+    previousPaths: 2,
+    previousVisits,
     source,
     visits,
     visitorType,

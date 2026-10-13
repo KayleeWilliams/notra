@@ -168,7 +168,7 @@ function JourneyDetailContent({
           <span className="min-w-0 truncate">
             {formatGeoSource(journey.source)}
           </span>
-          <Badge variant="secondary">
+          <Badge shape="rounded" size="md" variant="secondary">
             {journey.visitorType === "crawler"
               ? tGeoShared("crawler")
               : tGeoShared("aiReferral")}

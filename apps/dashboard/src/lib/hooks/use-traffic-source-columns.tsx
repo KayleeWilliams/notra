@@ -46,9 +46,11 @@ export function useTrafficSourceColumns({
     const categorySize = isMobile
       ? TRAFFIC_SOURCE_COLUMN_MIN_WIDTH.categoryMobile
       : TRAFFIC_SOURCE_COLUMN_MIN_WIDTH.category;
-    const visitsSize = isMobile
-      ? TRAFFIC_SOURCE_COLUMN_MIN_WIDTH.visitsMobile
-      : TRAFFIC_SOURCE_COLUMN_MIN_WIDTH.visits;
+    // Without sparklines (the drawer's bot list) the column only holds a number.
+    const visitsSize =
+      isMobile || seriesByKey === undefined
+        ? TRAFFIC_SOURCE_COLUMN_MIN_WIDTH.visitsMobile
+        : TRAFFIC_SOURCE_COLUMN_MIN_WIDTH.visits;
     const next: TableColumn<GeoTrafficSourceGroup>[] = [
       {
         key: "source",

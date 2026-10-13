@@ -1068,7 +1068,9 @@ export interface GeoTrafficSource {
   visits: number;
   previousVisits?: number;
   markdownVisits: number;
+  previousMarkdownVisits?: number;
   paths: number;
+  previousPaths?: number;
   lastSeenAt: string;
 }
 

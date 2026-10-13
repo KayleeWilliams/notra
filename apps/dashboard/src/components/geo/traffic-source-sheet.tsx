@@ -43,6 +43,8 @@ import {
   trafficGroupCurrentMembers,
   trafficGroupKey,
   trafficGroupPathsAreLowerBound,
+  trafficGroupPathsDelta,
+  trafficGroupPreviousMarkdownVisits,
   trafficGroupPreviousVisits,
   trafficGroupTopPages,
 } from "@/utils/ai-traffic-groups";
@@ -105,6 +107,25 @@ function formatShare(part: number, total: number): string {
   return total === 0 ? "0%" : `${Math.round((part / total) * 100)}%`;
 }
 
+/** Percentage-point change of a share, or null without a previous period. */
+function shareDelta(
+  part: number,
+  total: number,
+  previousPart: number | null,
+  previousTotal: number | null
+): number | null {
+  if (previousPart === null || previousTotal === null || total === 0) {
+    return null;
+  }
+  if (part === 0 && previousPart === 0) {
+    return null;
+  }
+  const share = (part / total) * 100;
+  const previousShare =
+    previousTotal === 0 ? 0 : (previousPart / previousTotal) * 100;
+  return share - previousShare;
+}
+
 function TrafficSourceSheetContent({
   group,
   series,
@@ -116,6 +137,7 @@ function TrafficSourceSheetContent({
   const locale = useLocale();
   const [trafficHost] = useGeoTrafficHostQuery();
   const previous = trafficGroupPreviousVisits(group);
+  const previousMarkdown = trafficGroupPreviousMarkdownVisits(group);
   const topPages = trafficGroupTopPages(pages, group, TOP_PAGES_LIMIT);
   const members = trafficGroupCurrentMembers(group);
   const showMarkdown = group.band !== "ai_referral" && trafficHost === "";
@@ -129,11 +151,19 @@ function TrafficSourceSheetContent({
     {
       label: tGeoShared("pages"),
       value: `${trafficGroupPathsAreLowerBound(group) ? "≥ " : ""}${group.paths.toLocaleString(locale)}`,
+      delta: trafficGroupPathsDelta(group),
     },
     showMarkdown
       ? {
           label: tCommon("labels.markdown"),
           value: formatShare(group.markdownVisits, group.visits),
+          delta: shareDelta(
+            group.markdownVisits,
+            group.visits,
+            previousMarkdown,
+            previous
+          ),
+          deltaKind: "rate",
         }
       : {
           label:
@@ -167,7 +197,7 @@ function TrafficSourceSheetContent({
         <div className="min-w-0 space-y-0.5">
           <SheetTitle className="flex min-w-0 items-center gap-2">
             <span className="min-w-0 truncate">{group.label}</span>
-            <Badge variant="secondary">
+            <Badge shape="rounded" size="md" variant="secondary">
               {group.band === "cited"
                 ? t("bands.cited")
                 : tGeoShared(

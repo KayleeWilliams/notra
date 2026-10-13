@@ -526,6 +526,8 @@ export interface SheetStat {
   value: string;
   /** Omit when the sheet has no comparison period; `null` renders nothing. */
   delta?: number | null;
+  /** How `delta` reads: percent change by default, `rate` for percentage points. */
+  deltaKind?: GeoStatDeltaKind;
 }
 
 export interface SheetStatGridProps {
