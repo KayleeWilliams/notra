@@ -16,6 +16,45 @@ docolin:
 
 A preview is a full copy of your site that Notra builds from a pull request or a branch at its own address. Drafts (`draft: true`) also show in previews, so reviewers can read a post before it goes live.
 
+## Local development
+
+With Node.js 22.12 or newer, run the CLI without a global installation:
+
+```bash
+npx notra@latest dev
+```
+
+Or use [Bun](https://bun.sh) directly:
+
+```bash
+bunx --bun notra@latest dev
+```
+
+Run either command from the site folder containing `blog.json`, `blog/`, or
+`changelog/`. If you prefer a global installation:
+
+```bash
+npm i -g notra
+notra dev
+```
+
+Open `http://localhost:4321`. Both `/blog` and `/changelog` are available, and `/`
+redirects to `/blog`. Content, components, CSS, assets and configuration reload
+when you edit them. Drafts are included, and analytics integrations are disabled.
+No login, API key or deployment is required. The first run downloads the Sites
+renderer; later runs reuse npm's or Bun's package cache, depending on the
+selected runtime. Node users do not need Bun. Stop the server with Ctrl+C.
+
+For a site in a subfolder or a different local port:
+
+```bash
+notra dev --source ./hosted-site --port 4400
+```
+
+`--source` selects the site root, not its `blog/` directory. This command uses the
+same renderer as hosted Notra Sites; it does not run your repository's app or its
+build scripts.
+
 ## Pull request previews
 
 Every pull request into the production branch gets a preview at `https://pr-<number>--<address>.notra.site`, which updates with every new commit and goes away when the pull request is closed. The **Notra Sites preview** check on the pull request links to it. Pull requests from forks don't get a preview, and if the site is in a subdirectory, a pull request that changes nothing in its folder doesn't get one either.

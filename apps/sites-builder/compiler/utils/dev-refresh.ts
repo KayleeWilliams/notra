@@ -1,4 +1,5 @@
 import type { DevRefreshOptions } from "../types/dev-refresh";
+import { cleanDevGeneratedAssets } from "./dev-generated-assets";
 import { siteHeadScripts } from "./head-scripts";
 import { hasReactComponents } from "./react";
 
@@ -86,6 +87,11 @@ export function createDevRefresh(options: DevRefreshOptions) {
     };
     const snapshot = JSON.stringify(params);
     if (snapshot === published && active) {
+      await cleanDevGeneratedAssets(
+        params.workDir,
+        params.publicFiles,
+        prepared.customScripts
+      );
       return;
     }
     await stopAstro();
@@ -108,6 +114,13 @@ export function createDevRefresh(options: DevRefreshOptions) {
     if (code !== 0) {
       await stopAstro();
       throw new Error(`Astro dev failed (${code})`);
+    }
+    if (!closed && current === revision) {
+      await cleanDevGeneratedAssets(
+        params.workDir,
+        params.publicFiles,
+        prepared.customScripts
+      );
     }
   };
 

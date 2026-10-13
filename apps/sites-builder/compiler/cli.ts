@@ -1,6 +1,10 @@
 #!/usr/bin/env node
+import { randomBytes } from "node:crypto";
 import { renameSync, watch } from "node:fs";
-import { writeFile } from "node:fs/promises";
+import type { FSWatcher } from "node:fs";
+import { mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
+import type { Server } from "node:http";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
@@ -18,13 +22,13 @@ import { USAGE } from "./constants/cli";
 import {
   findFreePort,
   paramsForArea,
-  startAstroDev,
   startDevProxy,
   stopAstroDev,
 } from "./dev-server";
 import { writeOgImages } from "./og-images";
 import { prepareSite, readSiteFiles } from "./prepare";
 import type { DevAreaServer, RunningDevArea } from "./types/dev-server";
+import { startDevAreas } from "./utils/dev-areas";
 import { createDevRefresh } from "./utils/dev-refresh";
 import { localDefaultConfig } from "./utils/local-options";
 
@@ -45,6 +49,10 @@ function printDiagnostics(diagnostics: SiteDiagnostic[]) {
 
 async function main() {
   const [command, ...rest] = process.argv.slice(2);
+  if (!command || command === "--help" || command === "-h") {
+    process.stdout.write(`${USAGE}\n`);
+    return;
+  }
   const { values } = parseArgs({
     args: rest,
     options: {
@@ -55,8 +63,13 @@ async function main() {
       port: { type: "string", default: "4321" },
       json: { type: "boolean", default: false },
       "result-file": { type: "string" },
+      help: { type: "boolean", short: "h" },
     },
   });
+  if (values.help) {
+    process.stdout.write(`${USAGE}\n`);
+    return;
+  }
   const siteRoot = resolve(values.source ?? ".");
 
   if (command === "validate") {
@@ -116,7 +129,6 @@ async function main() {
   }
 
   if (command === "dev") {
-    const workDir = join(TOOLCHAIN_ROOT, ".notra", "work");
     const target = values.target
       ? await readBuildTarget(values.target)
       : undefined;
@@ -125,18 +137,32 @@ async function main() {
     );
     const defaultConfig = localDefaultConfig(siteRoot, target);
     const port = Number(values.port ?? "4321");
+    if (!Number.isInteger(port) || port < 1 || port > 65533) {
+      throw new Error("--port must be an integer between 1 and 65533");
+    }
+    if (values.area && values.area !== "blog" && values.area !== "changelog") {
+      throw new Error("--area must be blog or changelog");
+    }
+    const workDir = await realpath(
+      await mkdtemp(join(tmpdir(), "notra-sites-dev-"))
+    );
     const mounted = listMountedAreas(mounts);
     const areas: DevAreaServer[] = [];
     let nextPort = port + 1;
-    for (const entry of mounted) {
-      // Sequential on purpose: each search starts after the last port taken.
-      const areaPort = await findFreePort(nextPort);
-      nextPort = areaPort + 1;
-      areas.push({
-        ...entry,
-        port: areaPort,
-        paramsPath: join(workDir, `params.dev.${entry.area}.json`),
-      });
+    try {
+      for (const entry of mounted) {
+        // Sequential on purpose: each search starts after the last port taken.
+        const areaPort = await findFreePort(nextPort);
+        nextPort = areaPort + 1;
+        areas.push({
+          ...entry,
+          port: areaPort,
+          paramsPath: join(workDir, `params.dev.${entry.area}.json`),
+        });
+      }
+    } catch (error) {
+      await rm(workDir, { recursive: true, force: true });
+      throw error;
     }
     const selected =
       areas.find((entry) => entry.area === values.area) ?? areas[0];
@@ -144,6 +170,8 @@ async function main() {
       process.exit(1);
     }
     const ordered = [selected, ...areas.filter((area) => area !== selected)];
+    const documentSession = randomBytes(18).toString("base64url");
+    let documentGeneration = 0;
     let running: RunningDevArea[] = [];
     const stopAreas = async () => {
       const stopping = running;
@@ -167,7 +195,7 @@ async function main() {
         prepareSite({
           siteRoot,
           workDir,
-          stableAssetNames: true,
+          incremental: true,
           defaultConfig,
         }),
       writeOgImages,
@@ -189,36 +217,30 @@ async function main() {
         if (astroCommand === "stop") {
           return 0;
         }
-        const started = await Promise.all(
-          areas.map((area) => startAstroDev(TOOLCHAIN_ROOT, area))
-        );
-        running = started.filter(
-          (entry): entry is RunningDevArea => entry !== null
-        );
-        if (running.length !== areas.length) {
-          await stopAreas();
-          return 1;
+        documentGeneration += 1;
+        for (const area of areas) {
+          area.documentToken = `${documentSession}.${documentGeneration}`;
         }
-        return 0;
+        running = (await startDevAreas(TOOLCHAIN_ROOT, areas)) ?? [];
+        return running.length === areas.length ? 0 : 1;
       },
     });
-    const proxy = await startDevProxy(port, mounts, ordered);
     let watchedRefresh: Promise<boolean> | undefined;
-    const watcher = watch(siteRoot, { recursive: true }, () => {
-      const requested = refresh.refresh(150);
-      if (requested !== watchedRefresh) {
-        watchedRefresh = requested;
-        requested.catch((error: unknown) =>
-          process.stderr.write(`${String(error)}\n`)
-        );
-      }
-    });
-    const stop = async () => {
-      watcher.close();
-      proxy.close();
-      await refresh.shutdown();
+    let proxy: Server | undefined;
+    let watcher: FSWatcher | undefined;
+    let stopping: Promise<void> | undefined;
+    const stop = () => {
+      stopping ??= (async () => {
+        watcher?.close();
+        proxy?.close();
+        await refresh.shutdown();
+        await rm(workDir, { recursive: true, force: true });
+      })();
+      return stopping;
     };
+    let interrupted = false;
     const onSignal = () => {
+      interrupted = true;
       stop()
         .then(() => process.exit(0))
         .catch((error: unknown) => {
@@ -226,12 +248,30 @@ async function main() {
           process.exit(1);
         });
     };
-    process.once("SIGINT", onSignal);
-    process.once("SIGTERM", onSignal);
+    process.on("SIGINT", onSignal);
+    process.on("SIGTERM", onSignal);
     try {
-      if (!(await refresh.refresh())) {
+      watcher = watch(siteRoot, { recursive: true }, () => {
+        const requested = refresh.refresh(150);
+        if (requested !== watchedRefresh) {
+          watchedRefresh = requested;
+          requested.catch((error: unknown) =>
+            process.stderr.write(`${String(error)}\n`)
+          );
+        }
+      });
+      proxy = await startDevProxy(port, mounts, ordered, async () => {
+        await watchedRefresh;
+      });
+      if (interrupted) {
+        proxy.close();
         await stop();
-        process.exit(1);
+        process.exit(0);
+      }
+      watchedRefresh = refresh.refresh();
+      if (!(await watchedRefresh)) {
+        await stop();
+        process.exit(interrupted ? 0 : 1);
       }
       process.stderr.write(
         `Previewing ${areas.map((area) => `${area.area} at http://localhost:${port}${area.mount}`).join(" and ")}\n`

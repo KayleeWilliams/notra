@@ -5,6 +5,9 @@ import type { SiteMountedArea } from "@notra/sites-core/types/deployment";
 export interface DevAreaServer extends SiteMountedArea {
   port: number;
   paramsPath: string;
+  hmrToken?: string;
+  hmrGeneration?: number;
+  documentToken?: string;
 }
 
 export interface RunningDevArea {

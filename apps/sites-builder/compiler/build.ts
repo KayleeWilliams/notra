@@ -20,6 +20,7 @@ import {
 } from "@notra/sites-core/utils/mounts";
 
 import type { BuildParams } from "../src/types/build-params";
+import { rewritePublicAssetUrls } from "../src/utils/public-assets";
 import { normalizeAgentInstructions, writeAgentFiles } from "./agent-files";
 import { AREA_PAGES_FILE, ASTRO_LOG_NOISE } from "./constants/build";
 import { writeOgImages } from "./og-images";
@@ -30,7 +31,6 @@ import { listFiles } from "./utils/fs";
 import { siteHeadScripts } from "./utils/head-scripts";
 import { inlineScriptHashes } from "./utils/inline-scripts";
 import { unnestLinks } from "./utils/nested-links";
-import { rewritePublicAssetUrls } from "./utils/public-assets";
 import { hasReactComponents } from "./utils/react";
 
 export function astroBin(toolchainRoot: string): string {

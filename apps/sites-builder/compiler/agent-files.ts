@@ -38,7 +38,7 @@ function metaLines(entry: AreaPageEntry, url: string): string[] {
   return lines;
 }
 
-function entryMarkdown(
+export function entryMarkdown(
   entry: AreaPageEntry,
   url: string,
   body: string
@@ -61,7 +61,7 @@ function entryLink(entry: AreaPageEntry, origin: string): string {
   return `- [${entry.title}](${new URL(`${entry.path}.md`, origin)})${description} (${details})`;
 }
 
-function indexMarkdown(pages: AreaPages, origin: string): string {
+export function indexMarkdown(pages: AreaPages, origin: string): string {
   const parts = [`# ${pages.title}`];
   if (pages.description) {
     parts.push(`> ${pages.description}`);

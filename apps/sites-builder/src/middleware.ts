@@ -1,7 +1,7 @@
 import { defineMiddleware } from "astro:middleware";
 
-import { rewritePublicAssetUrls } from "../compiler/utils/public-assets";
 import { params } from "./lib/params";
+import { rewritePublicAssetUrls } from "./utils/public-assets";
 
 export const onRequest = defineMiddleware(async (_context, next) => {
   const response = await next();

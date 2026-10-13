@@ -9,6 +9,8 @@
   "type": "module",
   "scripts": {
     "bundle": "bun build compiler/cli.ts --target=node --format=esm --outfile=dist/cli.mjs --external astro --external satori --external @resvg/resvg-js",
+    "package:cli": "bun run bundle && bun scripts/package-cli.ts",
+    "dev": "bun compiler/cli.ts dev --source fixtures/demo",
     "check-types": "tsc --noEmit",
     "test": "bun test tests",
     "fixture:build": "bun compiler/cli.ts build --source fixtures/acme --target fixtures/acme.target.json --out .notra/fixture-out",

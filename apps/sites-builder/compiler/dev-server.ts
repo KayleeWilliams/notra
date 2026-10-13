@@ -1,10 +1,20 @@
 import { spawn } from "node:child_process";
-import { mkdirSync } from "node:fs";
+import { randomBytes, timingSafeEqual } from "node:crypto";
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  rmSync,
+  symlinkSync,
+  watch,
+} from "node:fs";
 import { createServer, request } from "node:http";
-import type { IncomingMessage, Server } from "node:http";
+import type { ClientRequest, IncomingMessage, Server } from "node:http";
 import { connect, createServer as createNetServer } from "node:net";
-import { join, relative } from "node:path";
+import { dirname, join, relative } from "node:path";
+import { pipeline } from "node:stream";
 import type { Duplex } from "node:stream";
+import { setTimeout as delay } from "node:timers/promises";
 
 import type { SiteMounts } from "@notra/sites-core/types/deployment";
 import type { SiteHeadScript } from "@notra/sites-core/types/site-integrations";
@@ -19,11 +29,17 @@ import { ASTRO_LOG_NOISE } from "./constants/build";
 import {
   ASTRO_READY_SCAN_CHARS,
   ASTRO_READY_URL,
+  DEV_HMR_GENERATION_EVENT,
   DEV_PORT_SEARCH_RANGE,
+  DEV_PROXY_MAX_ATTEMPTS,
+  DEV_PROXY_RETRY_DELAY_MS,
+  DEV_PROXY_RETRY_ERRORS,
   DEV_READY_TIMEOUT_MS,
   DEV_STOP_TIMEOUT_MS,
 } from "./constants/cli";
 import type { DevAreaServer, RunningDevArea } from "./types/dev-server";
+import { isLocalDevHost } from "./utils/dev-host";
+import { devMarkdown } from "./utils/dev-markdown";
 
 function retargetHeadScripts(
   scripts: SiteHeadScript[],
@@ -66,7 +82,11 @@ function forwardOutput(text: string) {
 
 /** Resolves with a port nothing listens on yet, starting at `from`. */
 export async function findFreePort(from: number): Promise<number> {
-  for (let port = from; port < from + DEV_PORT_SEARCH_RANGE; port++) {
+  for (
+    let port = from;
+    port < from + DEV_PORT_SEARCH_RANGE && port <= 65535;
+    port++
+  ) {
     const free = await new Promise<boolean>((resolve) => {
       const probe = createNetServer();
       probe.once("error", () => resolve(false));
@@ -86,74 +106,131 @@ export async function startAstroDev(
   area: DevAreaServer
 ): Promise<RunningDevArea | null> {
   // Each area gets its own Astro root so the two servers never share `.astro/`.
-  const root = join(toolchainRoot, ".notra", "dev", area.area);
+  const root = join(dirname(area.paramsPath), "astro", area.area);
+  area.hmrToken ??= randomBytes(18).toString("base64url");
+  area.hmrGeneration = (area.hmrGeneration ?? 0) + 1;
   mkdirSync(root, { recursive: true });
-  const child = spawn(
-    process.execPath,
-    [
-      astroBin(toolchainRoot),
-      "dev",
-      "--ignore-lock",
-      "--root",
-      root,
-      "--config",
-      relative(root, join(toolchainRoot, "astro.config.mjs")),
-      "--host",
-      "127.0.0.1",
-      "--port",
-      String(area.port),
-    ],
-    {
-      cwd: toolchainRoot,
-      env: {
-        ...process.env,
-        NOTRA_BUILD_PARAMS: area.paramsPath,
-        ASTRO_TELEMETRY_DISABLED: "1",
-      },
-      stdio: ["ignore", "pipe", "pipe"],
+  cpSync(join(toolchainRoot, "src"), join(root, "src"), { recursive: true });
+  const modules = join(dirname(area.paramsPath), "node_modules");
+  if (!existsSync(modules)) {
+    let dependencyRoot = toolchainRoot;
+    while (!existsSync(join(dependencyRoot, "node_modules"))) {
+      const parent = dirname(dependencyRoot);
+      if (parent === dependencyRoot) {
+        throw new Error("Notra Sites runtime dependencies are missing");
+      }
+      dependencyRoot = parent;
+    }
+    symlinkSync(join(dependencyRoot, "node_modules"), modules, "junction");
+  }
+  const sourceWatcher = watch(
+    join(toolchainRoot, "src"),
+    { recursive: true },
+    (_event, filename) => {
+      if (!filename) {
+        return;
+      }
+      const source = join(toolchainRoot, "src", filename);
+      const destination = join(root, "src", filename);
+      try {
+        if (existsSync(source)) {
+          cpSync(source, destination, { recursive: true });
+        } else {
+          rmSync(destination, { recursive: true, force: true });
+        }
+      } catch (error) {
+        process.stderr.write(`${String(error)}\n`);
+      }
     }
   );
-  // Ready only once this child reports its own URL, so a stray server on the
-  // same port can never pass for it. The reported port wins over the requested one.
-  const port = await new Promise<number | null>((resolve) => {
-    const timer = setTimeout(() => resolve(null), DEV_READY_TIMEOUT_MS);
-    let ready = false;
-    // Each stream keeps a short tail so a URL split across chunks still matches.
-    const watch = (stream: NodeJS.ReadableStream) => {
-      let tail = "";
-      stream.on("data", (chunk: Buffer) => {
-        const text = chunk.toString();
-        forwardOutput(text);
-        if (ready) {
-          return;
-        }
-        tail = (tail + text).slice(-ASTRO_READY_SCAN_CHARS);
-        const match = ASTRO_READY_URL.exec(tail);
-        if (match?.[1]) {
-          ready = true;
-          clearTimeout(timer);
-          resolve(Number(match[1]));
-        }
+  let running: RunningDevArea | undefined;
+  try {
+    const child = spawn(
+      process.execPath,
+      [
+        astroBin(toolchainRoot),
+        "dev",
+        "--ignore-lock",
+        "--root",
+        root,
+        "--config",
+        relative(root, join(toolchainRoot, "astro.config.mjs")),
+        "--host",
+        "127.0.0.1",
+        "--port",
+        String(area.port),
+      ],
+      {
+        cwd: toolchainRoot,
+        env: {
+          ...process.env,
+          NOTRA_BUILD_PARAMS: area.paramsPath,
+          NOTRA_DEV_ROOT: root,
+          NOTRA_DEV_MODULES: modules,
+          NOTRA_DEV_HMR_TOKEN: `${area.hmrToken}.${area.hmrGeneration}`,
+          NOTRA_DEV_DOCUMENT_TOKEN: area.documentToken,
+          NOTRA_DEV_HMR_EVENT: DEV_HMR_GENERATION_EVENT,
+          ASTRO_TELEMETRY_DISABLED: "1",
+        },
+        stdio: ["ignore", "pipe", "pipe"],
+      }
+    );
+    running = { area, child };
+    child.once("close", () => sourceWatcher.close());
+    child.once("error", () => sourceWatcher.close());
+    // Ready only once this child reports its own URL, so a stray server on the
+    // same port can never pass for it. The reported port wins over the requested one.
+    const port = await new Promise<number | null>((resolve, reject) => {
+      const timer = setTimeout(() => resolve(null), DEV_READY_TIMEOUT_MS);
+      let ready = false;
+      // Each stream keeps a short tail so a URL split across chunks still matches.
+      const watch = (stream: NodeJS.ReadableStream) => {
+        let tail = "";
+        stream.on("data", (chunk: Buffer) => {
+          const text = chunk.toString();
+          forwardOutput(text);
+          if (ready) {
+            return;
+          }
+          tail = (tail + text).slice(-ASTRO_READY_SCAN_CHARS);
+          const match = ASTRO_READY_URL.exec(tail);
+          if (match?.[1]) {
+            ready = true;
+            clearTimeout(timer);
+            resolve(Number(match[1]));
+          }
+        });
+      };
+      watch(child.stdout);
+      watch(child.stderr);
+      child.once("error", (error) => {
+        clearTimeout(timer);
+        reject(error);
       });
-    };
-    watch(child.stdout);
-    watch(child.stderr);
-    child.once("exit", () => {
-      clearTimeout(timer);
-      resolve(null);
+      child.once("exit", () => {
+        clearTimeout(timer);
+        resolve(null);
+      });
     });
-  });
-  if (port === null) {
-    child.kill("SIGTERM");
-    return null;
+    if (port === null) {
+      sourceWatcher.close();
+      await stopAstroDev(running);
+      return null;
+    }
+    area.port = port;
+    return running;
+  } catch (error) {
+    sourceWatcher.close();
+    if (running) {
+      await stopAstroDev(running);
+    }
+    throw error;
   }
-  area.port = port;
-  return { area, child };
 }
 
 export async function stopAstroDev(running: RunningDevArea): Promise<void> {
   const { child } = running;
-  if (child.exitCode !== null || child.signalCode !== null) {
+  if (!child.pid || child.exitCode !== null || child.signalCode !== null) {
     return;
   }
   await new Promise<void>((resolve) => {
@@ -195,20 +272,39 @@ function proxyUpgrade(
     upstream.pipe(socket).pipe(upstream);
   });
   upstream.on("error", () => socket.destroy());
+  upstream.on("close", () => socket.destroy());
   socket.on("error", () => upstream.destroy());
+  socket.on("close", () => upstream.destroy());
 }
 
 export function startDevProxy(
   port: number,
   mounts: SiteMounts,
-  areas: DevAreaServer[]
+  areas: DevAreaServer[],
+  waitForReady: () => Promise<void>
 ): Promise<Server> {
   const [fallback] = areas;
   const targetFor = (pathname: string) => {
     const owner = resolveAreaForPath(mounts, pathname);
     return areas.find((area) => area.area === owner?.area) ?? fallback;
   };
-  const server = createServer((incoming, outgoing) => {
+  const server = createServer(async (incoming, outgoing) => {
+    if (!isLocalDevHost(incoming.headers.host)) {
+      outgoing.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
+      outgoing.end("Local previews require a loopback host.");
+      return;
+    }
+    try {
+      await waitForReady();
+    } catch (error) {
+      process.stderr.write(`${String(error)}\n`);
+      outgoing.writeHead(502, { "Content-Type": "text/plain; charset=utf-8" });
+      outgoing.end("The dev server is restarting, reload in a moment.");
+      return;
+    }
+    if (outgoing.destroyed) {
+      return;
+    }
     const pathname = pathnameOf(incoming);
     if (pathname === null) {
       outgoing.writeHead(400);
@@ -226,35 +322,210 @@ export function startDevProxy(
       outgoing.end();
       return;
     }
-    const upstream = request(
-      {
-        host: "127.0.0.1",
-        port: target.port,
-        method: incoming.method,
-        path: incoming.url,
-        headers: incoming.headers,
-      },
-      (response) => {
-        outgoing.writeHead(response.statusCode ?? 502, response.headers);
-        response.pipe(outgoing);
+    if (
+      (incoming.method === "GET" || incoming.method === "HEAD") &&
+      pathname.endsWith(".md")
+    ) {
+      const controller = new AbortController();
+      const disconnected = () => controller.abort();
+      outgoing.once("close", disconnected);
+      incoming.once("aborted", disconnected);
+      incoming.once("error", disconnected);
+      try {
+        const response = await devMarkdown(
+          target,
+          pathname,
+          `http://localhost:${port}`,
+          controller.signal
+        );
+        if (outgoing.destroyed || incoming.method === "HEAD") {
+          await response.body?.cancel();
+        }
+        if (outgoing.destroyed) {
+          return;
+        }
+        const body =
+          incoming.method === "HEAD"
+            ? undefined
+            : Buffer.from(await response.arrayBuffer());
+        if (outgoing.destroyed) {
+          return;
+        }
+        outgoing.writeHead(
+          response.status,
+          Object.fromEntries(response.headers)
+        );
+        outgoing.end(body);
+      } catch (error) {
+        if (outgoing.destroyed || controller.signal.aborted) {
+          return;
+        }
+        process.stderr.write(`${String(error)}\n`);
+        if (outgoing.headersSent) {
+          outgoing.destroy();
+          return;
+        }
+        outgoing.writeHead(502, {
+          "Content-Type": "text/plain; charset=utf-8",
+        });
+        outgoing.end("The dev server is restarting, reload in a moment.");
+      } finally {
+        outgoing.removeListener("close", disconnected);
+        incoming.removeListener("aborted", disconnected);
+        incoming.removeListener("error", disconnected);
       }
-    );
-    upstream.on("error", () => {
-      if (!outgoing.headersSent) {
-        outgoing.writeHead(502, { "content-type": "text/plain" });
+      return;
+    }
+    const retryable =
+      (incoming.method === "GET" || incoming.method === "HEAD") &&
+      incoming.headers["transfer-encoding"] === undefined &&
+      (incoming.headers["content-length"] === undefined ||
+        incoming.headers["content-length"] === "0");
+    const controller = new AbortController();
+    let upstream: ClientRequest | undefined;
+    let attempts = 0;
+    const disconnected = () => {
+      controller.abort();
+      upstream?.destroy();
+    };
+    outgoing.once("close", disconnected);
+    incoming.once("aborted", disconnected);
+    incoming.once("error", disconnected);
+    const connectUpstream = () => {
+      if (outgoing.destroyed || controller.signal.aborted) {
+        return;
       }
-      outgoing.end(
-        `The ${target.area} dev server is restarting, reload in a moment.`
+      attempts += 1;
+      const current = request(
+        {
+          host: "127.0.0.1",
+          port: target.port,
+          method: incoming.method,
+          path: incoming.url,
+          headers: incoming.headers,
+        },
+        (response) => {
+          if (outgoing.destroyed || controller.signal.aborted) {
+            response.destroy();
+            return;
+          }
+          outgoing.writeHead(response.statusCode ?? 502, response.headers);
+          pipeline(response, outgoing, (error) => {
+            if (error) {
+              current.destroy();
+            }
+          });
+        }
       );
-    });
-    incoming.pipe(upstream);
+      upstream = current;
+      current.on("error", async (error: NodeJS.ErrnoException) => {
+        if (outgoing.destroyed || controller.signal.aborted) {
+          return;
+        }
+        if (outgoing.headersSent) {
+          outgoing.destroy();
+          return;
+        }
+        incoming.unpipe(current);
+        current.destroy();
+        if (
+          retryable &&
+          attempts < DEV_PROXY_MAX_ATTEMPTS &&
+          DEV_PROXY_RETRY_ERRORS.has(error.code ?? "")
+        ) {
+          try {
+            await delay(DEV_PROXY_RETRY_DELAY_MS, undefined, {
+              signal: controller.signal,
+            });
+            if (outgoing.destroyed || controller.signal.aborted) {
+              return;
+            }
+            await waitForReady();
+            connectUpstream();
+            return;
+          } catch {
+            if (outgoing.destroyed || controller.signal.aborted) {
+              return;
+            }
+          }
+        }
+        outgoing.writeHead(502, { "content-type": "text/plain" });
+        outgoing.end(
+          `The ${target.area} dev server is restarting, reload in a moment.`
+        );
+      });
+      if (attempts === 1) {
+        incoming.pipe(current);
+      } else {
+        current.end();
+      }
+    };
+    connectUpstream();
   });
-  server.on("upgrade", (incoming, socket, head) => {
+  server.on("upgrade", async (incoming, socket, head) => {
+    if (!isLocalDevHost(incoming.headers.host)) {
+      socket.destroy();
+      return;
+    }
+    const disconnected = () => socket.destroy();
+    socket.once("error", disconnected);
+    socket.once("end", disconnected);
+    try {
+      await waitForReady();
+    } catch {
+      socket.destroy();
+      return;
+    } finally {
+      socket.removeListener("error", disconnected);
+      socket.removeListener("end", disconnected);
+    }
+    if (socket.destroyed) {
+      return;
+    }
     const pathname = pathnameOf(incoming);
-    const target = pathname === null ? undefined : targetFor(pathname);
+    let target = pathname === null ? undefined : targetFor(pathname);
     if (!target) {
       socket.destroy();
       return;
+    }
+    delete incoming.headers["x-notra-hmr-reload"];
+    if (incoming.headers["sec-websocket-protocol"] === "vite-hmr") {
+      const url = new URL(incoming.url ?? "/", "http://localhost");
+      const [token = "", revision, extra] = (
+        url.searchParams.get("token") ?? ""
+      ).split(".");
+      const generation = Number(revision);
+      const supplied = Buffer.from(token);
+      const owner = areas.find((area) => {
+        if (!area.hmrToken) {
+          return false;
+        }
+        const expected = Buffer.from(area.hmrToken);
+        return (
+          expected.length === supplied.length &&
+          timingSafeEqual(expected, supplied)
+        );
+      });
+      if (
+        !owner?.hmrGeneration ||
+        extra !== undefined ||
+        !Number.isSafeInteger(generation) ||
+        generation < 1 ||
+        String(generation) !== revision ||
+        generation > owner.hmrGeneration
+      ) {
+        socket.destroy();
+        return;
+      }
+      target = owner;
+      if (generation !== owner.hmrGeneration) {
+        incoming.headers["x-notra-hmr-reload"] = "1";
+        url.searchParams.set(
+          "token",
+          `${owner.hmrToken}.${owner.hmrGeneration}`
+        );
+        incoming.url = `${url.pathname}${url.search}`;
+      }
     }
     proxyUpgrade(incoming, socket, head, target);
   });

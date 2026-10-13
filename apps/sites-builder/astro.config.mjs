@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -13,6 +13,9 @@ if (!paramsPath) {
   );
 }
 const params = JSON.parse(readFileSync(paramsPath, "utf8"));
+const srcDir = process.env.NOTRA_DEV_ROOT
+  ? resolve(process.env.NOTRA_DEV_ROOT, "src")
+  : fileURLToPath(new URL("src", import.meta.url));
 const workDir = resolve(params.workDir);
 const siteDir = resolve(workDir, "site");
 const codeblocks = params.config.styling?.codeblocks ?? "system";
@@ -31,7 +34,7 @@ const shikiThemes = shikiThemesFor(codeblocks);
 
 export default defineConfig({
   site: params.publicOrigin,
-  srcDir: fileURLToPath(new URL("src", import.meta.url)),
+  srcDir,
   base: params.mount,
   outDir: resolve(workDir, "out", params.area),
   publicDir: resolve(siteDir, "public"),
@@ -57,7 +60,51 @@ export default defineConfig({
     },
   },
   vite: {
-    plugins: [tailwindcss()],
+    plugins: [
+      tailwindcss(),
+      ...(process.env.NOTRA_DEV_HMR_TOKEN
+        ? [
+            {
+              name: "notra-dev-hmr",
+              configResolved(config) {
+                config.webSocketToken = process.env.NOTRA_DEV_HMR_TOKEN;
+              },
+              configureServer(server) {
+                server.ws.on("connection", (socket, request) => {
+                  if (request.headers["x-notra-hmr-reload"] === "1") {
+                    socket.send(JSON.stringify({ type: "full-reload" }));
+                  }
+                });
+                const documentToken = process.env.NOTRA_DEV_DOCUMENT_TOKEN;
+                const event = process.env.NOTRA_DEV_HMR_EVENT;
+                if (documentToken && event) {
+                  const [session, revision] = documentToken.split(".");
+                  const current = Number(revision);
+                  server.ws.on(event, (renderedToken, client) => {
+                    if (typeof renderedToken !== "string") {
+                      return;
+                    }
+                    const [renderedSession, renderedRevision, extra] =
+                      renderedToken.split(".");
+                    const rendered = Number(renderedRevision);
+                    if (
+                      renderedSession === session &&
+                      extra === undefined &&
+                      Number.isSafeInteger(rendered) &&
+                      rendered >= 1 &&
+                      String(rendered) === renderedRevision &&
+                      rendered < current
+                    ) {
+                      client.send({ type: "full-reload" });
+                    }
+                  });
+                }
+              },
+            },
+          ]
+        : []),
+    ],
+    ssr: { noExternal: ["@astrojs/react"] },
     build: {
       rollupOptions: {
         onwarn(warning, warn) {
@@ -72,17 +119,27 @@ export default defineConfig({
       alias: {
         "@site": siteDir,
         "@notra/builtins/SiteAreas.astro": resolve(
-          "src/components/SiteAreas.astro"
+          srcDir,
+          "components/SiteAreas.astro"
         ),
         "@notra/builtins/ThemeToggle.astro": resolve(
-          "src/components/ThemeToggle.astro"
+          srcDir,
+          "components/ThemeToggle.astro"
         ),
-        "@notra/builtins": resolve("src/builtins"),
+        "@notra/builtins": resolve(srcDir, "builtins"),
         "@notra/custom-css": resolve(workDir, "custom.css"),
       },
     },
     server: {
-      fs: { allow: [workDir, resolve("."), resolve("../../node_modules")] },
+      fs: {
+        allow: [
+          workDir,
+          resolve("."),
+          process.env.NOTRA_DEV_MODULES
+            ? realpathSync(process.env.NOTRA_DEV_MODULES)
+            : resolve("../../node_modules"),
+        ],
+      },
     },
     logLevel: "warn",
   },
