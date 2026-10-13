@@ -7841,7 +7841,6 @@
         "subdomain": "Subdomain",
         "proxy": "Pfade auf deiner Website"
       },
-      "notChecked": "Noch nicht geprüft.",
       "check": "Prüfen",
       "checking": "Wird geprüft…",
       "checkLabel": "{hostname} prüfen",
@@ -7926,9 +7925,7 @@
       },
       "setupErrorTitle": "Diese Domain lässt sich noch nicht verifizieren",
       "connectTitle": "Domain verbinden",
-      "connectSubmit": "Weiter",
-      "lastChecked": "Geprüft <time></time>.",
-      "propagationHint": "DNS-Änderungen werden meist innerhalb weniger Minuten verifiziert."
+      "connectSubmit": "Weiter"
     },
     "editorPage": {
       "title": "Editor",

@@ -59,6 +59,7 @@ export interface SiteStatusBadgeConfig {
   variant: NonNullable<ComponentProps<typeof Badge>["variant"]>;
   icon?: IconSvgElement;
   square?: boolean;
+  spin?: boolean;
 }
 export type SiteSection = (typeof SITE_DETAIL_TABS)[number];
 

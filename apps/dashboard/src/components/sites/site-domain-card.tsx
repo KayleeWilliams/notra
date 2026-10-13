@@ -27,7 +27,6 @@ import {
   SiteDnsSetup,
 } from "@/components/sites/site-domain-dns";
 import { SiteProxySetup } from "@/components/sites/site-domain-proxy";
-import { SiteRelativeTime } from "@/components/sites/site-relative-time";
 import { SITE_DOMAIN_STATUS_BADGES } from "@/constants/sites";
 import type {
   SiteDomainCardProps,
@@ -106,7 +105,6 @@ export function SiteDomainCard({
   const t = useTranslations("sites.domainsPage");
   const isActive = domain.status === "active";
   const url = siteDomainUrl(domain, mounts);
-  const { lastCheckedAt } = domain;
 
   let setup = (
     <SiteDnsSetup
@@ -126,11 +124,18 @@ export function SiteDomainCard({
   } else if (isActive) {
     setup = <SiteDnsRecordsTable records={domain.records} />;
   }
+  const checkInHeader = domain.kind === "proxy" || isActive;
 
   return (
     <TitleCard
       action={
         <>
+          {checkInHeader ? (
+            <SiteDomainCheckButton
+              domain={domain}
+              scope={{ organizationId, siteId }}
+            />
+          ) : null}
           <SiteDomainStatusBadge status={siteDomainChipStatus(domain)} />
           <DomainMenu
             canOpen={isActive}
@@ -141,25 +146,6 @@ export function SiteDomainCard({
         </>
       }
       as="section"
-      footer={
-        <>
-          <p className="text-muted-foreground min-w-0 text-xs text-pretty">
-            {lastCheckedAt
-              ? t.rich("lastChecked", {
-                  time: () => <SiteRelativeTime date={lastCheckedAt} />,
-                })
-              : t("notChecked")}
-            {isActive || domain.kind === "proxy"
-              ? null
-              : ` ${t("propagationHint")}`}
-          </p>
-          <SiteDomainCheckButton
-            domain={domain}
-            scope={{ organizationId, siteId }}
-            variant="outline"
-          />
-        </>
-      }
       heading={
         <span className="flex min-w-0 items-center gap-2">
           <span className="truncate" title={domain.hostname}>

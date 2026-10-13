@@ -23,6 +23,7 @@ import type { ReactNode } from "react";
 import { useTranslations } from "use-intl";
 
 import { buttonVariants } from "@/components/button";
+import { SiteDomainCheckButton } from "@/components/sites/site-domain-check-button";
 import {
   SITE_CLOUDFLARE_PROVIDER_PATTERN,
   SITE_VERCEL_PROVIDER_PATTERN,
@@ -241,7 +242,14 @@ export function SiteDnsSetup({
         <p className="text-muted-foreground min-w-0 text-sm text-pretty">
           {intro}
         </p>
-        {action}
+        <div className="flex items-center gap-2">
+          <SiteDomainCheckButton
+            domain={domain}
+            scope={{ organizationId, siteId }}
+            variant="outline"
+          />
+          {action}
+        </div>
       </div>
       <SiteDnsRecordsTable records={domain.records} />
     </div>

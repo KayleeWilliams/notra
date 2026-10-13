@@ -103,7 +103,7 @@ export const SITE_DOMAIN_STATUS_BADGES: Record<
   active: { variant: "success", icon: Tick02Icon, square: true },
   dnsRequired: { variant: "warning", icon: Alert02Icon },
   proxyRequired: { variant: "warning", icon: Alert02Icon },
-  verifying: { variant: "info", icon: Loading03Icon },
+  verifying: { variant: "info", icon: Loading03Icon, spin: true },
   failed: { variant: "destructive", icon: Cancel01Icon, square: true },
 };
 
@@ -120,8 +120,8 @@ export const SITE_STATUS_BADGES: Record<
   SiteStatusBadgeConfig
 > = {
   queued: { variant: "info", icon: Clock01Icon },
-  building: { variant: "warning", icon: Loading03Icon },
-  uploading: { variant: "warning", icon: Loading03Icon },
+  building: { variant: "warning", icon: Loading03Icon, spin: true },
+  uploading: { variant: "warning", icon: Loading03Icon, spin: true },
   ready: { variant: "success", icon: Tick02Icon, square: true },
   failed: { variant: "destructive", icon: Cancel01Icon, square: true },
   superseded: { variant: "secondary" },

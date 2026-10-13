@@ -7841,7 +7841,6 @@
         "subdomain": "Subdomain",
         "proxy": "Paths on your site"
       },
-      "notChecked": "Not checked yet.",
       "check": "Check",
       "checking": "Checking…",
       "checkLabel": "Check {hostname}",
@@ -7926,9 +7925,7 @@
       },
       "setupErrorTitle": "Can't verify this domain yet",
       "connectTitle": "Connect your domain",
-      "connectSubmit": "Continue",
-      "lastChecked": "Checked <time></time>.",
-      "propagationHint": "DNS changes usually verify within a few minutes."
+      "connectSubmit": "Continue"
     },
     "editorPage": {
       "title": "Editor",

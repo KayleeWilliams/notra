@@ -1,6 +1,6 @@
 "use client";
 
-import { RefreshIcon } from "@hugeicons/core-free-icons";
+import { Refresh03Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Tooltip,
@@ -41,7 +41,7 @@ export function SiteDomainCheckButton({
             "size-4",
             check.isPending && "motion-safe:animate-spin"
           )}
-          icon={RefreshIcon}
+          icon={Refresh03Icon}
           strokeWidth={1.5}
         />
       </TooltipTrigger>
