@@ -68,8 +68,20 @@ function authorRefs(entry: BlogEntry): EntryAuthorRef[] {
   return Array.isArray(author) ? author : [author];
 }
 
-export function authorsOf(entry: BlogEntry): ResolvedAuthor[] {
-  return authorRefs(entry).map(resolveAuthor);
+export function authorsOf(
+  entry: BlogEntry,
+  listedEntries?: BlogEntry[]
+): ResolvedAuthor[] {
+  return authorRefs(entry).map((ref) => {
+    const author = resolveAuthor(ref);
+    if (
+      listedEntries &&
+      !listedEntries.some((listed) => authoredBy(listed, author.id))
+    ) {
+      author.href = undefined;
+    }
+    return author;
+  });
 }
 
 export function authorNamesOf(entry: BlogEntry | ChangelogEntry): string[] {

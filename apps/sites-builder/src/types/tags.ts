@@ -3,12 +3,13 @@ import type { BlogEntry, ChangelogEntry } from "./entries";
 export interface TagLink {
   name: string;
   slug: string;
-  href: string;
+  href?: string;
 }
 
 export interface SiteTag<
   Entry extends BlogEntry | ChangelogEntry,
 > extends TagLink {
+  href: string;
   entries: Entry[];
 }
 

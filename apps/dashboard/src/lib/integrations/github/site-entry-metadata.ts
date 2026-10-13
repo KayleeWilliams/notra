@@ -132,6 +132,7 @@ export async function prepareSiteEntryMetadata(
       authors,
       featured: post.featured,
       noindex: post.noindex,
+      hidden: post.hidden,
       date: post.displayDate,
     },
   };

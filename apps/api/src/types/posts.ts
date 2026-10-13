@@ -40,6 +40,7 @@ export type PostRow = Pick<
   | "authorIds"
   | "featured"
   | "noindex"
+  | "hidden"
   | "displayDate"
   | "status"
   | "createdAt"

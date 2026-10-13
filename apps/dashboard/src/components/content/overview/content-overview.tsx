@@ -181,12 +181,19 @@ export function ContentOverview(props: ContentOverviewProps) {
         ) : null}
         {isBlog ? (
           <OverviewToggleRow
-            checked={!metadata.noindex}
+            checked={!(metadata.hidden || metadata.noindex)}
+            disabled={metadata.hidden}
             hint={t("indexed.hint")}
             label={t("indexed.label")}
             onCheckedChange={(visible) => api.update({ noindex: !visible })}
           />
         ) : null}
+        <OverviewToggleRow
+          checked={metadata.hidden}
+          hint={t("hidden.hint")}
+          label={t("hidden.label")}
+          onCheckedChange={(hidden) => api.update({ hidden })}
+        />
       </div>
 
       <div className="bg-border h-px" />

@@ -217,6 +217,7 @@ export const blogFrontmatterSchema = z.object({
   tags: z.array(z.string()).default([]),
   featured: z.boolean().default(false),
   draft: z.boolean().default(false),
+  hidden: z.boolean().default(false),
   noindex: z.boolean().default(false),
 });
 
@@ -229,4 +230,5 @@ export const changelogFrontmatterSchema = z.object({
   image: z.string().optional(),
   imageAlt: z.string().trim().optional(),
   draft: z.boolean().default(false),
+  hidden: z.boolean().default(false),
 });

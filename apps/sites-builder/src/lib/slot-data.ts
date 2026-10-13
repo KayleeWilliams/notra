@@ -30,13 +30,16 @@ export function slotArea(): SlotArea {
   };
 }
 
-export function slotPost(entry: BlogEntry): SlotPost {
+export function slotPost(
+  entry: BlogEntry,
+  authors = authorsOf(entry)
+): SlotPost {
   return {
     title: entry.data.title,
     description: entry.data.description ?? excerpt(entry.body),
     date: formatDate(entry.data.date),
     tags: entry.data.tags,
-    authors: authorsOf(entry).map((author) => ({
+    authors: authors.map((author) => ({
       name: author.name,
       title: author.title,
       url: author.href ? absoluteUrl(author.href) : author.url,

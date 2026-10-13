@@ -6584,6 +6584,10 @@
         "label": "Visible in search",
         "hint": "When off, the post stays reachable by link but is hidden from search engines, the sitemap and llms.txt."
       },
+      "hidden": {
+        "label": "Unlisted",
+        "hint": "Reachable by direct link, but excluded from site listings, feeds, search engines and AI indexes. Anyone with the link can read it. Turning this off restores your previous search visibility setting."
+      },
       "cover": {
         "label": "Cover",
         "hint": "Shown on the blog card, at the top of the post and as the preview image when the link is shared. Without a cover, the site generates one.",

@@ -6,7 +6,7 @@ import BackLink from "../components/BackLink.astro";
 import SiteSlot from "../components/SiteSlot.astro";
 import Base from "../layouts/Base.astro";
 import { authorsOf, personNode } from "../lib/authors";
-import { getBlogEntries, getChangelogEntries } from "../lib/entries";
+import { getBlogEntries, getBlogRoutes, getChangelogRoutes } from "../lib/entries";
 import { generatedImage } from "../lib/og";
 import { slotChangelogEntry } from "../lib/slot-data";
 import { absoluteUrl, areaTitle, config, href, markdownHref, params } from "../lib/params";
@@ -15,24 +15,24 @@ import { excerpt } from "../utils/excerpt";
 
 export async function getStaticPaths() {
   if (params.area === "blog") {
-    const entries = await getBlogEntries();
+    const entries = await getBlogRoutes();
     return entries.map((entry) => ({
       params: { slug: entry.id },
       props: { kind: "blog" as const, entry },
     }));
   }
-  const entries = await getChangelogEntries();
+  const entries = await getChangelogRoutes();
   return entries.map((entry) => ({ params: { slug: entry.id }, props: { kind: "changelog" as const, entry } }));
 }
 
 const props = Astro.props;
 const entry = props.entry;
-const noindex = props.kind === "blog" ? props.entry.data.noindex || props.entry.data.draft : props.entry.data.draft;
+const noindex = entry.data.hidden || entry.data.draft || (props.kind === "blog" && props.entry.data.noindex);
 const url = absoluteUrl(href(entry.id));
 const description = entry.data.description ?? excerpt(entry.body) ?? config.description;
 const updated = props.kind === "blog" ? props.entry.data.updated : undefined;
 const modified = updated ?? entry.data.date;
-const authors = props.kind === "blog" ? authorsOf(props.entry) : [];
+const authors = props.kind === "blog" ? authorsOf(props.entry, entry.data.hidden ? await getBlogEntries() : undefined) : [];
 const thumbnail = generatedImage(entry.id);
 const image = socialImage(entry.data.image, thumbnail, entry.data.imageAlt);
 const jsonLd = [

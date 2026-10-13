@@ -348,6 +348,7 @@ export function buildSiteEntryMarkdown(
   // Changelog entries have no featured slot and no per-entry noindex.
   write("featured", isBlog && metadata.featured ? true : null);
   write("noindex", isBlog && metadata.noindex ? true : null);
+  write("hidden", metadata.hidden ? true : null);
 
   // Quoted strings: YAML 1.1 parsers would read a plain `No` or `on` as a boolean.
   const yaml = document

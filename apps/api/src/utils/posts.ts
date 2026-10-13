@@ -51,6 +51,7 @@ function serializePostMetadata(post: PostRow, authors: PostAuthorsById) {
     }),
     featured: post.featured,
     noindex: post.noindex,
+    hidden: post.hidden,
     displayDate: formatDisplayDate(post.displayDate),
   };
 }
@@ -111,6 +112,7 @@ export function postQueryColumns() {
     authorIds: true,
     featured: true,
     noindex: true,
+    hidden: true,
     displayDate: true,
     status: true,
     createdAt: true,
@@ -136,6 +138,7 @@ export function postReturningColumns() {
     authorIds: posts.authorIds,
     featured: posts.featured,
     noindex: posts.noindex,
+    hidden: posts.hidden,
     displayDate: posts.displayDate,
     status: posts.status,
     createdAt: posts.createdAt,

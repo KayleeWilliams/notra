@@ -25,6 +25,7 @@ export function postMetadataUpdateData(
       : { authorIds: metadata.authorIds }),
     ...(metadata.featured === undefined ? {} : { featured: metadata.featured }),
     ...(metadata.noindex === undefined ? {} : { noindex: metadata.noindex }),
+    ...(metadata.hidden === undefined ? {} : { hidden: metadata.hidden }),
     ...(metadata.displayDate === undefined
       ? {}
       : { displayDate: parsePostDisplayDate(metadata.displayDate) }),

@@ -157,6 +157,7 @@ const postReadColumns = {
   authorIds: true,
   featured: true,
   noindex: true,
+  hidden: true,
   displayDate: true,
   status: true,
   updatedAt: true,
@@ -228,6 +229,7 @@ function serializePostMetadata(post: PostMetadataColumns): PostMetadata {
     authorIds: post.authorIds,
     featured: post.featured,
     noindex: post.noindex,
+    hidden: post.hidden,
     displayDate: post.displayDate
       ? post.displayDate.toISOString().slice(0, 10)
       : null,
@@ -875,6 +877,7 @@ export const contentRouter = {
               authorIds: posts.authorIds,
               featured: posts.featured,
               noindex: posts.noindex,
+              hidden: posts.hidden,
               displayDate: posts.displayDate,
               status: posts.status,
               updatedAt: posts.updatedAt,

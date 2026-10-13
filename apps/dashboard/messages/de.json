@@ -6584,6 +6584,10 @@
         "label": "In Suche sichtbar",
         "hint": "Aus heißt: Der Post bleibt per Link erreichbar, taucht aber nicht in Suchmaschinen, der Sitemap und llms.txt auf."
       },
+      "hidden": {
+        "label": "Nur über Link erreichbar",
+        "hint": "Bleibt per direktem Link erreichbar, erscheint aber nicht in Site-Listen, Feeds, Suchmaschinen oder AI-Verzeichnissen. Jeder mit dem Link kann den Inhalt lesen. Ausschalten stellt die vorherige Einstellung für die Suche wieder her."
+      },
       "cover": {
         "label": "Cover",
         "hint": "Erscheint auf der Blog-Karte, oben im Post und als Vorschaubild beim Teilen. Ohne Cover erzeugt die Site eins.",

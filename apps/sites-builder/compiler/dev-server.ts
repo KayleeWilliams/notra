@@ -25,7 +25,7 @@ import {
 
 import type { BuildParams } from "../src/types/build-params";
 import { astroBin } from "./build";
-import { ASTRO_LOG_NOISE } from "./constants/build";
+import { AREA_PAGES_FILE, ASTRO_LOG_NOISE } from "./constants/build";
 import {
   ASTRO_READY_SCAN_CHARS,
   ASTRO_READY_URL,
@@ -247,7 +247,9 @@ export async function stopAstroDev(running: RunningDevArea): Promise<void> {
 
 function pathnameOf(incoming: IncomingMessage): string | null {
   try {
-    return new URL(incoming.url ?? "/", "http://localhost").pathname;
+    return decodeURIComponent(
+      new URL(incoming.url ?? "/", "http://localhost").pathname
+    );
   } catch {
     return null;
   }
@@ -308,6 +310,17 @@ export function startDevProxy(
     const pathname = pathnameOf(incoming);
     if (pathname === null) {
       outgoing.writeHead(400);
+      outgoing.end();
+      return;
+    }
+    if (
+      areas.some(
+        (area) =>
+          pathname.replace(/\/+$/, "") ===
+          joinMountPath(area.mount, AREA_PAGES_FILE)
+      )
+    ) {
+      outgoing.writeHead(404);
       outgoing.end();
       return;
     }

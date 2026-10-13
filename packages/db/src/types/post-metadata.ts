@@ -12,6 +12,7 @@ export interface PostMetadataColumnsPatch {
   authorIds?: string[];
   featured?: boolean;
   noindex?: boolean;
+  hidden?: boolean;
   /** YYYY-MM-DD */
   displayDate?: string | null;
 }

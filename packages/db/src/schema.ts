@@ -2370,6 +2370,7 @@ export const posts = pgTable(
       .notNull(),
     featured: boolean("featured").default(false).notNull(),
     noindex: boolean("noindex").default(false).notNull(),
+    hidden: boolean("hidden").default(false).notNull(),
     displayDate: timestamp("display_date"),
     status: postStatusEnum("status").default("draft").notNull(),
     publishedAt: timestamp("published_at"),

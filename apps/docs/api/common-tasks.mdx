@@ -52,6 +52,7 @@ type UpdatePostRequest = {
     authorIds?: string[];
     featured?: boolean;
     noindex?: boolean;
+    hidden?: boolean;
     displayDate?: string | null;
   };
 };
@@ -87,6 +88,7 @@ type Post = {
     }>;
     featured: boolean;
     noindex: boolean;
+    hidden: boolean;
     displayDate: string | null;
   } | null;
   status: "draft" | "published";
@@ -167,6 +169,7 @@ Inside `metadata`, send only the fields you want to change:
 | `authorIds` | Replaces the credited authors, in display order. Up to 5 IDs from `GET /v1/posts/authors`. |
 | `featured` | `true` pins the post to the top of the blog index. |
 | `noindex` | `true` asks search engines not to index the post and leaves it out of the sitemap. |
+| `hidden` | `true` keeps the hosted page reachable by direct link but removes it from site listings, feeds, search engine indexing, sitemaps and generated AI indexes. It does not make the page private. |
 | `displayDate` | Date shown on the post as `YYYY-MM-DD`, or `null` to use the publish date. |
 
 Authors are created in the dashboard. List them to find their IDs:
@@ -236,6 +239,7 @@ The response contains the post with the stored metadata, with each author ID res
   ],
   "featured": false,
   "noindex": false,
+  "hidden": false,
   "displayDate": "2026-10-01"
 }
 ```

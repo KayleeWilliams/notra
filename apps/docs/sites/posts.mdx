@@ -46,6 +46,7 @@ Today we're launching **Acme Flow**.
 | `tags` | list | | Shown as links under the post and on cards, each with its own [tag page](#tags), and used in the RSS feed, search engine metadata and the Markdown version |
 | `featured` | boolean | | `true` pins the post on top of the blog index while `blog.featured` is `"none"` |
 | `draft` | boolean | | `true` hides the post on the live site, while it still shows in previews |
+| `hidden` | boolean | | Defaults to `false`. `true` keeps the published HTML and Markdown URLs reachable, but removes the post from discovery and forces `noindex` |
 | `noindex` | boolean | | `true` keeps a published post out of search engines, sitemaps and `llms.txt` |
 
 ## Changelog entries
@@ -72,6 +73,7 @@ tags: [Feature]
 | `image` | path or URL | | Image shown in the entry, and the social preview |
 | `imageAlt` | string | | Describes the image for screen readers and link previews |
 | `draft` | boolean | | `true` hides the entry on the live site, while it still shows in previews |
+| `hidden` | boolean | | Defaults to `false`. `true` keeps the published HTML and Markdown URLs reachable, but removes the entry from discovery and forces `noindex` |
 
 `author`, `updated`, `featured` and `noindex` only apply to blog posts, and Notra ignores unknown fields. When the frontmatter is missing or wrong, the build stops and names the file and the field.
 
@@ -161,6 +163,12 @@ Files excluded by [`.notraignore`](/sites/repository#exclude-files-with-notraign
 
 Drafts you write in the [Notra editor](/sites/publishing#the-editor) work differently, because they never reach the repository until you publish them.
 
+## Hidden pages
+
+Set `hidden: true` on a blog post or changelog entry to publish an unlisted page. Its HTML URL and Markdown version still work, but Notra leaves it out of indexes, featured posts, tag and author listings, previous/next links, RSS, sitemaps, structured-data lists, Markdown indexes, `llms.txt` and `llms-full.txt`. Hidden pages always use `noindex`, even with `seo.indexing: "all"`. This also applies in previews.
+
+Unlike `hidden`, a blog post's `noindex: true` only controls indexing: the post remains in public lists, RSS and the Markdown index. Hidden pages are not private; anyone with the URL can read or share them. A page with both `draft: true` and `hidden: true` still stays off the live site until you remove `draft`.
+
 ## Variables
 
 Define values once in `blog.json` and use them in any post with `{{ name }}`:
@@ -187,4 +195,4 @@ Placeholders inside JavaScript imports, exports and expressions stay unchanged. 
 
 ## Posts published from Notra
 
-When you publish a post from Notra to a site, Notra writes the frontmatter for you with the title, description, date, the cover image and its alt text, tags, the authors as [author objects](#authors-in-the-frontmatter), and `featured` and `noindex` when you turn them on.
+When you publish a post from Notra to a site, Notra writes the frontmatter for you with the title, description, date, the cover image and its alt text, tags, the authors as [author objects](#authors-in-the-frontmatter), and `featured`, `hidden` and `noindex` when you turn them on.
