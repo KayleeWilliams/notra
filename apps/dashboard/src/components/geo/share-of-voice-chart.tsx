@@ -363,7 +363,7 @@ export function ShareOfVoiceChart(props: ShareOfVoiceChartProps) {
                   <GeoStatDelta
                     delta={rankDelta}
                     hint={tGeoShared("vsFirstHalfOfThis")}
-                    kind="position"
+                    kind="rank"
                     label={tCommon("labels.rank")}
                   />
                 ) : null}

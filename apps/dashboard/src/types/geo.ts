@@ -77,6 +77,7 @@ import type { useTranslations } from "use-intl";
 import type { Button } from "@/components/button";
 import type { GeoPromptDetailSurface } from "@/types/analytics/geo-events";
 import type { ChartConfig, ChartSeriesColors } from "@/types/charts";
+import type { GeoCompetitorSuggestion } from "@/types/geo-competitors";
 import type { GeoPromptDetailState } from "@/types/geo-prompt-detail";
 import type { GeoScanModelMenuProps } from "@/types/geo-scan-activity";
 
@@ -1305,12 +1306,6 @@ export interface BrandTrackingBadgeProps {
   className?: string;
 }
 
-export interface TrackBrandButtonProps {
-  brand: string;
-  onTrack: (brand: string) => void;
-  className?: string;
-}
-
 export interface ShareOfVoiceChartProps {
   points: GeoCompetitorSharePoint[];
   /** Daily mentions per brand; drives the change indicators. */
@@ -1391,6 +1386,8 @@ export interface CompetitorEditDialogProps {
   organizationId: string;
   competitor: GeoCompetitor | null;
   initialName?: string;
+  /** Prefills the website, e.g. the domain resolved for a discovered brand. */
+  initialDomain?: string | null;
   /** Shows a CSV import shortcut in the footer; closes the dialog first. */
   onImportCsv?: () => void;
 }
@@ -1399,6 +1396,7 @@ export interface CompetitorEditFormProps {
   organizationId: string;
   competitor: GeoCompetitor | null;
   initialName?: string;
+  initialDomain?: string | null;
   onDone: () => void;
   onCancel?: () => void;
   onImportCsv?: () => void;
@@ -1451,12 +1449,6 @@ export interface GeoCompetitorDetailPoint {
   rawDay: string;
   mentions: number;
   [key: string]: string | number;
-}
-
-export interface GeoCompetitorMentionStats {
-  latest: number;
-  latestDay: string;
-  peak: number;
 }
 
 export interface CompetitorsTableProps {
@@ -1641,12 +1633,25 @@ export interface CompetitorLogoPreviewProps {
 export interface CompetitorDetailViewProps {
   organizationSlug: string;
   competitor: string;
-  variant?: "modal" | "page";
 }
 
 export interface CompetitorSheetProps {
   title: string;
+  /** Runs once the close animation has finished. */
+  onClose: () => void;
   children: ReactNode;
+}
+
+export interface CompetitorSuggestionsTableProps {
+  suggestions: readonly GeoCompetitorSuggestion[];
+  competitors: GeoCompetitor[];
+  organizationId: string;
+  organizationSlug?: string;
+  onTrack: (brand: string) => void;
+}
+
+export interface CompetitorSheetHostProps {
+  organizationSlug: string;
 }
 
 export interface CompetitorDetailDialogProps {

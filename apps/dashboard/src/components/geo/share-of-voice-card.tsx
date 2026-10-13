@@ -8,9 +8,13 @@ import { useTranslations } from "use-intl";
 
 import { ShareOfVoiceTable } from "@/components/geo/share-of-voice-table";
 import { trackEvent } from "@/lib/analytics/posthog-client";
-import { useGeoCompetitorRowNavigation } from "@/lib/hooks/use-geo";
+import {
+  useGeoCompetitorRowNavigation,
+  useGeoSettings,
+} from "@/lib/hooks/use-geo";
 import { useGeoActiveProject } from "@/lib/hooks/use-geo-active-project";
 import type { ShareOfVoiceCardProps } from "@/types/geo";
+import { scopeCompetitorShare } from "@/utils/geo-competitor-scope";
 import { findOwnBrandDomain, isOwnBrandName } from "@/utils/geo-competitors";
 
 export function ShareOfVoiceCard({
@@ -29,6 +33,18 @@ export function ShareOfVoiceCard({
     organizationId
   );
   const { domain: projectDomain } = useGeoActiveProject(organizationId ?? "");
+  const { data: settingsData } = useGeoSettings(organizationId ?? "");
+  // Same brand set as the competitors page: you and your tracked rivals,
+  // variants folded, the assistants themselves left out.
+  const scoped = scopeCompetitorShare({
+    points,
+    timeseries,
+    competitors: competitors ?? [],
+    companyName,
+    aliases,
+    engines: settingsData?.settings?.engines,
+    ignoredCompetitors: settingsData?.settings?.ignoredCompetitors,
+  });
   const ownDomain = projectDomain ?? findOwnBrandDomain(aliases ?? []);
   const openRow = (row: ShareOfVoiceRow) => {
     trackEvent(POSTHOG_EVENTS.GEO_SHARE_OF_VOICE_SLICE_CLICKED, {
@@ -58,8 +74,8 @@ export function ShareOfVoiceCard({
         onRowClick={organizationSlug ? openRow : undefined}
         onRowPointerEnter={organizationSlug ? prefetchRow : undefined}
         ownDomain={ownDomain}
-        points={points}
-        timeseries={timeseries}
+        points={scoped.points}
+        timeseries={scoped.timeseries}
       />
     </InstrumentSection>
   );

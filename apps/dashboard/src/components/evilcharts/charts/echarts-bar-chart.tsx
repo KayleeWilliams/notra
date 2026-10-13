@@ -227,6 +227,7 @@ export interface EChartsBarChartProps<TData extends Record<string, unknown>> {
   animationType?: BarAnimationType; // default grow-in order each <Bar> inherits
   barGap?: number; // gap between bars within the same category, in pixels
   barCategoryGap?: number; // gap between categories of bars, in pixels
+  barMaxWidth?: number; // caps each bar's width, in pixels — keeps sparse ranges from drawing slabs
   defaultSelectedDataKey?: string | null; // series selected on first render
   onSelectionChange?: (key: string | null) => void; // fires when the selected series changes
   hoverDataKey?: string | null; // controlled hover from a legend or other sibling UI
@@ -850,6 +851,7 @@ type OptionBuildContext = {
   brushHeight: number;
   barGap?: number;
   barCategoryGap?: number;
+  barMaxWidth?: number;
   resolved: ResolvedColors;
   categories: string[];
   brushRange: BrushRange; // zoom window carried through rebuilds
@@ -1261,6 +1263,7 @@ function buildBarSeries(ctx: OptionBuildContext): BarSeriesOption[] {
     hasSelection,
     barGap,
     barCategoryGap,
+    barMaxWidth,
     resolved,
   } = ctx;
 
@@ -1415,6 +1418,7 @@ function buildBarSeries(ctx: OptionBuildContext): BarSeriesOption[] {
       stack: isStacked ? "total" : undefined,
       barGap,
       barCategoryGap,
+      barMaxWidth,
       cursor: bar.isClickable ? "pointer" : "default",
       // Selected series ride on top; when a selection is active the rest sink below.
       z: isSelected ? 3 : hasSelection ? 1 : 2,
@@ -1935,6 +1939,7 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
   animationType = "left-to-right",
   barGap,
   barCategoryGap,
+  barMaxWidth,
   defaultSelectedDataKey = null,
   onSelectionChange,
   hoverDataKey,
@@ -2155,6 +2160,7 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
       brushHeight,
       barGap,
       barCategoryGap,
+      barMaxWidth,
       resolved,
       categories,
       brushRange: live.brushRange,
@@ -2210,6 +2216,7 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
     brushHeight,
     barGap,
     barCategoryGap,
+    barMaxWidth,
     maxHighlightIndex,
   ]);
 

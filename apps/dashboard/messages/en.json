@@ -2566,13 +2566,6 @@
     "competitorDetailView": {
       "mentionsUnavailable": "Mentions for {competitor} could not be loaded.",
       "notEnoughScans": "Not enough scans yet to chart {competitor}.",
-      "latestOn": "Latest on {day}",
-      "peak": "Peak",
-      "stats": {
-        "answersDetail": "latest answers naming {competitor}",
-        "promptsDetail": "tracked prompts",
-        "withYourBrandDetail": "{own} of {total} answers"
-      },
       "promptsUnavailable": "Prompt appearances could not be loaded.",
       "promptsEmpty": "{competitor} has not shown up in your tracked prompts yet.",
       "whereShowsUp": "Where {competitor} shows up",
@@ -2580,7 +2573,9 @@
       "absent": "Absent",
       "editNamed": "Edit {competitor}",
       "editCompetitor": "Edit competitor",
-      "noWebsite": "No website yet"
+      "foundInAnswers": "Found in AI answers",
+      "trackCompetitor": "Track competitor",
+      "mentionsHint": "Daily answers naming {competitor} across your tracked prompts and engines."
     },
     "competitorEditDialog": {
       "editDescription": "Name, website and how this brand shows up in your charts.",
@@ -2607,7 +2602,9 @@
       "scanning": "Scanning engines…",
       "loadFailed": "Couldn't load assistant recommendations.",
       "cellDetail": "{mentions, number} of {checks, number} answers",
-      "refreshFailed": "Couldn't refresh, showing earlier data"
+      "refreshFailed": "Couldn't refresh, showing earlier data",
+      "showAll": "Show all {count, number}",
+      "showLess": "Show less"
     },
     "competitorModal": {
       "description": "How AI engines mention {title} across your tracked prompts"
@@ -4144,7 +4141,8 @@
       "personaScanned": "Persona scanned across {count, plural, one {# engine} other {# engines}}",
       "resolveCreatedProjectFailed": "Failed to resolve created project",
       "connectingProperty": "Connecting {property}…",
-      "connectingPropertyDescription": "Reading your search queries. This can take a minute, keep working in the meantime."
+      "connectingPropertyDescription": "Reading your search queries. This can take a minute, keep working in the meantime.",
+      "updateCompetitorFailed": "Couldn't update the competitor suggestion."
     },
     "competitorChoices": {
       "searchLabel": "Search competitors",
@@ -4195,6 +4193,13 @@
     },
     "trafficExport": {
       "label": "Export to CSV"
+    },
+    "competitorSuggestions": {
+      "title": "Suggested competitors",
+      "hint": "Brands AI assistants named in at least two answers that you don't track yet.",
+      "trackNamed": "Track {brand}",
+      "dismissNamed": "Dismiss {brand}",
+      "dismiss": "Dismiss suggestion"
     }
   },
   "integrations": {

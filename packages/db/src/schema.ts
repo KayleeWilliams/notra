@@ -1577,6 +1577,11 @@ export const geoSettings = pgTable(
       .array()
       .notNull()
       .default(sql`ARRAY[]::text[]`),
+    /** Discovered brands dismissed from the competitor suggestions. */
+    ignoredCompetitors: text("ignored_competitors")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
     enabled: boolean("enabled").notNull().default(true),
     scanIntervalHours: integer("scan_interval_hours").notNull().default(24),
     sentimentAttemptedAt: timestamp("sentiment_attempted_at"),

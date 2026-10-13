@@ -67,9 +67,10 @@ import { useTranslations } from "use-intl";
 
 import { useGeoLive } from "@/components/providers/geo-live-provider";
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
+import { GEO_COMPETITOR_DETAIL_QUERY_KEY } from "@/constants/geo-competitors";
 import { trackEvent } from "@/lib/analytics/posthog-client";
 import { geoDbOrgQueryKey, geoDbQueryKey } from "@/lib/db/geo-collections";
-import { useRouter } from "@/lib/navigation";
+import { usePathname, useRouter, useSearchParams } from "@/lib/navigation";
 import type { GeoScanTrigger } from "@/types/analytics/geo-events";
 import type {
   GeoGenerateFromWebsiteInput,
@@ -83,7 +84,6 @@ import type {
 } from "@/types/geo";
 import { loadCompetitorDetailView } from "@/utils/competitor-detail-chunk";
 import { toErrorMessage } from "@/utils/error-message";
-import { geoCompetitorDetailPath } from "@/utils/geo-competitors";
 import { describeGeoImportResult } from "@/utils/geo-import";
 import { withGeoProject } from "@/utils/geo-paths";
 import {
@@ -244,6 +244,54 @@ export function useGeoSettingsUpsert(
       trackEvent(POSTHOG_EVENTS.GEO_SETTINGS_SAVE_FAILED);
       toast.error(toErrorMessage(error, tToast("saveSettingsFailed")));
     },
+  });
+}
+
+/**
+ * Dismisses a suggested competitor (or restores it). The settings cache is
+ * patched first so the suggestion leaves the list on click.
+ */
+export function useGeoCompetitorIgnore(organizationId: string) {
+  const tToast = useTranslations("geo.toasts");
+  const { projectId } = useGeoProjectScope();
+  const queryClient = useQueryClient();
+  const settingsKey = dashboardOrpc.geo.settings.queryKey({
+    input: geoSettingsQueryInput({ organizationId, projectId }),
+  });
+  return useMutation({
+    mutationFn: (input: { name: string; ignored: boolean }) =>
+      dashboardOrpc.geo.competitorIgnore.call({
+        ...input,
+        organizationId,
+        projectId,
+      }),
+    onMutate: async ({ name, ignored }) => {
+      await queryClient.cancelQueries({ queryKey: settingsKey });
+      const previous =
+        queryClient.getQueryData<GeoSettingsResponse>(settingsKey);
+      const settings = previous?.settings;
+      if (settings) {
+        const key = name.trim().toLowerCase();
+        const rest = settings.ignoredCompetitors.filter(
+          (entry) => entry !== key
+        );
+        queryClient.setQueryData<GeoSettingsResponse>(settingsKey, {
+          ...previous,
+          settings: {
+            ...settings,
+            ignoredCompetitors: ignored ? [...rest, key] : rest,
+          },
+        });
+      }
+      return { previous };
+    },
+    onError: (error, _input, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(settingsKey, context.previous);
+      }
+      toast.error(toErrorMessage(error, tToast("updateCompetitorFailed")));
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: settingsKey }),
   });
 }
 
@@ -547,55 +595,49 @@ export function usePrefetchGeoCompetitorDetail(organizationId: string) {
   };
 }
 
-function geoCompetitorRowHref(
-  organizationSlug: string,
-  brand: string,
-  projectId?: string,
-  aggregate = false
-): string {
-  if (aggregate) {
-    return withGeoProject(`/${organizationSlug}/geo/competitors`, projectId);
-  }
-  return withGeoProject(
-    geoCompetitorDetailPath(organizationSlug, brand),
-    projectId
-  );
-}
-
 /**
  * Row navigation for competitor lists/charts. The aggregated "Other" slice
- * routes to the competitors index; every other brand opens its detail page
- * (and prefetches its detail query on hover).
+ * routes to the competitors index; every other brand opens the detail sheet
+ * over the current page via `?competitor=` (and prefetches its detail query
+ * on hover).
  */
 export function useGeoCompetitorRowNavigation(
   organizationSlug: string | undefined,
   organizationId: string | undefined
 ) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { projectId } = useGeoProjectScope();
   const prefetchDetail = usePrefetchGeoCompetitorDetail(organizationId ?? "");
+  const indexHref = organizationSlug
+    ? withGeoProject(`/${organizationSlug}/geo/competitors`, projectId)
+    : null;
 
   const openRow = (brand: string, aggregate = false) => {
-    if (!organizationSlug) {
+    if (!indexHref) {
       return;
     }
-    router.push(
-      geoCompetitorRowHref(organizationSlug, brand, projectId, aggregate)
-    );
+    if (aggregate) {
+      router.push(indexHref);
+      return;
+    }
+    const next = new URLSearchParams(searchParams);
+    next.set(GEO_COMPETITOR_DETAIL_QUERY_KEY, brand);
+    router.push(`${pathname}?${next.toString()}`, { scroll: false });
   };
 
   const prefetchRow = (brand: string, aggregate = false) => {
-    if (!organizationSlug) {
+    if (!indexHref) {
       return;
     }
-    router.prefetch(
-      geoCompetitorRowHref(organizationSlug, brand, projectId, aggregate)
-    );
-    if (!aggregate) {
-      prefetchDetail(brand);
-      // The detail sheet's code, so the click only waits for data.
-      loadCompetitorDetailView().catch(() => undefined);
+    if (aggregate) {
+      router.prefetch(indexHref);
+      return;
     }
+    prefetchDetail(brand);
+    // The detail sheet's code, so the click only waits for data.
+    loadCompetitorDetailView().catch(() => undefined);
   };
 
   return { openRow, prefetchRow };

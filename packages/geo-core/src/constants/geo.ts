@@ -38,7 +38,17 @@ import {
 export const GEO_MAX_ENGINES = 64;
 export const GEO_MODEL_CATALOG_STALE_MS = 60 * 60 * 1000;
 
-export const GEO_JUDGE_MODEL = "openai/gpt-5.4-nano";
+/**
+ * Reads every scan answer for mentions, position, sentiment and competitors.
+ * Benchmarked 2026-10-13 on 60 real answers: with the competitor rules in
+ * buildJudgePrompt, gpt-6-luna at low effort found competitors at F1 0.95
+ * (gpt-5.4-nano: 0.60 with the old prompt) at a similar price.
+ */
+export const GEO_JUDGE_MODEL = "openai/gpt-6-luna";
+/** Default effort spends 350+ reasoning tokens per answer for no gain. */
+export const GEO_JUDGE_REASONING_EFFORT = "low";
+/** Prompt translation stays on the small model; it needs no judgement. */
+export const GEO_TRANSLATION_MODEL = "openai/gpt-5.4-nano";
 
 export const GEO_OPENAI_API_KEY_ENV = "OPENAI_API_KEY";
 export const GEO_ANTHROPIC_API_KEY_ENV = "ANTHROPIC_API_KEY";
@@ -375,7 +385,8 @@ export const GEO_FLEX_MODELS: ReadonlySet<string> = new Set([
   "openai/gpt-5.6-luna",
   "openai/gpt-5.6-terra",
 ]);
-export const GEO_JUDGE_MAX_TOKENS = 800;
+/** Room for low-effort reasoning plus the structured result. */
+export const GEO_JUDGE_MAX_TOKENS = 1500;
 export const GEO_SCAN_CONCURRENCY = 4;
 export const GEO_SCAN_DEFAULT_INTERVAL_HOURS = 24;
 export const GEO_SCAN_INTERVAL_OPTIONS = [
@@ -608,7 +619,6 @@ export const AI_TRAFFIC_DEFAULT_JOURNEYS_LIMIT = 25;
 export const OWN_BRAND_ROW_ID = "own-brand";
 
 export const COMPETITOR_PROMPTS_TABLE_HEIGHT = 288;
-export const COMPETITOR_PROMPTS_PAGE_TABLE_HEIGHT = 620;
 export const COMPETITORS_TABLE_ROW_HEIGHT = 52;
 
 export const PROMPTS_TABLE_HEIGHT = 420;

@@ -12,6 +12,7 @@ import { AnalyticsProvider } from "@/components/analytics/analytics-context";
 import { AnalyticsShell } from "@/components/analytics/analytics-shell";
 import { DashboardClientWrapper } from "@/components/dashboard/dashboard-client-wrapper";
 import { StudioFreeHome } from "@/components/dashboard/studio-free-home";
+import { GeoCompetitorSheetHost } from "@/components/geo/competitor-sheet-host";
 import { GeoCatalogWarmer } from "@/components/geo/geo-catalog-warmer";
 import { GeoPageGate } from "@/components/geo/geo-page-gate";
 import { IntegrationsBackLink } from "@/components/integrations/integrations-back-link";
@@ -170,6 +171,7 @@ export function createDashboardUiRoutes(parent: AnyRoute) {
             <GeoPageGate entitled={geoEntitled} fallback={<DashboardLoading />}>
               <UiModalProvider>
                 <Outlet />
+                <GeoCompetitorSheetHost organizationSlug={slug} />
               </UiModalProvider>
             </GeoPageGate>
           </GeoLiveProvider>

@@ -2566,13 +2566,6 @@
     "competitorDetailView": {
       "mentionsUnavailable": "Erwähnungen für {competitor} konnten nicht geladen werden.",
       "notEnoughScans": "Noch nicht genug Scans, um {competitor} darzustellen.",
-      "latestOn": "Zuletzt am {day}",
-      "peak": "Höchstwert",
-      "stats": {
-        "answersDetail": "neueste Antworten, die {competitor} nennen",
-        "promptsDetail": "getrackte Prompts",
-        "withYourBrandDetail": "{own} von {total} Antworten"
-      },
       "promptsUnavailable": "Prompt-Vorkommen konnten nicht geladen werden.",
       "promptsEmpty": "{competitor} ist in deinen getrackten Prompts noch nicht aufgetaucht.",
       "whereShowsUp": "Wo {competitor} auftaucht",
@@ -2580,7 +2573,9 @@
       "absent": "Nicht genannt",
       "editNamed": "{competitor} bearbeiten",
       "editCompetitor": "Wettbewerber bearbeiten",
-      "noWebsite": "Noch keine Website"
+      "foundInAnswers": "In KI-Antworten gefunden",
+      "trackCompetitor": "Wettbewerber tracken",
+      "mentionsHint": "Tägliche Antworten, die {competitor} nennen, über deine getrackten Prompts und KI-Engines."
     },
     "competitorEditDialog": {
       "editDescription": "Name, Website und wie diese Marke in deinen Diagrammen erscheint.",
@@ -2607,7 +2602,9 @@
       "scanning": "Engines werden gescannt…",
       "loadFailed": "Empfehlungen nach Assistent konnten nicht geladen werden.",
       "cellDetail": "{mentions, number} von {checks, number} Antworten",
-      "refreshFailed": "Aktualisierung fehlgeschlagen, ältere Daten"
+      "refreshFailed": "Aktualisierung fehlgeschlagen, ältere Daten",
+      "showAll": "Alle {count, number} anzeigen",
+      "showLess": "Weniger anzeigen"
     },
     "competitorModal": {
       "description": "Wie KI-Engines {title} in deinen getrackten Prompts erwähnen"
@@ -4144,7 +4141,8 @@
       "personaScanned": "Persona mit {count, plural, one {# KI-Engine} other {# KI-Engines}} gescannt",
       "resolveCreatedProjectFailed": "Erstelltes Projekt konnte nicht gefunden werden",
       "connectingProperty": "{property} wird verbunden…",
-      "connectingPropertyDescription": "Deine Suchanfragen werden gelesen. Das kann eine Minute dauern, du kannst solange weiterarbeiten."
+      "connectingPropertyDescription": "Deine Suchanfragen werden gelesen. Das kann eine Minute dauern, du kannst solange weiterarbeiten.",
+      "updateCompetitorFailed": "Wettbewerber-Vorschlag konnte nicht aktualisiert werden."
     },
     "competitorChoices": {
       "searchLabel": "Wettbewerber suchen",
@@ -4195,6 +4193,13 @@
     },
     "trafficExport": {
       "label": "Als CSV exportieren"
+    },
+    "competitorSuggestions": {
+      "title": "Vorgeschlagene Wettbewerber",
+      "hint": "Marken, die KI-Assistenten in mindestens zwei Antworten genannt haben und die du noch nicht trackst.",
+      "trackNamed": "{brand} tracken",
+      "dismissNamed": "{brand} ausblenden",
+      "dismiss": "Vorschlag ausblenden"
     }
   },
   "integrations": {

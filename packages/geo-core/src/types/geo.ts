@@ -89,6 +89,8 @@ export interface GeoSettings {
   trackWithoutSearch: boolean;
   pausedAutoPromptIds: string[];
   removedAutoPromptIds: string[];
+  /** Discovered brands the user dismissed from competitor suggestions. */
+  ignoredCompetitors: string[];
   enabled: boolean;
   scanIntervalHours: number;
   scanStartedAt: string | null;
@@ -120,6 +122,7 @@ export interface GeoSettingsRow {
   trackWithoutSearch: boolean;
   pausedAutoPromptIds: string[];
   removedAutoPromptIds: string[];
+  ignoredCompetitors: string[];
   enabled: boolean;
   scanIntervalHours: number;
   nextScanAt: Date | null;
@@ -156,7 +159,16 @@ export interface GeoTimeseriesPoint {
   avgPosition?: number | null;
 }
 
-export type GeoStatDeltaKind = "rate" | "mentions" | "position" | "score";
+/**
+ * `position` is an average position where lower is better, shown as the raw
+ * change. `rank` is a leaderboard rank, shown as places gained or lost.
+ */
+export type GeoStatDeltaKind =
+  | "rate"
+  | "mentions"
+  | "position"
+  | "rank"
+  | "score";
 
 export type GeoStatDeltaTone = "up" | "down" | "flat";
 
@@ -373,6 +385,15 @@ export interface GeoPromptHistoryInput extends GeoScopeInput {
 export interface GeoPromptRescanInput extends GeoScopeInput {
   promptId: string;
   engines?: readonly string[];
+}
+
+export interface GeoCompetitorDomainFillInput extends GeoScopeInput {
+  domains: { name: string; domain: string }[];
+}
+
+export interface GeoCompetitorIgnoreInput extends GeoScopeInput {
+  name: string;
+  ignored: boolean;
 }
 
 export interface GeoPromptGapIgnoreInput extends GeoScopeInput {
@@ -680,6 +701,8 @@ export interface GeoScanProjectContext {
   runId: string;
   companyName: string;
   aliases: string[];
+  /** What the company does; tells the judge which brands are real rivals. */
+  companyDescription?: string | null;
   /** Canonical brand website used to recognize citations from owned subdomains. */
   websiteUrl?: string | null;
   /** Additional project domains whose citations count as owned sources. */
@@ -814,6 +837,8 @@ export interface GeoCheckContext {
   capturedAt: Date;
   companyName: string;
   aliases: string[];
+  /** What the company does; tells the judge which brands are real rivals. */
+  companyDescription?: string | null;
   websiteUrl?: string | null;
   domains?: string[];
 }

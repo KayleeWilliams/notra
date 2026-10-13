@@ -193,6 +193,23 @@ export const geoCompetitorDeleteInputSchema = geoOrganizationInputSchema.extend(
   }
 );
 
+export const geoCompetitorDomainFillInputSchema =
+  geoOrganizationInputSchema.extend({
+    domains: array(
+      object({
+        name: string().trim().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH),
+        domain: string().trim().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH),
+      })
+    ).max(GEO_MAX_COMPETITORS),
+  });
+
+export const geoCompetitorIgnoreInputSchema = geoOrganizationInputSchema.extend(
+  {
+    name: string().trim().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH),
+    ignored: boolean(),
+  }
+);
+
 export const geoCompetitorDetailInputSchema = geoOrganizationInputSchema.extend(
   {
     brand: string().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH),

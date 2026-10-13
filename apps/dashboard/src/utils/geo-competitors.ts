@@ -22,6 +22,7 @@ import {
   CHART_PRIMARY_COLOR,
   RIVAL_SWATCHES,
 } from "@/constants/charts";
+import { GEO_COMPETITOR_DETAIL_QUERY_KEY } from "@/constants/geo-competitors";
 import type { ChartColorPair } from "@/types/charts";
 import type { EngineFamilyBrandRow, EngineFamilyBrandScope } from "@/types/geo";
 import type { GeoCompetitorRowEntry } from "@/types/geo-competitors";
@@ -390,7 +391,7 @@ export function geoCompetitorDetailPath(
   organizationSlug: string,
   brand: string
 ): string {
-  return `/${organizationSlug}/geo/competitors/${encodeURIComponent(brand)}`;
+  return `/${organizationSlug}/geo/competitors?${GEO_COMPETITOR_DETAIL_QUERY_KEY}=${encodeURIComponent(brand)}`;
 }
 
 function normalizeDomainAlias(value: string): string {

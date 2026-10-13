@@ -15,10 +15,12 @@ import {
   GEO_GROUNDED_ANSWER_MAX_TOKENS,
   GEO_JUDGE_MAX_TOKENS,
   GEO_JUDGE_MODEL,
+  GEO_JUDGE_REASONING_EFFORT,
   GEO_MENTION_EVALUATION_FEATURE,
   GEO_MENTION_EVALUATION_TIMEOUT_MS,
   GEO_PROVIDER_TIMEOUT_MS,
   GEO_TRANSLATION_MAX_TOKENS,
+  GEO_TRANSLATION_MODEL,
 } from "../constants/geo";
 import {
   GSC_SUGGESTION_MAX_TOKENS,
@@ -230,6 +232,7 @@ export const geoModelLive = Layer.succeed(
             abortSignal: signal,
             providerOptions: {
               gateway: { tags: ["geo-scan-judge"], serviceTier: "flex" },
+              openai: { reasoningEffort: GEO_JUDGE_REASONING_EFFORT },
             },
           });
           return {
@@ -293,7 +296,7 @@ export const geoModelLive = Layer.succeed(
       Effect.tryPromise({
         try: async (signal) => {
           const result = await generateText({
-            model: gateway(GEO_JUDGE_MODEL, {
+            model: gateway(GEO_TRANSLATION_MODEL, {
               organizationId: input.organizationId,
             }),
             output: Output.object({ schema: geoTranslationResultSchema }),
@@ -308,7 +311,7 @@ export const geoModelLive = Layer.succeed(
             translations: result.output.translations,
             usage: usageWithModel(
               result.usage,
-              GEO_JUDGE_MODEL,
+              GEO_TRANSLATION_MODEL,
               getRouteMetadata(result.providerMetadata)
             ),
           };

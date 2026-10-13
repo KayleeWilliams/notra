@@ -781,7 +781,8 @@ export function geoStatDeltaTone(
   }
   const oneDecimal = kind === "position" || kind === "score";
   const rounded = oneDecimal ? Math.round(delta * 10) / 10 : Math.round(delta);
-  const effective = kind === "position" ? -rounded : rounded;
+  const lowerIsBetter = kind === "position" || kind === "rank";
+  const effective = lowerIsBetter ? -rounded : rounded;
   if (effective > 0) {
     return "up";
   }
@@ -816,6 +817,14 @@ export function formatGeoStatDelta(
     const rounded = Math.round(delta);
     const points = labels.points(rounded);
     return signed && rounded >= 0 ? `+${points}` : points;
+  }
+  if (kind === "rank") {
+    // A rank going from #40 to #34 reads as six places gained, not "-6".
+    const gained = -Math.round(delta);
+    if (!signed) {
+      return String(Math.abs(gained));
+    }
+    return gained > 0 ? `+${gained}` : String(gained);
   }
   const rounded = Math.round(delta * 10) / 10;
   const text = new Intl.NumberFormat(locale, {

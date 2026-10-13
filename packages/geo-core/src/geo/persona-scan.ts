@@ -426,6 +426,7 @@ const runGeoPersonaNowProgram = Effect.fn("geo.runPersonaNow")(function* (
         catalog,
         companyName: settings.companyName,
         aliases: settings.aliases,
+        companyDescription: brand?.companyDescription ?? null,
         websiteUrl: brand?.websiteUrl ?? null,
         domains: settings.domains,
       },

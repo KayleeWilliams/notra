@@ -42,6 +42,7 @@ import { Button } from "@/components/button";
 import { CompetitorLogoPreview } from "@/components/geo/competitor-logo-preview";
 import { COMPETITOR_SWATCHES } from "@/constants/charts";
 import { useGeoCompetitorsDb } from "@/lib/hooks/use-geo-db";
+import { useCompanyLogo } from "@/lib/hooks/use-onboarding";
 import { cn } from "@/lib/utils";
 import type { CompetitorEditFormProps } from "@/types/geo";
 
@@ -292,6 +293,7 @@ export function CompetitorEditForm({
   organizationId,
   competitor,
   initialName,
+  initialDomain,
   onDone,
   onCancel,
   onImportCsv,
@@ -310,7 +312,7 @@ export function CompetitorEditForm({
   const form = useForm({
     defaultValues: {
       name: competitor?.name ?? initialName ?? "",
-      website: competitor?.domain ?? "",
+      website: competitor?.domain ?? initialDomain ?? "",
       synonyms: competitor?.synonyms ?? [],
       kind: competitor?.kind ?? ("direct" as GeoCompetitorKind),
       color: competitor?.color ?? "",
@@ -330,6 +332,30 @@ export function CompetitorEditForm({
       onDone();
     },
   });
+
+  // A brand without a website (a discovered one, or one tracked by name only)
+  // gets the website the logo lookup already found, unless the user typed one.
+  const lookupName =
+    competitor?.domain || initialDomain
+      ? null
+      : (competitor?.name ?? initialName)?.trim() || null;
+  const { data: lookup } = useCompanyLogo(null, lookupName);
+  const lookupDomain = lookup?.domain ?? null;
+  useEffect(() => {
+    if (!lookupDomain) {
+      return;
+    }
+    const websiteMeta = form.getFieldMeta("website");
+    if (websiteMeta?.isDirty || form.getFieldValue("website")) {
+      return;
+    }
+    // The lookup belongs to the name the form opened with; once the user
+    // renames the brand, its website no longer applies.
+    if (form.getFieldValue("name").trim() !== lookupName) {
+      return;
+    }
+    form.setFieldValue("website", lookupDomain, { dontUpdateMeta: true });
+  }, [form, lookupDomain, lookupName]);
 
   const debouncedColorChange = useDebouncedCallback(
     (hex: string) => form.setFieldValue("color", hex),
