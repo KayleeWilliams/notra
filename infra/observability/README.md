@@ -236,6 +236,58 @@ and reviewed platform HTTP/cache/runtime dimensions: never IP, URLs, paths,
 headers, key IDs, session IDs, generation IDs, or captured AI content. Empty
 platform dimensions remain empty; missing dimensions become `unattributed`.
 
+#### Vercel validation and allocation contract
+
+Provider metadata is validated before grouping or status-label emission. Metric
+IDs use `vercel` plus two to four lowercase alphanumeric/underscore components;
+source events use one to four such components. IDs, metadata strings, dimension
+names and pagination cursors are limited to 160 characters. Dimension names are
+alphanumeric identifiers starting with a letter, with at most 64 names per metric.
+Aggregation arrays contain one to twelve reviewed entries: `avg`, `count`, `max`,
+`min`, `p50`, `p75`, `p90`, `p95`, `p99`, `stddev`, `sum`, `unique`.
+Reviewed units are `bytes`, `count`, `currency`, `gigabyte_hour`, `megabytes`,
+`milliseconds`, `percent`, `ratio`, `score`, `seconds`, `usd`. Unit validation is
+case-insensitive; output spelling and existing currency/USD sum selection stay
+unchanged. Unknown units or aggregations reject the catalog, not publish free text.
+
+Requested dimensions have field-specific contracts:
+
+- `projectId`: opaque `prj_` plus alphanumeric characters, at most 160 characters;
+  never project names, emails, URLs or numeric IDs.
+- `environment`: `production`, `preview`, `development`. Custom environments need
+  explicit privacy review and fixture additions before extending this list.
+- `httpStatus`: canonical decimal 100–599, as an integer or three-digit string.
+  No unknown sentinel is retained: `0`/`"0"` are rejected.
+- `requestMethod`: uppercase `CONNECT`, `DELETE`, `GET`, `HEAD`, `OPTIONS`, `PATCH`,
+  `POST`, `PUT`, `TRACE`.
+- `cacheResult`: `BYPASS`, `HIT`, `MISS`, `REVALIDATED`, `STALE`.
+- `runtime`: `edge`, `nodejsN.x` (one- or two-digit positive major), or `python3.N`
+  (one- or two-digit positive minor), without suffixes or free-text names.
+- `functionStartType`: `cold`, `hot`, `prewarmed`.
+
+For every requested field, empty strings stay empty; null/absent values become
+`unattributed`, never an invented environment. Unrequested sensitive dimensions
+are ignored. New provider units, aggregations, environments or runtime families
+require reviewed fixture additions. Native numeric values and measured zero are
+unchanged; null/non-finite observations remain omitted.
+
+Each decoded HTTP response is capped at **1 MiB**, enforced on actual streamed
+bytes before decoding/JSON parsing even with missing or incorrect Content-Length.
+Oversized advertised lengths can fail early; overflow cancels the response stream.
+Catalog pages accept at most **250 items**, the catalog at most **1,000 items** and
+ten pages. Summary arrays reject **500 or more rows** before mapping. An aggregate
+snapshot accepts at most **10,000 sample/status lines** and **4 MiB of UTF-8 bytes**,
+including each final newline, across both workers and all breakdowns.
+
+All limits fail visibly without silent truncation or scrub-and-publish behavior.
+Ordinary failed groups retain only fixed diagnostic categories and failure status,
+not partial measurements. A global snapshot-budget failure stops scheduling new
+groups, settles the other timeout-bounded request and invalidates the entire poll:
+no apparently complete partial snapshot or stale measurements are served. The
+next valid poll can recover. Provider values and response/error bodies are never
+included in diagnostics. Fixed-origin, redirect-refusal and 30-second timeout
+protections remain in place; `/healthz` remains liveness only.
+
 Measurements are **five-minute window gauges**, ending at least ten minutes
 before the poll to allow ingestion, not monotonic totals. Do not use
 `rate`, `increase` or sum repeated scrapes to calculate historical totals.

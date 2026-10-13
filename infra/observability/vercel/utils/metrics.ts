@@ -1,11 +1,15 @@
 import {
   INGESTION_LAG_SECONDS,
+  METRIC_ID_PATTERN,
   MAX_QUERY_OUTPUTS,
+  MAX_SNAPSHOT_BYTES,
+  MAX_SNAPSHOT_LINES,
   PLATFORM_BREAKDOWNS,
   SAFE_DIMENSIONS,
   SERIES_LIMIT,
   WINDOW_SECONDS,
 } from "../constants/metrics.ts";
+import { dimensionValue } from "../schemas/dimensions.ts";
 import type {
   CatalogMetric,
   MetricGroup,
@@ -13,6 +17,7 @@ import type {
   MetricQueryBody,
   MetricSelection,
   MetricSummary,
+  SnapshotBudget,
 } from "../types/metrics.ts";
 
 export function metricSelections(metric: CatalogMetric): string[] {
@@ -73,7 +78,7 @@ export function metricGroups(catalog: CatalogMetric[]): MetricGroup[] {
   const groups = new Map<string, MetricGroup>();
   for (const metric of catalog) {
     // Only bounded platform metric IDs, never arbitrary custom metric names.
-    if (!/^vercel(?:\.[a-z0-9_]+){2,4}$/.test(metric.id)) {
+    if (!METRIC_ID_PATTERN.test(metric.id)) {
       continue;
     }
     const dimensions = SAFE_DIMENSIONS.filter((name) =>
@@ -167,13 +172,14 @@ export function promLabels(labels: Record<string, string | number>): string {
 export function metricSamples(
   group: MetricGroup,
   query: MetricQuery,
-  summary: MetricSummary[]
+  summary: MetricSummary[],
+  budget: SnapshotBudget = { lines: 0, bytes: 0 }
 ): string[] {
   // A top-N response is not complete team coverage. Reject rather than silently truncate.
   if (summary.length >= SERIES_LIMIT) {
     throw new Error("series_limit");
   }
-  const samples = [];
+  const samples: string[] = [];
   for (const { alias, metric, aggregation } of query.selections) {
     const seen = new Set();
     for (const row of summary) {
@@ -188,30 +194,41 @@ export function metricSamples(
         breakdown: group.breakdown ?? "project",
       };
       for (const dimension of group.dimensions) {
-        const label = row.dimensions[dimension];
-        if (
-          label != null &&
-          !(typeof label === "number" && Number.isSafeInteger(label)) &&
-          (typeof label !== "string" || !/^[a-zA-Z0-9_.:-]{0,160}$/.test(label))
-        ) {
-          throw new Error("invalid_dimension");
-        }
         const name = dimension.replace(
           /[A-Z]/g,
           (letter) => `_${letter.toLowerCase()}`
         );
-        labels[name] =
-          typeof label === "string" || typeof label === "number"
-            ? label
-            : "unattributed";
+        labels[name] = dimensionValue(dimension, row.dimensions[dimension]);
       }
       const key = promLabels(labels);
       if (seen.has(key)) {
         throw new Error("duplicate_series");
       }
       seen.add(key);
-      samples.push(`notra_vercel_metric_window${key} ${value}`);
+      appendSnapshotLine(
+        samples,
+        `notra_vercel_metric_window${key} ${value}`,
+        budget
+      );
     }
   }
   return samples;
+}
+
+/** Count the final newline and actual UTF-8 bytes before retaining each line. */
+export function appendSnapshotLine(
+  lines: string[],
+  line: string,
+  budget: SnapshotBudget
+) {
+  const bytes = Buffer.byteLength(line, "utf8") + 1;
+  if (budget.lines + 1 > MAX_SNAPSHOT_LINES) {
+    throw new Error("snapshot_line_limit");
+  }
+  if (budget.bytes + bytes > MAX_SNAPSHOT_BYTES) {
+    throw new Error("snapshot_byte_limit");
+  }
+  budget.lines++;
+  budget.bytes += bytes;
+  lines.push(line);
 }

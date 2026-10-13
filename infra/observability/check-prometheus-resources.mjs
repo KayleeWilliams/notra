@@ -332,8 +332,8 @@ export async function checkPrometheusResources(
       })
       .map(({ expr, legendFormat }) => ({
         expression: expr
-          .replaceAll(`\${environment}`, "validation")
-          .replaceAll(`\${project:regex}`, "fixture_project")
+          .replaceAll(`\${environment}`, windowFixtureDimensions.environment)
+          .replaceAll(`\${project:regex}`, windowFixtureDimensions.projectId)
           .replaceAll(`\${metric}`, "vercel.request.count"),
         legendFormat,
       }));
