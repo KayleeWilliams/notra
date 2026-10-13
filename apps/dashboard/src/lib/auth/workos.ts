@@ -1,4 +1,3 @@
-import { redirect } from "@tanstack/react-router";
 import {
   getConfig,
   selectStalePKCEVerifierCookieNames,
@@ -40,12 +39,12 @@ export async function createAuthSignInUrl() {
 export async function signOutAuthSession(options?: SignOutActionOptions) {
   const auth = getAuthKitContext().auth();
   if (!auth.user || !auth.sessionId) {
-    throw redirect({ href: options?.returnTo || "/", reloadDocument: true });
+    return options?.returnTo || "/";
   }
   const authkit = await getAuthkit();
   const { logoutUrl } = await authkit.signOut(auth.sessionId, options);
   clearHostAuthSessionCookie();
-  throw redirect({ href: logoutUrl, reloadDocument: true });
+  return logoutUrl;
 }
 
 export async function saveAuthSession(session: Session) {

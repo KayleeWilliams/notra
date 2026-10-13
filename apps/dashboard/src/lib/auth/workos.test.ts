@@ -44,18 +44,12 @@ test("native WorkOS operations preserve PKCE, session persistence, and logout wi
     assert.deepEqual(await sessionEncryption.unsealData(sealed, { password: "local-test-cookie-password-with-32-characters", ttl: 0 }), session);
     emitted.delete("set-cookie");
     auth = { user: session.user, sessionId: "session_local_fixture" };
-    let logout;
-    try { await signOutAuthSession({ returnTo: "http://localhost:3000/login" }); } catch (error) { logout = error; }
-    assert.ok(logout);
-    const logoutUrl = new URL(logout.options.href);
+    const logoutUrl = new URL(await signOutAuthSession({ returnTo: "http://localhost:3000/login" }));
     assert.equal(logoutUrl.searchParams.get("session_id"), "session_local_fixture");
     assert.equal(logoutUrl.searchParams.get("return_to"), "http://localhost:3000/login");
-    assert.equal(logout.options.reloadDocument, true);
     assert.ok(emitted.getSetCookie().some(cookie => cookie.startsWith("wos-session=") && cookie.includes("Max-Age=0")));
     auth = { user: null };
-    let anonymous;
-    try { await signOutAuthSession({ returnTo: "/login" }); } catch (error) { anonymous = error; }
-    assert.equal(anonymous.options.href, "/login");
+    assert.equal(await signOutAuthSession({ returnTo: "/login" }), "/login");
   `;
   const child = spawnSync(process.execPath, ["--eval", script], {
     cwd: fileURLToPath(new URL("../../..", import.meta.url)),

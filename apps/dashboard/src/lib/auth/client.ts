@@ -5,8 +5,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { resetPostHogIdentity } from "@/lib/analytics/posthog-client";
 import { signOutAction } from "@/lib/auth/sign-out-action";
 import { dashboardOrpcClient } from "@/lib/orpc/client";
-import type { SignOutOptions } from "@/types/auth/client";
 import type { ClientSessionData } from "@/types/auth/session";
+import type { SignOutActionOptions } from "@/types/auth/user-actions";
 import { QUERY_KEYS } from "@/utils/query-keys";
 
 async function fetchSession(): Promise<ClientSessionData | null> {
@@ -64,11 +64,11 @@ function useSessionInvalidation() {
 function useSignOut() {
   const invalidateSession = useSessionInvalidation();
 
-  return async (options?: SignOutOptions) => {
-    await signOutAction({ returnTo: options?.returnTo });
+  return async (options?: SignOutActionOptions) => {
+    const logoutUrl = await signOutAction({ returnTo: options?.returnTo });
     invalidateSession();
     resetPostHogIdentity();
-    options?.fetchOptions?.onSuccess?.();
+    window.location.assign(logoutUrl);
   };
 }
 
