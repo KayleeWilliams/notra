@@ -50,26 +50,120 @@
   "panels": [
     {
       "id": 1,
-      "title": "Live collection is not connected yet",
+      "title": "Regional API probes and application telemetry",
       "type": "text",
       "gridPos": { "x": 0, "y": 0, "w": 24, "h": 4 },
       "options": {
         "mode": "markdown",
-        "content": "**These are pending live-telemetry panels, not evidence of zero traffic.** Real historical API totals are on the [production overview](/d/notra-overview). MCP history cannot be reconstructed where calls were never recorded. Application and standalone MCP rollouts are still required. Missing data is not zero. No tool arguments, results, prompts or credentials belong here."
+        "content": "**Synthetic response time includes the network; it is not real-traffic p95.** Regional probes require deployment and a dedicated monitoring key. They check API reachability and an authenticated workspace read from US East and EU West, independently of the customer/user filters. Application and standalone MCP telemetry below still require rollout. Missing data is not zero. No tool arguments, results, prompts or credentials belong here."
       }
+    },
+    {
+      "id": 10,
+      "title": "Synthetic API response time · US East vs EU West",
+      "description": "One controlled request every 30 seconds per check and region, including DNS, connection, TLS and response transfer. Not the p95 of customer traffic. Failed probes are excluded from this latency chart and remain visible in check status.",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 4, "w": 24, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "notra-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s", "min": 0 } },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "probe_duration_seconds{job=\"http-probes\",probe_check=~\"api_ping|api_workspace\"} and on (job,instance,probe_region,probe_check) (probe_success{job=\"http-probes\",probe_check=~\"api_ping|api_workspace\"} == 1) and on (job,instance,probe_region,probe_check) (up{job=\"http-probes\",probe_check=~\"api_ping|api_workspace\"} == 1)",
+          "legendFormat": "{{probe_region}} · {{probe_check}}"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Regional API check status",
+      "description": "Success requires HTTP 200 and the expected response body; the workspace check also requires valid JSON and API-key workspace context. An unavailable exporter or missing measurement is not a successful check.",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "notra-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "No data",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "Failed", "color": "red" },
+                "1": { "text": "OK", "color": "green" }
+              }
+            }
+          ]
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false },
+        "textMode": "value_and_name",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "instant": true,
+          "expr": "probe_success{job=\"http-probes\",probe_check=~\"api_ping|api_workspace\"} and on (job,instance,probe_region,probe_check) (up{job=\"http-probes\",probe_check=~\"api_ping|api_workspace\"} == 1)",
+          "legendFormat": "{{probe_region}} · {{probe_check}}"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "title": "Regional probe collection health",
+      "description": "Prometheus scrape health for each API check and each regional exporter. A probe can report a failed API check while collection remains healthy. Missing series are not replaced with zero or success.",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "notra-prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "No data",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": { "text": "Not collecting", "color": "red" },
+                "1": { "text": "Collecting", "color": "green" }
+              }
+            }
+          ]
+        }
+      },
+      "options": {
+        "orientation": "vertical",
+        "text": { "titleSize": 12, "valueSize": 18 },
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false },
+        "textMode": "value_and_name",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "instant": true,
+          "expr": "up{job=\"http-probes\",probe_check=~\"api_ping|api_workspace\"}",
+          "legendFormat": "{{probe_region}} · {{probe_check}}"
+        },
+        {
+          "refId": "B",
+          "instant": true,
+          "expr": "up{job=\"blackbox\",probe_region=~\"us-east|eu-west\"}",
+          "legendFormat": "{{probe_region}} · exporter"
+        }
+      ]
     },
     {
       "id": 200,
       "title": "Live API and MCP metrics · deployment required",
       "type": "row",
       "collapsed": true,
-      "gridPos": { "x": 0, "y": 4, "w": 24, "h": 1 },
+      "gridPos": { "x": 0, "y": 18, "w": 24, "h": 1 },
       "panels": [
         {
           "id": 2,
           "title": "API requests / second by surface and status",
           "type": "timeseries",
-          "gridPos": { "x": 0, "y": 4, "w": 12, "h": 7 },
+          "gridPos": { "x": 0, "y": 19, "w": 12, "h": 7 },
           "datasource": { "type": "loki", "uid": "notra-loki" },
           "targets": [
             {
@@ -83,7 +177,7 @@
           "id": 3,
           "title": "API completed-request p95 latency",
           "type": "timeseries",
-          "gridPos": { "x": 12, "y": 4, "w": 12, "h": 7 },
+          "gridPos": { "x": 12, "y": 19, "w": 12, "h": 7 },
           "datasource": { "type": "loki", "uid": "notra-loki" },
           "fieldConfig": { "defaults": { "unit": "ms", "min": 0 } },
           "targets": [
@@ -98,7 +192,7 @@
           "id": 4,
           "title": "API errors / second (including auth and rate limits)",
           "type": "timeseries",
-          "gridPos": { "x": 0, "y": 11, "w": 12, "h": 7 },
+          "gridPos": { "x": 0, "y": 26, "w": 12, "h": 7 },
           "datasource": { "type": "loki", "uid": "notra-loki" },
           "targets": [
             {
@@ -112,7 +206,7 @@
           "id": 5,
           "title": "MCP logical calls / second",
           "type": "timeseries",
-          "gridPos": { "x": 12, "y": 11, "w": 12, "h": 7 },
+          "gridPos": { "x": 12, "y": 26, "w": 12, "h": 7 },
           "datasource": { "type": "loki", "uid": "notra-loki" },
           "targets": [
             {
@@ -126,7 +220,7 @@
           "id": 6,
           "title": "MCP logical-call p95 latency (includes OAuth retry)",
           "type": "timeseries",
-          "gridPos": { "x": 0, "y": 18, "w": 12, "h": 7 },
+          "gridPos": { "x": 0, "y": 33, "w": 12, "h": 7 },
           "datasource": { "type": "loki", "uid": "notra-loki" },
           "fieldConfig": { "defaults": { "unit": "ms", "min": 0 } },
           "targets": [
@@ -141,7 +235,7 @@
           "id": 7,
           "title": "MCP errors / second",
           "type": "timeseries",
-          "gridPos": { "x": 12, "y": 18, "w": 12, "h": 7 },
+          "gridPos": { "x": 12, "y": 33, "w": 12, "h": 7 },
           "datasource": { "type": "loki", "uid": "notra-loki" },
           "targets": [
             {
@@ -155,7 +249,7 @@
           "id": 8,
           "title": "Top organizations by observed MCP calls (selected range)",
           "type": "bargauge",
-          "gridPos": { "x": 0, "y": 25, "w": 12, "h": 8 },
+          "gridPos": { "x": 0, "y": 40, "w": 12, "h": 8 },
           "transformations": [
             { "id": "prepareTimeSeries", "options": { "format": "multi" } }
           ],
@@ -187,7 +281,7 @@
           "id": 9,
           "title": "Top authenticated users by API / MCP events (selected range)",
           "type": "bargauge",
-          "gridPos": { "x": 12, "y": 25, "w": 12, "h": 8 },
+          "gridPos": { "x": 12, "y": 40, "w": 12, "h": 8 },
           "transformations": [
             { "id": "prepareTimeSeries", "options": { "format": "multi" } }
           ],

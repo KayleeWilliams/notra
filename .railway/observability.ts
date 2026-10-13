@@ -57,7 +57,11 @@ export default defineRailway((ctx) => {
   const blackbox = service("blackbox", {
     ...monitoringService,
     healthcheck: "/",
-    env: { PORT: "9115", RAILWAY_RUN_UID: "65534" },
+    env: {
+      NOTRA_PROBE_API_KEY: preserve(),
+      PORT: "9115",
+      RAILWAY_RUN_UID: "65534",
+    },
   });
   const tunnel = service("monitoring-tunnel", {
     ...monitoringService,
