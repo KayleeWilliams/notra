@@ -80,14 +80,6 @@ export async function serveFile(params: ServeFileParams): Promise<Response> {
   for (const [name, value] of Object.entries(params.extraHeaders ?? {})) {
     headers.set(name, value);
   }
-  const servedType = headers.get("Content-Type") ?? "";
-  if (
-    params.llmsLink &&
-    (servedType.startsWith("text/html") ||
-      servedType.startsWith("text/markdown"))
-  ) {
-    headers.append("Link", params.llmsLink);
-  }
   if (isPreview) {
     headers.set("X-Robots-Tag", "noindex, nofollow");
   }

@@ -17,8 +17,5 @@ export function markdownNotFound(params: MarkdownNotFoundParams): Response {
     "X-Robots-Tag": "noindex",
     Vary: "Accept",
   });
-  if (params.llmsLink) {
-    headers.set("Link", params.llmsLink);
-  }
   return new Response(`${lines.join("\n")}\n`, { status: 404, headers });
 }

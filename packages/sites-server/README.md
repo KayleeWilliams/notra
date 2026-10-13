@@ -134,6 +134,14 @@ roll above and a new build of each Site; existing immutable deployments do not c
 
 **Rotate the preview secret.** Generate a new value, set `SITES_PREVIEW_SECRET` (dashboard) and `PREVIEW_SECRET` (worker: `wrangler secret put PREVIEW_SECRET`) together. Existing preview sessions and share links stop working.
 
+**AI resource discovery.** The worker advertises existing `llms.txt` and
+`llms-full.txt` artifacts through `Link` headers on manifest-routed responses,
+including HTML and Markdown 404s. `X-Llms-Txt` points to the section's `llms.txt`
+(or the root index outside a section). Both files have `/.well-known/` redirect
+aliases at the root and section mounts. Missing artifacts are not advertised,
+and protected previews still require access before discovery or file serving.
+These worker changes do not require a builder snapshot roll or a site rebuild.
+
 **Preview access.** Protected previews open with a Notra login (member session), a share link (7 days) or, if set, the preview password.
 
 - *Member sessions* are signed tokens with `userId` + `issuedAt`, valid 1 h. The host-only cookie lives 7 days so an expired one renews by bouncing through `/sites/preview-access` (no click while the member is signed in). Removing a member, leaving an organization, the WorkOS `organization_membership.deleted` webhook and dashboard sign-out write `revokedSessions[userId]` into `state.json` of every affected site; the worker refuses tokens issued at or before it within 5 s. Losing access also ends the share links that member created; signing out does not. Entries are pruned once every token they cover has expired. Role changes don't matter: every member role may open previews.
