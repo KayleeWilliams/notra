@@ -9,7 +9,7 @@ export const OG_FONT_SUBSETS = [
   "cyrillic",
   "greek",
 ] as const;
-export const OG_FONT_WEIGHTS = [500, 700] as const;
+export const OG_FONT_WEIGHTS = [400, 500, 600, 700] as const;
 
 export const OG_FONT_FAMILY = OG_FONT_SUBSETS.map(
   (subset) => `"Inter ${subset}"`

@@ -9,6 +9,7 @@ import {
   sites,
 } from "@notra/db/schema";
 import { SITE_R2_KEYS } from "@notra/sites-core/constants/sites";
+import { hashBuildTarget } from "@notra/sites-core/utils/build-target";
 import { createInitialServingState } from "@notra/sites-core/utils/serving-state";
 import type { SQL } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
@@ -17,6 +18,7 @@ import { Effect } from "effect";
 import type { SiteDeployment } from "../src/types/deployments";
 import type { SiteJob } from "../src/types/jobs";
 import type { Site } from "../src/types/sites";
+import { buildTargetForDeployment } from "../src/utils/urls";
 
 if (process.env.NOTRA_SITES_LIFECYCLE_TEST_WORKER !== "1") {
   test("site lifecycle regressions with an isolated in-memory database adapter", () => {
@@ -80,6 +82,17 @@ if (process.env.NOTRA_SITES_LIFECYCLE_TEST_WORKER !== "1") {
                 (job.status === "running" &&
                   (job.leaseUntil?.getTime() ?? Infinity) < Date.now()))
           );
+        }
+        if (table === siteDeployments && params[1] === "production") {
+          return deployments
+            .filter(
+              (deployment) =>
+                deployment.siteId === params[0] &&
+                deployment.kind === "production" &&
+                deployment.status === "ready"
+            )
+            .sort((a, b) => b.generation - a.generation)
+            .slice(0, 10);
         }
         if (table === siteDeployments && params[1] === "old") {
           return deployments.filter(
@@ -151,6 +164,14 @@ if (process.env.NOTRA_SITES_LIFECYCLE_TEST_WORKER !== "1") {
               Object.assign(target, values);
             }
             updated = matches ? [{ ...target }] : [];
+          } else if (patch.status === "expired") {
+            const target = deployments.find(
+              (deployment) => deployment.id === query.params[0]
+            );
+            if (target) {
+              Object.assign(target, patch);
+            }
+            updated = target ? [target] : [];
           } else {
             const cutoff = query.sql.includes('"generation" <=')
               ? Number(query.params[2])
@@ -272,14 +293,61 @@ if (process.env.NOTRA_SITES_LIFECYCLE_TEST_WORKER !== "1") {
 
   const { claimSiteJob, completeSiteJob, failSiteJob } =
     await import("../src/jobs");
-  const { enqueuePreviewRemoval, cancelPreviewBuilds, enqueueSiteDeployment } =
-    await import("../src/deployments");
-  const { redeploy } = await import("../src/deploy");
+  const {
+    enqueuePreviewRemoval,
+    cancelPreviewBuilds,
+    enqueueSiteDeployment,
+    getProductionDeploymentHistory,
+  } = await import("../src/deployments");
+  const { redeploy, rollbackToDeployment } = await import("../src/deploy");
   const { createBranchPreview } = await import("../src/previews");
   const { runSiteJob } = await import("../src/runner");
   const { cleanupSiteDeployments } = await import("../src/cleanup");
-  const { restoreProductionDeployment, activateDeployment } =
-    await import("../src/activation");
+  const { activateDeployment } = await import("../src/activation");
+  const readyProduction = async (id: string, generation: number) => {
+    const finishedAt = new Date(Date.now() - 2 * 86_400_000);
+    const target = buildTargetForDeployment({
+      site,
+      kind: "production",
+      previewKey: null,
+    });
+    const deployment: SiteDeployment = {
+      id,
+      siteId: site.id,
+      organizationId: site.organizationId,
+      kind: "production",
+      previewKey: null,
+      generation,
+      trigger: "manual",
+      status: "ready",
+      branch: "main",
+      commitSha: id,
+      commitMessage: null,
+      commitAuthor: null,
+      pullRequestNumber: null,
+      target,
+      configHash: await hashBuildTarget(target),
+      inputFingerprint: null,
+      skipReason: null,
+      smartDeploymentEvaluation: null,
+      buildBudgetReserved: true,
+      toolchainVersion: null,
+      fileCount: 1,
+      totalBytes: 2,
+      buildDurationMs: 1,
+      diagnostics: [],
+      errorMessage: null,
+      checkRunId: null,
+      requestedByUserId: null,
+      startedAt: finishedAt,
+      finishedAt,
+      createdAt: finishedAt,
+      updatedAt: finishedAt,
+    };
+    deployments.push(deployment);
+    objects.set(SITE_R2_KEYS.manifest(site.id, id), "{}");
+    return deployment;
+  };
   const makeJob = (id: string, siteId = "site1"): SiteJob => ({
     id,
     siteId,
@@ -306,6 +374,10 @@ if (process.env.NOTRA_SITES_LIFECYCLE_TEST_WORKER !== "1") {
       id: "site1",
       organizationId: "organization",
       slug: "example",
+      name: "Example",
+      publicOrigin: "https://example.test",
+      mounts: { blog: "/blog" },
+      showBranding: true,
       lastGeneration: 10,
       previewPassword: null,
       previewVisibility: "protected",
@@ -425,12 +497,10 @@ if (process.env.NOTRA_SITES_LIFECYCLE_TEST_WORKER !== "1") {
   });
 
   test("cleanup wins the storage lock before rollback and activation cannot revive deleted files", async () => {
-    const old = {
-      id: "old",
-      kind: "production",
-      generation: 1,
-    } as SiteDeployment;
-    objects.set(SITE_R2_KEYS.manifest(site.id, old.id), "{}");
+    const old = await readyProduction("old", 0);
+    for (let generation = 1; generation <= 10; generation += 1) {
+      await readyProduction(`retained-${generation}`, generation);
+    }
     let listed = () => {};
     let resume = () => {};
     const started = new Promise<void>((resolve) => {
@@ -445,7 +515,9 @@ if (process.env.NOTRA_SITES_LIFECYCLE_TEST_WORKER !== "1") {
     };
     const cleanup = cleanupSiteDeployments(site.id);
     await started;
-    const rollback = restoreProductionDeployment(site, old);
+    const rollback = rollbackToDeployment(site, old.id).catch(
+      (error: unknown) => error
+    );
     const activation = activateDeployment(site, old);
     await Promise.resolve();
     expect(site.lastGeneration).toBe(11);
@@ -454,31 +526,35 @@ if (process.env.NOTRA_SITES_LIFECYCLE_TEST_WORKER !== "1") {
     ).toBeNull();
     resume();
     expect((await cleanup).deleted).toEqual([old.id]);
-    expect(await rollback).toBe("not_live");
+    expect(old.status).toBe("expired");
+    expect(objects.has(SITE_R2_KEYS.manifest(site.id, old.id))).toBe(false);
+    expect(await rollback).toMatchObject({
+      message: expect.stringContaining("last ten"),
+    });
     expect(await activation).toBe("not_live");
   });
 
   test("rollback wins the storage lock and cleanup retains the newly live deployment", async () => {
-    const old = {
-      id: "old",
-      kind: "production",
-      generation: 1,
-    } as SiteDeployment;
-    objects.set(SITE_R2_KEYS.manifest(site.id, old.id), "{}");
-    expect(await restoreProductionDeployment(site, old)).toBe("live");
+    const old = await readyProduction("old", 0);
+    await readyProduction("latest", 1);
+    await rollbackToDeployment(site, old.id);
+    for (let generation = 2; generation <= 10; generation += 1) {
+      await readyProduction(`retained-${generation}`, generation);
+    }
+    expect(
+      (await getProductionDeploymentHistory(site.id)).map(
+        (deployment) => deployment.id
+      )
+    ).not.toContain(old.id);
     expect((await cleanupSiteDeployments(site.id)).deleted).toEqual([]);
     expect(objects.has(SITE_R2_KEYS.manifest(site.id, old.id))).toBe(true);
   });
 
   test("rollback generation stays reserved if the storage transaction fails after publishing", async () => {
-    const old = {
-      id: "old",
-      kind: "production",
-      generation: 1,
-    } as SiteDeployment;
-    objects.set(SITE_R2_KEYS.manifest(site.id, old.id), "{}");
+    const old = await readyProduction("old", 1);
+    await readyProduction("latest", 2);
     failNextCommit = true;
-    await expect(restoreProductionDeployment(site, old)).rejects.toThrow(
+    await expect(rollbackToDeployment(site, old.id)).rejects.toThrow(
       "Storage transaction commit failed"
     );
     expect(
@@ -561,17 +637,13 @@ if (process.env.NOTRA_SITES_LIFECYCLE_TEST_WORKER !== "1") {
   });
 
   test("activation and rollback reject a newly suspended site despite an active caller", async () => {
+    const production = await readyProduction("old", 1);
+    await readyProduction("latest", 2);
     const stale = { ...site };
     site.status = "suspended";
-    const production = {
-      id: "old",
-      kind: "production",
-      generation: 11,
-    } as SiteDeployment;
-    objects.set(SITE_R2_KEYS.manifest(site.id, production.id), "{}");
     expect(await activateDeployment(stale, production)).toBe("not_live");
-    expect(await restoreProductionDeployment(stale, production)).toBe(
-      "not_live"
+    await expect(rollbackToDeployment(stale, production.id)).rejects.toThrow(
+      "Only active sites"
     );
     expect(
       JSON.parse(objects.get(SITE_R2_KEYS.state(site.id)) ?? "{}").production

@@ -24,7 +24,7 @@ test.each([
       </IntlProvider>
     );
     expect(html).toContain(`${change}</span>`);
-    expect(html).toContain("rounded-full");
+    expect(html).toContain("rounded-md");
     expect(html).toContain("min-w-8 text-right text-sm tabular-nums");
     expect(html).not.toContain("grid-cols-2");
   }

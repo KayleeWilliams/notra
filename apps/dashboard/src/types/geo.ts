@@ -77,6 +77,7 @@ import type { useTranslations } from "use-intl";
 import type { Button } from "@/components/button";
 import type { GeoPromptDetailSurface } from "@/types/analytics/geo-events";
 import type { ChartConfig, ChartSeriesColors } from "@/types/charts";
+import type { GeoCompetitorSuggestion } from "@/types/geo-competitors";
 import type { GeoPromptDetailState } from "@/types/geo-prompt-detail";
 import type { GeoScanModelMenuProps } from "@/types/geo-scan-activity";
 
@@ -178,6 +179,22 @@ export interface GeoTrafficSkeletonProps {
   geoRange?: GeoRangeControl;
 }
 
+export interface TrafficTableSkeletonProps {
+  columns: TableColumn<unknown>[];
+  rows: number;
+  rowHeight?: number;
+  flushTop?: boolean;
+  flushBottom?: boolean;
+}
+
+export interface TrafficSourceBandSkeletonProps {
+  band: GeoTrafficSourceBand;
+  columns: TableColumn<unknown>[];
+  rows: number;
+  stacked: boolean;
+  followedByStack: boolean;
+}
+
 export interface GeoProjectScopeProps {
   slug: string;
   children: ReactNode;
@@ -193,6 +210,15 @@ export interface GeoOverviewPageEmpty {
   organizationId: string;
 }
 
+export interface GeoOverviewLoadingState {
+  settingsPending: boolean;
+  queriesEnabled: boolean;
+  overviewPending: boolean;
+  timeseriesPending: boolean;
+  visibilityEnabled: boolean;
+  visibilityPending: readonly boolean[];
+}
+
 export interface GeoOverviewPageReady {
   status: "ready";
   organizationId: string;
@@ -200,7 +226,6 @@ export interface GeoOverviewPageReady {
   companyName: string;
   geoRange: GeoRangeControl;
   isScanning: boolean;
-  revealActive: boolean;
   tabs: GeoTabsProps;
   scanMenu: GeoScanModelMenuProps;
 }
@@ -470,7 +495,6 @@ export interface JourneysTabProps {
   loading: boolean;
   organizationId: string;
   organizationSlug: string;
-  revealActive: boolean;
 }
 
 export interface JourneysCardProps {
@@ -502,6 +526,8 @@ export interface SheetStat {
   value: string;
   /** Omit when the sheet has no comparison period; `null` renders nothing. */
   delta?: number | null;
+  /** How `delta` reads: percent change by default, `rate` for percentage points. */
+  deltaKind?: GeoStatDeltaKind;
 }
 
 export interface SheetStatGridProps {
@@ -861,7 +887,6 @@ export interface GeoTabsProps {
   activeTab: GeoTab;
   onActiveTabChange: (tab: GeoTab) => void;
   organizationSlug: string;
-  revealActive: boolean;
   settings: GeoSettings;
   engines: GeoOverviewEngine[];
   timeseriesPoints: GeoTimeseriesPoint[];
@@ -1299,12 +1324,6 @@ export interface BrandTrackingBadgeProps {
   className?: string;
 }
 
-export interface TrackBrandButtonProps {
-  brand: string;
-  onTrack: (brand: string) => void;
-  className?: string;
-}
-
 export interface ShareOfVoiceChartProps {
   points: GeoCompetitorSharePoint[];
   /** Daily mentions per brand; drives the change indicators. */
@@ -1385,6 +1404,8 @@ export interface CompetitorEditDialogProps {
   organizationId: string;
   competitor: GeoCompetitor | null;
   initialName?: string;
+  /** Prefills the website, e.g. the domain resolved for a discovered brand. */
+  initialDomain?: string | null;
   /** Shows a CSV import shortcut in the footer; closes the dialog first. */
   onImportCsv?: () => void;
 }
@@ -1393,6 +1414,7 @@ export interface CompetitorEditFormProps {
   organizationId: string;
   competitor: GeoCompetitor | null;
   initialName?: string;
+  initialDomain?: string | null;
   onDone: () => void;
   onCancel?: () => void;
   onImportCsv?: () => void;
@@ -1445,12 +1467,6 @@ export interface GeoCompetitorDetailPoint {
   rawDay: string;
   mentions: number;
   [key: string]: string | number;
-}
-
-export interface GeoCompetitorMentionStats {
-  latest: number;
-  latestDay: string;
-  peak: number;
 }
 
 export interface CompetitorsTableProps {
@@ -1635,12 +1651,25 @@ export interface CompetitorLogoPreviewProps {
 export interface CompetitorDetailViewProps {
   organizationSlug: string;
   competitor: string;
-  variant?: "modal" | "page";
 }
 
 export interface CompetitorSheetProps {
   title: string;
+  /** Runs once the close animation has finished. */
+  onClose: () => void;
   children: ReactNode;
+}
+
+export interface CompetitorSuggestionsTableProps {
+  suggestions: readonly GeoCompetitorSuggestion[];
+  competitors: GeoCompetitor[];
+  organizationId: string;
+  organizationSlug?: string;
+  onTrack: (brand: string) => void;
+}
+
+export interface CompetitorSheetHostProps {
+  organizationSlug: string;
 }
 
 export interface CompetitorDetailDialogProps {

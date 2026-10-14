@@ -15,6 +15,7 @@ import { Effect } from "effect";
 
 import {
   BRANCH_SUGGESTION_LIMIT,
+  CHECK_RUN_UPDATE_TIMEOUT_MS,
   CONFIG_SEARCH_SKIPPED_SEGMENTS,
   CONTENT_FILE,
   EMPTY_TREE_SCAN,
@@ -427,7 +428,9 @@ export async function completeCheckRun(
   token: string,
   params: CompleteCheckRunParams
 ): Promise<void> {
-  const octokit = createOctokit(token);
+  const octokit = createOctokit(token, {
+    requestTimeoutMs: CHECK_RUN_UPDATE_TIMEOUT_MS,
+  });
   await octokit.request(
     "PATCH /repos/{owner}/{repo}/check-runs/{check_run_id}",
     {

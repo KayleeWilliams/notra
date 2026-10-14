@@ -109,6 +109,7 @@ export async function publishSavedContentToGitHub(
         authorIds: true,
         featured: true,
         noindex: true,
+        hidden: true,
         displayDate: true,
       },
     }),

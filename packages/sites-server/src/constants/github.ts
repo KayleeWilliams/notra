@@ -11,11 +11,15 @@ export const UNCHANGED_BUILD_TITLE = "Skipped – no site changes";
 /** GitHub rejects check run summaries above 65535 characters. */
 export const CHECK_RUN_SUMMARY_MAX_LENGTH = 60_000;
 export const CHECK_RUN_ANNOTATION_MAX_LENGTH = 1000;
+export const CHECK_RUN_UPDATE_TIMEOUT_MS = 5000;
+export const CHECK_RUN_LOCK_TIMEOUT_MS = 8000;
+export const CHECK_RUN_STATE_TIMEOUT_MS = 2000;
 export const PREVIEW_COMMENT_TITLES = {
   live: "✅ Preview ready",
   failed: "❌ Build failed",
   skipped: "⏭️ Build skipped",
   not_live: "⏭️ Preview not published",
+  held: "⏸️ Automatic publishing paused",
 } as const;
 
 export const BRANCH_SUGGESTION_LIMIT = 300;

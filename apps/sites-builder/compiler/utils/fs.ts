@@ -1,4 +1,4 @@
-import { access, mkdir, readdir, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 export async function listFiles(root: string): Promise<string[]> {
@@ -21,6 +21,10 @@ export async function writeFileEnsured(
   path: string,
   content: string | Uint8Array
 ) {
+  const existing = await readFile(path).catch(() => null);
+  if (existing?.equals(Buffer.from(content))) {
+    return;
+  }
   await mkdir(dirname(path), { recursive: true });
   await writeFile(path, content);
 }

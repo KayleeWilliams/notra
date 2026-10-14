@@ -1000,15 +1000,27 @@ export async function queryGeoCheckCompetitorShareAggregate(
     });
 }
 
-function brandMentionedWhere(brand: string, own: boolean): SQL {
-  return own
-    ? eq(geoMentionChecks.mentioned, true)
-    : sql`${geoMentionChecks.competitors} @> array[${brand}]::text[]`;
+/**
+ * `brandKeys` are folded names (NFKC, lowercase, letters and digits only), so
+ * "Peec AI", "Peec.ai" and a tracked competitor's synonyms all match.
+ */
+function brandMentionedWhere(brandKeys: readonly string[], own: boolean): SQL {
+  if (own) {
+    return eq(geoMentionChecks.mentioned, true);
+  }
+  if (brandKeys.length === 0) {
+    return sql`false`;
+  }
+  const keys = sql.join(
+    brandKeys.map((key) => sql`${key}`),
+    sql`, `
+  );
+  return sql`exists (select 1 from unnest(${geoMentionChecks.competitors}) as named(brand) where regexp_replace(lower(normalize(named.brand, NFKC)), '[^[:alnum:]]+', '', 'g') in (${keys}))`;
 }
 
 export async function queryGeoCheckCompetitorTimeseries(
   scope: GeoCheckScope,
-  brand: string,
+  brandKeys: readonly string[],
   window: GeoCheckWindow | undefined,
   own = false
 ): Promise<GeoCheckCompetitorTimeseriesRow[]> {
@@ -1017,7 +1029,7 @@ export async function queryGeoCheckCompetitorTimeseries(
     db
       .select({
         day: sql<string>`(${geoMentionChecks.capturedAt})::date`,
-        mentions: countChecksWhere(brandMentionedWhere(brand, own)),
+        mentions: countChecksWhere(brandMentionedWhere(brandKeys, own)),
         checks: countChecks,
       })
       .from(geoMentionChecks)
@@ -1035,14 +1047,14 @@ export async function queryGeoCheckCompetitorTimeseries(
 
 export async function queryGeoCheckCompetitorPrompts(
   scope: GeoCheckScope,
-  brand: string,
+  brandKeys: readonly string[],
   window: GeoCheckWindow | undefined,
   own = false
 ): Promise<GeoCheckCompetitorPromptRow[]> {
   const filters = [
     scopeWhere(scope),
     withoutPersonaRows,
-    brandMentionedWhere(brand, own),
+    brandMentionedWhere(brandKeys, own),
     ...capturedWithin(window),
   ];
 
@@ -1082,7 +1094,7 @@ export async function queryGeoCheckCompetitorPrompts(
 
 export async function queryGeoCheckCompetitorPromptSummary(
   scope: GeoCheckScope,
-  brand: string,
+  brandKeys: readonly string[],
   window: GeoCheckWindow | undefined,
   own = false
 ): Promise<GeoCheckCompetitorPromptSummaryRow> {
@@ -1097,7 +1109,7 @@ export async function queryGeoCheckCompetitorPromptSummary(
       and(
         scopeWhere(scope),
         withoutPersonaRows,
-        brandMentionedWhere(brand, own),
+        brandMentionedWhere(brandKeys, own),
         ...capturedWithin(window)
       )
     )

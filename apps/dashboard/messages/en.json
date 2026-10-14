@@ -1152,6 +1152,7 @@
     },
     "content": {
       "slugNotSupported": "Slug can only be set for blog posts and changelogs",
+      "socialVideoNotAllowed": "This video can't be attached to this post",
       "slugTaken": "A post with this slug already exists",
       "tooManyPublishRequests": "Too many GitHub publish requests. Please try again shortly.",
       "contentTypeMismatch": "Content type does not match the saved post",
@@ -2566,13 +2567,6 @@
     "competitorDetailView": {
       "mentionsUnavailable": "Mentions for {competitor} could not be loaded.",
       "notEnoughScans": "Not enough scans yet to chart {competitor}.",
-      "latestOn": "Latest on {day}",
-      "peak": "Peak",
-      "stats": {
-        "answersDetail": "latest answers naming {competitor}",
-        "promptsDetail": "tracked prompts",
-        "withYourBrandDetail": "{own} of {total} answers"
-      },
       "promptsUnavailable": "Prompt appearances could not be loaded.",
       "promptsEmpty": "{competitor} has not shown up in your tracked prompts yet.",
       "whereShowsUp": "Where {competitor} shows up",
@@ -2580,7 +2574,9 @@
       "absent": "Absent",
       "editNamed": "Edit {competitor}",
       "editCompetitor": "Edit competitor",
-      "noWebsite": "No website yet"
+      "foundInAnswers": "Found in AI answers",
+      "trackCompetitor": "Track competitor",
+      "mentionsHint": "Daily answers naming {competitor} across your tracked prompts and engines."
     },
     "competitorEditDialog": {
       "editDescription": "Name, website and how this brand shows up in your charts.",
@@ -2607,7 +2603,9 @@
       "scanning": "Scanning engines…",
       "loadFailed": "Couldn't load assistant recommendations.",
       "cellDetail": "{mentions, number} of {checks, number} answers",
-      "refreshFailed": "Couldn't refresh, showing earlier data"
+      "refreshFailed": "Couldn't refresh, showing earlier data",
+      "showAll": "Show all {count, number}",
+      "showLess": "Show less"
     },
     "competitorModal": {
       "description": "How AI engines mention {title} across your tracked prompts"
@@ -2740,7 +2738,8 @@
       "seriesLabel": "Brand visibility",
       "brandsHint": "How often each brand shows up in this engine's answers to your prompts",
       "resultHeader": "Result",
-      "emptyPrompts": "No prompts scanned yet"
+      "emptyPrompts": "No prompts scanned yet",
+      "visiblePrompts": "Visible in prompts"
     },
     "engineRateTable": {
       "columns": {
@@ -4143,7 +4142,8 @@
       "personaScanned": "Persona scanned across {count, plural, one {# engine} other {# engines}}",
       "resolveCreatedProjectFailed": "Failed to resolve created project",
       "connectingProperty": "Connecting {property}…",
-      "connectingPropertyDescription": "Reading your search queries. This can take a minute, keep working in the meantime."
+      "connectingPropertyDescription": "Reading your search queries. This can take a minute, keep working in the meantime.",
+      "updateCompetitorFailed": "Couldn't update the competitor suggestion."
     },
     "competitorChoices": {
       "searchLabel": "Search competitors",
@@ -4194,6 +4194,13 @@
     },
     "trafficExport": {
       "label": "Export to CSV"
+    },
+    "competitorSuggestions": {
+      "title": "Suggested competitors",
+      "hint": "Brands AI assistants named in at least two answers that you don't track yet.",
+      "trackNamed": "Track {brand}",
+      "dismissNamed": "Dismiss {brand}",
+      "dismiss": "Dismiss suggestion"
     }
   },
   "integrations": {
@@ -6379,7 +6386,15 @@
       "readDocs": "Read the {platform} docs",
       "reconnectPrompt": "Have you tried reconnecting?",
       "reconnectInSettings": "Reconnect in settings",
-      "addAsReference": "Add as reference"
+      "addAsReference": "Add as reference",
+      "attachVideo": "Attach video",
+      "attachVideoHint": "Drop or browse · MP4 or WebM, up to {maxMb} MB",
+      "uploadingVideo": "Uploading video…",
+      "videoTooLarge": "Video must be {maxMb} MB or smaller",
+      "videoUploadFailed": "Video upload failed",
+      "replaceVideo": "Replace",
+      "removeVideo": "Remove video",
+      "attachmentSaveFailed": "Couldn't save the video to the post"
     },
     "collections": {
       "status": "{status, select, generating {Generating} published {Published} draft {Draft} other {Empty}}",
@@ -6496,6 +6511,7 @@
         "publishingTrigger": "Publishing…",
         "failedTrigger": "Publishing failed",
         "scheduledTrigger": "Scheduled · {date}",
+        "video": "Video",
         "saveFirst": "Save your changes first. Scheduled posts go out as saved.",
         "saveFirstHint": "Save your changes first",
         "title": "Schedule post",
@@ -6513,7 +6529,7 @@
           "openOnlyHint": "Only updates the pull request. You merge it yourself."
         },
         "social": {
-          "hint": "Posts the saved text.",
+          "hint": "Posts the saved text and video, if one is attached.",
           "noAccounts": "No account connected yet. <link>Connect one</link> to post automatically.",
           "account": "Account",
           "accountMissing": "The account this post was scheduled from is no longer connected. Pick another account or turn this off.",
@@ -6577,6 +6593,10 @@
       "indexed": {
         "label": "Visible in search",
         "hint": "When off, the post stays reachable by link but is hidden from search engines, the sitemap and llms.txt."
+      },
+      "hidden": {
+        "label": "Unlisted",
+        "hint": "Reachable by direct link, but excluded from site listings, feeds, search engines and AI indexes. Anyone with the link can read it. Turning this off restores your previous search visibility setting."
       },
       "cover": {
         "label": "Cover",
@@ -7449,6 +7469,7 @@
       "title": "Deployments",
       "empty": "No deployments yet",
       "current": "Currently live",
+      "live": "Live",
       "noCommitMessage": "No commit message",
       "redeployQueued": "Redeploy queued",
       "redeployFailed": "Couldn't redeploy",
@@ -7462,16 +7483,22 @@
         "view": "View details",
         "visit": "Visit",
         "redeploy": "Redeploy",
-        "rollback": "Restore to production"
+        "rollback": "Rollback",
+        "promote": "Promote",
+        "undoRollback": "Undo rollback"
       }
     },
     "rollback": {
-      "title": "Restore this deployment?",
-      "description": "It goes live right away. Notra serves the files from this deployment as they are, without a rebuild.",
+      "title": "Roll back to this deployment?",
+      "description": "This deployment goes live immediately without a rebuild. Automatic publishing pauses: new builds continue, but won't go live until you promote the latest successful build or undo the rollback.",
+      "pausedTitle": "Automatic publishing paused",
+      "pausedDescription": "New builds continue, but aren't live. Undo rollback to publish the latest successful build and resume automatic publishing.",
+      "promoted": "Latest successful deployment is live. Automatic publishing resumed.",
+      "promoteFailed": "Couldn't promote the latest successful deployment",
       "noCommitMessage": "No commit message",
-      "confirm": "Restore",
-      "done": "Deployment restored",
-      "failed": "Couldn't restore the deployment"
+      "confirm": "Roll back",
+      "done": "Rolled back. Automatic publishing paused.",
+      "failed": "Couldn't roll back the deployment"
     },
     "deployment": {
       "title": "Deployment {sha}",
@@ -7831,9 +7858,8 @@
     },
     "domainsPage": {
       "title": "Domains",
-      "description": "Serve your site on your own domain. A verified domain becomes the primary address.",
+      "description": "Connect a domain you own. Once it's verified, it becomes your site's primary address.",
       "addDomain": "Add domain",
-      "notraAddress": "Notra address",
       "primary": "Primary",
       "open": "Open",
       "copyUrl": "Copy URL",
@@ -7841,8 +7867,6 @@
         "subdomain": "Subdomain",
         "proxy": "Paths on your site"
       },
-      "checked": "Checked",
-      "notChecked": "Not checked yet",
       "check": "Check",
       "checking": "Checking…",
       "checkLabel": "Check {hostname}",
@@ -7880,13 +7904,14 @@
         "proxyRequirement": "Turn off the orange cloud in Cloudflare so Notra can issue your HTTPS certificate. This is the required setting, not a live status.",
         "proxied": "Proxied",
         "proxyNotApplicable": "Proxy not applicable",
-        "proxyNotApplicableDescription": "TXT records verify domain ownership. Cloudflare only proxies A, AAAA and CNAME records."
+        "proxyNotApplicableDescription": "TXT records verify domain ownership. Cloudflare only proxies A, AAAA and CNAME records.",
+        "addRecords": "Add these records where you manage your domain's DNS.",
+        "addRecordsToZone": "Add these records to the DNS of {zone}."
       },
       "proxy": {
         "agentPromptDescription": "Let your coding agent set up the proxy.",
         "agentPromptLabel": "Proxy setup agent prompt",
         "manualSetup": "Manual setup",
-        "viewPrompt": "View prompt",
         "description": "Forward <code>{paths}</code> and everything below them to <code>{origin}</code>, keeping the path.",
         "platform": "Platform",
         "noCookies": "Don't forward cookies or authorization headers. The site doesn't need them.",
@@ -7897,7 +7922,9 @@
           "tanstack": "TanStack Start",
           "cloudflare": "Cloudflare Worker",
           "nginx": "nginx"
-        }
+        },
+        "agentTab": "Coding agent",
+        "setupLabel": "Setup method"
       },
       "add": {
         "title": "Add domain",
@@ -7923,12 +7950,8 @@
         "errorDescription": "Add them yourself from the DNS configuration below."
       },
       "setupErrorTitle": "Can't verify this domain yet",
-      "columns": {
-        "domain": "Domain",
-        "status": "Status",
-        "checked": "Checked",
-        "actions": "Actions"
-      }
+      "connectTitle": "Connect your domain",
+      "connectSubmit": "Continue"
     },
     "editorPage": {
       "title": "Editor",

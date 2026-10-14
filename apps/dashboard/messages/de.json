@@ -1152,6 +1152,7 @@
     },
     "content": {
       "slugNotSupported": "Ein Slug kann nur für Blogbeiträge und Changelogs festgelegt werden",
+      "socialVideoNotAllowed": "Dieses Video kann nicht an diesen Beitrag angehängt werden",
       "slugTaken": "Ein Beitrag mit diesem Slug existiert bereits",
       "tooManyPublishRequests": "Zu viele GitHub-Veröffentlichungen. Bitte versuch es gleich nochmal.",
       "contentTypeMismatch": "Der Inhaltstyp passt nicht zum gespeicherten Beitrag",
@@ -2566,13 +2567,6 @@
     "competitorDetailView": {
       "mentionsUnavailable": "Erwähnungen für {competitor} konnten nicht geladen werden.",
       "notEnoughScans": "Noch nicht genug Scans, um {competitor} darzustellen.",
-      "latestOn": "Zuletzt am {day}",
-      "peak": "Höchstwert",
-      "stats": {
-        "answersDetail": "neueste Antworten, die {competitor} nennen",
-        "promptsDetail": "getrackte Prompts",
-        "withYourBrandDetail": "{own} von {total} Antworten"
-      },
       "promptsUnavailable": "Prompt-Vorkommen konnten nicht geladen werden.",
       "promptsEmpty": "{competitor} ist in deinen getrackten Prompts noch nicht aufgetaucht.",
       "whereShowsUp": "Wo {competitor} auftaucht",
@@ -2580,7 +2574,9 @@
       "absent": "Nicht genannt",
       "editNamed": "{competitor} bearbeiten",
       "editCompetitor": "Wettbewerber bearbeiten",
-      "noWebsite": "Noch keine Website"
+      "foundInAnswers": "In KI-Antworten gefunden",
+      "trackCompetitor": "Wettbewerber tracken",
+      "mentionsHint": "Tägliche Antworten, die {competitor} nennen, über deine getrackten Prompts und KI-Engines."
     },
     "competitorEditDialog": {
       "editDescription": "Name, Website und wie diese Marke in deinen Diagrammen erscheint.",
@@ -2607,7 +2603,9 @@
       "scanning": "Engines werden gescannt…",
       "loadFailed": "Empfehlungen nach Assistent konnten nicht geladen werden.",
       "cellDetail": "{mentions, number} von {checks, number} Antworten",
-      "refreshFailed": "Aktualisierung fehlgeschlagen, ältere Daten"
+      "refreshFailed": "Aktualisierung fehlgeschlagen, ältere Daten",
+      "showAll": "Alle {count, number} anzeigen",
+      "showLess": "Weniger anzeigen"
     },
     "competitorModal": {
       "description": "Wie KI-Engines {title} in deinen getrackten Prompts erwähnen"
@@ -2740,7 +2738,8 @@
       "seriesLabel": "Markensichtbarkeit",
       "brandsHint": "Wie oft jede Marke in den Antworten dieser KI-Engine auf deine Prompts auftaucht",
       "resultHeader": "Ergebnis",
-      "emptyPrompts": "Noch keine Prompts gescannt"
+      "emptyPrompts": "Noch keine Prompts gescannt",
+      "visiblePrompts": "Sichtbar in Prompts"
     },
     "engineRateTable": {
       "columns": {
@@ -4143,7 +4142,8 @@
       "personaScanned": "Persona mit {count, plural, one {# KI-Engine} other {# KI-Engines}} gescannt",
       "resolveCreatedProjectFailed": "Erstelltes Projekt konnte nicht gefunden werden",
       "connectingProperty": "{property} wird verbunden…",
-      "connectingPropertyDescription": "Deine Suchanfragen werden gelesen. Das kann eine Minute dauern, du kannst solange weiterarbeiten."
+      "connectingPropertyDescription": "Deine Suchanfragen werden gelesen. Das kann eine Minute dauern, du kannst solange weiterarbeiten.",
+      "updateCompetitorFailed": "Wettbewerber-Vorschlag konnte nicht aktualisiert werden."
     },
     "competitorChoices": {
       "searchLabel": "Wettbewerber suchen",
@@ -4194,6 +4194,13 @@
     },
     "trafficExport": {
       "label": "Als CSV exportieren"
+    },
+    "competitorSuggestions": {
+      "title": "Vorgeschlagene Wettbewerber",
+      "hint": "Marken, die KI-Assistenten in mindestens zwei Antworten genannt haben und die du noch nicht trackst.",
+      "trackNamed": "{brand} tracken",
+      "dismissNamed": "{brand} ausblenden",
+      "dismiss": "Vorschlag ausblenden"
     }
   },
   "integrations": {
@@ -6379,7 +6386,15 @@
       "readDocs": "Zur {platform}-Dokumentation",
       "reconnectPrompt": "Hast du versucht, das Konto neu zu verbinden?",
       "reconnectInSettings": "In den Einstellungen neu verbinden",
-      "addAsReference": "Als Referenz hinzufügen"
+      "addAsReference": "Als Referenz hinzufügen",
+      "attachVideo": "Video anhängen",
+      "attachVideoHint": "Hierher ziehen oder auswählen · MP4 oder WebM, bis zu {maxMb} MB",
+      "uploadingVideo": "Video wird hochgeladen…",
+      "videoTooLarge": "Das Video darf höchstens {maxMb} MB groß sein",
+      "videoUploadFailed": "Video-Upload fehlgeschlagen",
+      "replaceVideo": "Ersetzen",
+      "removeVideo": "Video entfernen",
+      "attachmentSaveFailed": "Das Video konnte nicht am Beitrag gespeichert werden"
     },
     "collections": {
       "status": "{status, select, generating {Wird erstellt} published {Veröffentlicht} draft {Entwurf} other {Leer}}",
@@ -6496,6 +6511,7 @@
         "publishingTrigger": "Wird veröffentlicht…",
         "failedTrigger": "Veröffentlichung fehlgeschlagen",
         "scheduledTrigger": "Geplant · {date}",
+        "video": "Video",
         "saveFirst": "Speichere zuerst deine Änderungen. Geplante Beiträge gehen so raus, wie sie gespeichert sind.",
         "saveFirstHint": "Speichere zuerst deine Änderungen",
         "title": "Beitrag planen",
@@ -6513,7 +6529,7 @@
           "openOnlyHint": "Aktualisiert nur den Pull Request. Mergen musst du selbst."
         },
         "social": {
-          "hint": "Postet den gespeicherten Text.",
+          "hint": "Postet den gespeicherten Text und das angehängte Video, falls vorhanden.",
           "noAccounts": "Noch kein Account verbunden. <link>Verbinde einen</link>, um automatisch zu posten.",
           "account": "Account",
           "accountMissing": "Der Account, über den dieser Beitrag geplant wurde, ist nicht mehr verbunden. Wähle einen anderen Account oder schalte dies aus.",
@@ -6577,6 +6593,10 @@
       "indexed": {
         "label": "In Suche sichtbar",
         "hint": "Aus heißt: Der Post bleibt per Link erreichbar, taucht aber nicht in Suchmaschinen, der Sitemap und llms.txt auf."
+      },
+      "hidden": {
+        "label": "Nur über Link erreichbar",
+        "hint": "Bleibt per direktem Link erreichbar, erscheint aber nicht in Site-Listen, Feeds, Suchmaschinen oder AI-Verzeichnissen. Jeder mit dem Link kann den Inhalt lesen. Ausschalten stellt die vorherige Einstellung für die Suche wieder her."
       },
       "cover": {
         "label": "Cover",
@@ -7449,6 +7469,7 @@
       "title": "Deployments",
       "empty": "Noch keine Deployments",
       "current": "Aktuell live",
+      "live": "Live",
       "noCommitMessage": "Keine Commit-Nachricht",
       "redeployQueued": "Redeploy eingereiht",
       "redeployFailed": "Redeploy fehlgeschlagen",
@@ -7462,16 +7483,22 @@
         "view": "Details ansehen",
         "visit": "Öffnen",
         "redeploy": "Redeploy",
-        "rollback": "Als Produktion wiederherstellen"
+        "rollback": "Rollback",
+        "promote": "Promoten",
+        "undoRollback": "Rollback rückgängig machen"
       }
     },
     "rollback": {
-      "title": "Dieses Deployment wiederherstellen?",
-      "description": "Es geht sofort live. Notra liefert die Dateien dieses Deployments unverändert aus, ohne neuen Build.",
+      "title": "Auf dieses Deployment zurückrollen?",
+      "description": "Dieses Deployment geht sofort ohne neuen Build live. Automatisches Veröffentlichen wird pausiert: Neue Builds laufen weiter, gehen aber erst live, wenn du den neuesten erfolgreichen Build promotest oder den Rollback rückgängig machst.",
+      "pausedTitle": "Automatisches Veröffentlichen pausiert",
+      "pausedDescription": "Neue Builds laufen weiter, sind aber nicht live. Mache den Rollback rückgängig, um den neuesten erfolgreichen Build zu veröffentlichen und automatisches Veröffentlichen fortzusetzen.",
+      "promoted": "Das neueste erfolgreiche Deployment ist live. Automatisches Veröffentlichen fortgesetzt.",
+      "promoteFailed": "Das neueste erfolgreiche Deployment konnte nicht promotet werden",
       "noCommitMessage": "Keine Commit-Nachricht",
-      "confirm": "Wiederherstellen",
-      "done": "Deployment wiederhergestellt",
-      "failed": "Deployment konnte nicht wiederhergestellt werden"
+      "confirm": "Zurückrollen",
+      "done": "Rollback abgeschlossen. Automatisches Veröffentlichen pausiert.",
+      "failed": "Rollback fehlgeschlagen"
     },
     "deployment": {
       "title": "Deployment {sha}",
@@ -7831,9 +7858,8 @@
     },
     "domainsPage": {
       "title": "Domains",
-      "description": "Stelle deine Site unter deiner eigenen Domain bereit. Eine verifizierte Domain wird zur primären Adresse.",
+      "description": "Verbinde eine eigene Domain. Sobald sie verifiziert ist, wird sie zur Hauptadresse deiner Seite.",
       "addDomain": "Domain hinzufügen",
-      "notraAddress": "Notra-Adresse",
       "primary": "Primär",
       "open": "Öffnen",
       "copyUrl": "URL kopieren",
@@ -7841,8 +7867,6 @@
         "subdomain": "Subdomain",
         "proxy": "Pfade auf deiner Website"
       },
-      "checked": "Geprüft",
-      "notChecked": "Noch nicht geprüft",
       "check": "Prüfen",
       "checking": "Wird geprüft…",
       "checkLabel": "{hostname} prüfen",
@@ -7880,13 +7904,14 @@
         "proxyRequirement": "Schalte die orange Wolke in Cloudflare aus, damit Notra dein HTTPS-Zertifikat ausstellen kann. Dies ist die erforderliche Einstellung, kein Live-Status.",
         "proxied": "Mit Proxy",
         "proxyNotApplicable": "Proxy nicht anwendbar",
-        "proxyNotApplicableDescription": "TXT-Einträge bestätigen den Domainbesitz. Cloudflare unterstützt den Proxy nur für A-, AAAA- und CNAME-Einträge."
+        "proxyNotApplicableDescription": "TXT-Einträge bestätigen den Domainbesitz. Cloudflare unterstützt den Proxy nur für A-, AAAA- und CNAME-Einträge.",
+        "addRecords": "Füge diese Einträge dort hinzu, wo du die DNS deiner Domain verwaltest.",
+        "addRecordsToZone": "Füge diese Einträge in den DNS von {zone} hinzu."
       },
       "proxy": {
         "agentPromptDescription": "Lass deinen Coding-Agent den Proxy einrichten.",
         "agentPromptLabel": "Agent-Prompt für das Proxy-Setup",
         "manualSetup": "Manuell einrichten",
-        "viewPrompt": "Prompt ansehen",
         "description": "Leite <code>{paths}</code> und alles darunter an <code>{origin}</code> weiter, der Pfad bleibt gleich.",
         "platform": "Plattform",
         "noCookies": "Leite keine Cookies oder Authorization-Header weiter. Die Site braucht sie nicht.",
@@ -7897,7 +7922,9 @@
           "tanstack": "TanStack Start",
           "cloudflare": "Cloudflare Worker",
           "nginx": "nginx"
-        }
+        },
+        "agentTab": "Coding-Agent",
+        "setupLabel": "Einrichtungsart"
       },
       "add": {
         "title": "Domain hinzufügen",
@@ -7923,12 +7950,8 @@
         "errorDescription": "Lege sie selbst an, siehe DNS-Konfiguration unten."
       },
       "setupErrorTitle": "Diese Domain lässt sich noch nicht verifizieren",
-      "columns": {
-        "domain": "Domain",
-        "status": "Status",
-        "checked": "Geprüft",
-        "actions": "Aktionen"
-      }
+      "connectTitle": "Domain verbinden",
+      "connectSubmit": "Weiter"
     },
     "editorPage": {
       "title": "Editor",

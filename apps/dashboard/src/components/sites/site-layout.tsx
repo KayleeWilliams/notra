@@ -14,8 +14,10 @@ import { useTranslations } from "use-intl";
 import { buttonVariants } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import Link from "@/components/framework/link";
+import { SkeletonCrossfade } from "@/components/skeleton-crossfade";
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { useSiteDetail, useSitesOrganizationId } from "@/lib/hooks/use-sites";
+import { useParams } from "@/lib/navigation";
 import type {
   SiteLayoutProps,
   SiteLoadErrorProps,
@@ -23,7 +25,10 @@ import type {
 import { siteHref } from "@/utils/site-links";
 
 import { SiteContext } from "./site-context";
-import { SitePageSkeleton } from "./site-page-skeleton";
+import {
+  SiteDeploymentSkeleton,
+  SiteSectionSkeleton,
+} from "./site-page-skeleton";
 import { SitesPageShell } from "./sites-page-shell";
 import { SitesUnavailableState } from "./sites-unavailable-state";
 
@@ -37,6 +42,8 @@ export function SiteLayout({
   const detailQuery = useSiteDetail(organizationId, siteId);
   const [projectParam, setProjectParam] = useGeoProjectQueryState();
   const owningProjectId = detailQuery.data?.site.projectId;
+  const ready = Boolean(detailQuery.data) && projectParam === owningProjectId;
+  const { deploymentId } = useParams<{ deploymentId?: string }>();
 
   useEffect(() => {
     if (owningProjectId && projectParam !== owningProjectId) {
@@ -53,45 +60,53 @@ export function SiteLayout({
     );
   }
 
-  if (!detailQuery.data || projectParam !== owningProjectId) {
-    return <SitePageSkeleton />;
-  }
   const detail = detailQuery.data;
   const liveDeployment =
-    detail.deployments.find(
+    detail?.deployments.find(
       (deployment) => deployment.id === detail.site.liveDeploymentId
     ) ?? null;
 
   return (
-    <SiteContext
-      value={{
-        organizationId,
-        organizationSlug,
-        siteId,
-        detail,
-        liveDeployment,
-      }}
+    <SkeletonCrossfade
+      loading={!ready || !detail}
+      skeleton={
+        <SitesPageShell>
+          {deploymentId ? <SiteDeploymentSkeleton /> : <SiteSectionSkeleton />}
+        </SitesPageShell>
+      }
     >
-      <SitesPageShell>
-        {detail.site.status === "suspended" ? (
-          <Alert role="status">
-            <HugeiconsIcon
-              aria-hidden="true"
-              icon={CloudOffIcon}
-              strokeWidth={1.5}
-            />
-            <AlertTitle>{t("offline")}</AlertTitle>
-            <AlertDescription>
-              {t("offlineDescription")}{" "}
-              <Link href={siteHref(organizationSlug, siteId, "settings")}>
-                {t("offlineAction")}
-              </Link>
-            </AlertDescription>
-          </Alert>
-        ) : null}
-        {children}
-      </SitesPageShell>
-    </SiteContext>
+      {ready && detail ? (
+        <SiteContext
+          value={{
+            organizationId,
+            organizationSlug,
+            siteId,
+            detail,
+            liveDeployment,
+          }}
+        >
+          <SitesPageShell>
+            {detail.site.status === "suspended" ? (
+              <Alert role="status">
+                <HugeiconsIcon
+                  aria-hidden="true"
+                  icon={CloudOffIcon}
+                  strokeWidth={1.5}
+                />
+                <AlertTitle>{t("offline")}</AlertTitle>
+                <AlertDescription>
+                  {t("offlineDescription")}{" "}
+                  <Link href={siteHref(organizationSlug, siteId, "settings")}>
+                    {t("offlineAction")}
+                  </Link>
+                </AlertDescription>
+              </Alert>
+            ) : null}
+            {children}
+          </SitesPageShell>
+        </SiteContext>
+      ) : null}
+    </SkeletonCrossfade>
   );
 }
 

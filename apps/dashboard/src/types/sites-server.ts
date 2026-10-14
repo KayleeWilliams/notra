@@ -22,6 +22,19 @@ export interface SiteAccess {
   userId: string;
 }
 
+export interface SiteDeploymentAccess extends SiteAccess {
+  canManageDeployments: boolean;
+}
+
+export interface SiteDeploymentActionsContext {
+  history: readonly Pick<SiteDeploymentDbRow, "id" | "configHash">[];
+  currentHash: string;
+  liveDeploymentId: string | null;
+  rollbackActive: boolean;
+  canManageDeployments: boolean;
+  siteActive: boolean;
+}
+
 export interface SiteJobSweepResult {
   dispatched: number;
   reaped: number;

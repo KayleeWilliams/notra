@@ -1,8 +1,9 @@
 import { afterAll, beforeAll, expect, test } from "bun:test";
-import { spawnSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { promisify } from "node:util";
 
 import {
   DIAGRAM_CHECK_SCRIPT,
@@ -22,13 +23,31 @@ afterAll(() => {
   rmSync(dir, { recursive: true, force: true });
 });
 
-function check(spec: unknown) {
+async function check(spec: unknown) {
   writeFileSync(
     join(dir, DIAGRAM_SPEC_PATH),
     typeof spec === "string" ? spec : JSON.stringify(spec)
   );
-  const run = spawnSync("node", ["check.mjs"], { cwd: dir, encoding: "utf8" });
-  return { exitCode: run.status, output: run.stdout };
+  try {
+    const { stdout } = await promisify(execFile)("node", ["check.mjs"], {
+      cwd: dir,
+      encoding: "utf8",
+      timeout: 3000,
+      killSignal: "SIGKILL",
+    });
+    return { exitCode: 0, output: stdout };
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      "code" in error &&
+      typeof error.code === "number" &&
+      "stdout" in error &&
+      typeof error.stdout === "string"
+    ) {
+      return { exitCode: error.code, output: error.stdout };
+    }
+    throw error;
+  }
 }
 
 const tidy = {
@@ -76,16 +95,16 @@ const tidy = {
   ],
 };
 
-test("a tidy diagram inside the 1100x530 box passes", () => {
-  const result = check(tidy);
+test("a tidy diagram inside the 1100x530 box passes", async () => {
+  const result = await check(tidy);
   expect(result.exitCode).toBe(0);
   expect(result.output).toContain("OK");
 });
 
-test("invalid JSON and dangling arrow ids fail with exit code 1", () => {
-  expect(check("{ nope").exitCode).toBe(1);
+test("invalid JSON and dangling arrow ids fail with exit code 1", async () => {
+  expect((await check("{ nope")).exitCode).toBe(1);
 
-  const dangling = check({
+  const dangling = await check({
     elements: [
       { type: "rectangle", id: "a", x: 0, y: 0 },
       { type: "arrow", start: { id: "a" }, end: { id: "ghost" } },
@@ -97,8 +116,8 @@ test("invalid JSON and dangling arrow ids fail with exit code 1", () => {
   );
 });
 
-test("warns about overlaps, oversized diagrams, and labels that do not fit", () => {
-  const result = check({
+test("warns about overlaps, oversized diagrams, and labels that do not fit", async () => {
+  const result = await check({
     elements: [
       {
         type: "rectangle",

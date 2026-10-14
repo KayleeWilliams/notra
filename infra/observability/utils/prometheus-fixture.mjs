@@ -59,8 +59,7 @@ for (const [job, count] of Object.entries(fixtureCounts)) {
   while (samples.length < count) {
     let labels = `id="fixture_${samples.length}"`;
     if (job === "vercel") {
-      labels +=
-        ',metric="fixture.metric",aggregation="count",unit="count",breakdown="project",project_id="fixture_project",environment="validation"';
+      labels += `,metric="fixture.metric",aggregation="count",unit="count",breakdown="project",project_id="${windowFixtureDimensions.projectId}",environment="${windowFixtureDimensions.environment}"`;
     } else if (job === "application-metrics") {
       labels +=
         ',service_name="fixture-app",deployment_environment_name="validation",otel_scope_name="fixture",otel_scope_version="1.0.0"';

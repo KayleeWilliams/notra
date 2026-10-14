@@ -13,6 +13,7 @@ import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { CompetitorEditDialog } from "@/components/geo/competitor-edit-dialog";
+import { CompetitorSuggestionsTable } from "@/components/geo/competitor-suggestions-table";
 import { CompetitorsTable } from "@/components/geo/competitors-table";
 import { CompetitorsCsvImportDialog } from "@/components/geo/geo-csv-import-dialog";
 import { GeoRangePicker } from "@/components/geo/geo-range-picker";
@@ -29,8 +30,10 @@ import {
   useIsGeoScanning,
 } from "@/lib/hooks/use-geo";
 import { useGeoActiveProject } from "@/lib/hooks/use-geo-active-project";
+import { useGeoCompetitorDomainBackfill } from "@/lib/hooks/use-geo-competitor-domain-backfill";
 import { useGeoCompetitorsDb } from "@/lib/hooks/use-geo-db";
 import { useGeoRange } from "@/lib/hooks/use-geo-range";
+import { scopeCompetitorShare } from "@/utils/geo-competitor-scope";
 import { shareOfVoiceByBrand } from "@/utils/geo-share-of-voice";
 import dynamic from "@/utils/lazy-component";
 
@@ -83,6 +86,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const { competitors } = useGeoCompetitorsDb(organizationId);
   const { domain: ownDomain } = useGeoActiveProject(organizationId);
   const isScanning = useIsGeoScanning(organizationId);
+  useGeoCompetitorDomainBackfill(organizationId, competitors);
   const [managerOpen, setManagerOpen] = useState(false);
   const [initialName, setInitialName] = useState<string>();
   const [importOpen, setImportOpen] = useState(false);
@@ -126,8 +130,16 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     );
   }
 
-  const points = competitorShare?.points ?? [];
-  const timeseries = competitorShare?.timeseries ?? [];
+  const shareScope = scopeCompetitorShare({
+    points: competitorShare?.points ?? [],
+    timeseries: competitorShare?.timeseries ?? [],
+    competitors,
+    companyName: settings.companyName,
+    aliases: settings.aliases,
+    engines: settings.engines,
+    ignoredCompetitors: settings.ignoredCompetitors,
+  });
+  const { points, timeseries } = shareScope;
 
   return (
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -183,6 +195,13 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             companyName: settings.companyName,
             aliases: settings.aliases,
           })}
+        />
+        <CompetitorSuggestionsTable
+          competitors={competitors}
+          onTrack={openManager}
+          organizationId={organizationId}
+          organizationSlug={organizationSlug}
+          suggestions={shareScope.suggestions}
         />
       </div>
       <CompetitorEditDialog

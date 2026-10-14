@@ -1,7 +1,7 @@
 import type { ParsedLocation } from "@tanstack/react-router";
 
 export interface RouteModal {
-  kind: "account" | "competitor" | "framer" | "raycast";
+  kind: "account" | "framer" | "raycast";
   organizationSlug: string;
   name: string;
 }

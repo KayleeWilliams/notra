@@ -449,20 +449,21 @@ const activationOutcome = Effect.fn("Sites.activationOutcome")(function* (
   site: Site,
   deployment: SiteDeployment
 ) {
-  const live =
-    site.status === "active" &&
-    (yield* Effect.uninterruptible(
-      Effect.tryPromise({
-        try: () => activateDeployment(site, deployment),
-        catch: (error) => error,
-      })
-    )) === "live";
-  return live ? { kind: "live" as const } : { kind: "not_live" as const };
+  if (site.status !== "active") {
+    return { kind: "not_live" as const };
+  }
+  const outcome = yield* Effect.uninterruptible(
+    Effect.tryPromise({
+      try: () => activateDeployment(site, deployment),
+      catch: (error) => error,
+    })
+  );
+  return { kind: outcome };
 });
 
 export const runDeploymentPipelineEffect = Effect.fn(
   "Sites.runDeploymentPipeline"
-)(function* (site: Site, queued: SiteDeployment) {
+)(function* (site: Site, queued: SiteDeployment, onFinalized?: () => void) {
   const deployment = yield* Effect.tryPromise({
     try: () => openCheckRun(site, queued),
     catch: (error) => error,
@@ -492,6 +493,9 @@ export const runDeploymentPipelineEffect = Effect.fn(
     try: () => reportOutcome(site, finished, outcome),
     catch: (error) => error,
   });
+  if (onFinalized) {
+    yield* Effect.sync(onFinalized);
+  }
   if (Option.isSome(build.pendingTelemetryError)) {
     return yield* Effect.fail(build.pendingTelemetryError.value);
   }
@@ -500,9 +504,10 @@ export const runDeploymentPipelineEffect = Effect.fn(
 
 export function runDeploymentPipeline(
   site: Site,
-  queued: SiteDeployment
+  queued: SiteDeployment,
+  onFinalized?: () => void
 ): Promise<DeploymentOutcome> {
-  return runSitesEffect(runDeploymentPipelineEffect(site, queued));
+  return runSitesEffect(runDeploymentPipelineEffect(site, queued, onFinalized));
 }
 
 export async function failDeployment(

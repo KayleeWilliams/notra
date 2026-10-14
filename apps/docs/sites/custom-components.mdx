@@ -93,7 +93,7 @@ For a component that only displays content, add Notra's `client:static` directiv
 
 Notra renders it to HTML during the build without loading its JavaScript in the browser. Links and native HTML behavior still work, but React event handlers and effects do not run. Use this for presentational components, not counters, forms with React handlers or interactive demos.
 
-`client:static` works on imported JSX and inline components, including in headers, footers and slots. Use it without a value and without another `client:*` directive. Built-in components and MDX snippets do not need it. Pages without interactive React components do not load the React browser runtime; sites without custom React components also skip the React build integration.
+`client:static` works on imported JSX and inline components, including in headers, footers and slots, and on components inside `{…}` expressions, like `{props.page === "entry" && <Banner client:static />}`. Use it without a value and without another `client:*` directive. Built-in components and MDX snippets do not need it. Pages without interactive React components do not load the React browser runtime; sites without custom React components also skip the React build integration.
 
 ## Reusable content
 

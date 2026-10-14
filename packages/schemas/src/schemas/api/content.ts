@@ -407,6 +407,11 @@ const postMetadataResponseSchema = z
         "Asks search engines not to index the post and leaves it out of the sitemap.",
       example: false,
     }),
+    hidden: z.boolean().openapi({
+      description:
+        "Reachable by direct link, but excluded from hosted site listings, feeds, search engine indexing, sitemaps and generated AI indexes. Not private.",
+      example: false,
+    }),
     displayDate: z.string().nullable().openapi({
       description:
         "Date shown on the post as YYYY-MM-DD. Null means the publish date is used.",
@@ -503,6 +508,11 @@ const patchPostMetadataRequestSchema = z
       description:
         "Ask search engines not to index the post and leave it out of the sitemap.",
       example: false,
+    }),
+    hidden: z.boolean().optional().openapi({
+      description:
+        "Hide the post from hosted site listings, feeds, search engine indexing, sitemaps and generated AI indexes while keeping its direct URL accessible. Not private.",
+      example: true,
     }),
     displayDate: postDisplayDatePatchSchema.optional().openapi({
       description:

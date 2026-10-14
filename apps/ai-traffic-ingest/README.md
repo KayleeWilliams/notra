@@ -26,6 +26,13 @@ background work and the batcher before closing the database pool and exiting.
 Rate-limit hits return `429`; Redis transport failures and limiter timeouts return
 `502` without writing an event. Redis availability is required for tracked ingestion.
 Token generation is still checked against Postgres and fails closed on an outage.
+An identity lookup failure returns `502`; missing identities and revoked tokens
+return `401`. Rejection logs retain `reason: invalid_token` and add `authReason`
+to distinguish an invalid signature, missing identity, revoked token, inactive
+site, or a site token used for a drain. Lookup failures include `stage` as
+`identity_lookup` or `site_lookup`. Signed organization/project/site IDs are
+included when available; raw tokens and scope from invalid signatures are never
+logged.
 
 Before identity and host lookups, tracked AI envelopes and malformed signed payloads
 pass a separate 1,000-request-per-minute admission limit keyed by organization,

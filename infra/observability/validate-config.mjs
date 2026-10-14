@@ -81,6 +81,27 @@ export function validationCommands() {
         "NOTRA_OTLP_TOKEN=notra-config-validation-fixture-only",
       ]
     ),
+    command(
+      "blackbox",
+      "prom/blackbox-exporter",
+      "/bin/sh",
+      "/etc/blackbox_exporter/config.yml",
+      [
+        "/entrypoint.sh",
+        "--config.file=/etc/blackbox_exporter/config.yml",
+        "--config.check",
+      ],
+      [
+        "--user",
+        "65534:65534",
+        "--tmpfs",
+        "/tmp:rw,nosuid,noexec,size=1048576,uid=65534,gid=65534,mode=0700",
+        "--mount",
+        `type=bind,source=${fileURLToPath(new URL("blackbox/entrypoint.sh", import.meta.url))},target=/entrypoint.sh,readonly`,
+        "--env",
+        "NOTRA_PROBE_API_KEY=notra-config-validation-fixture-only",
+      ]
+    ),
   ];
 }
 

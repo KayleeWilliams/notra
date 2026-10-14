@@ -8,7 +8,7 @@ const description = notFound.description ?? "It may have moved, or the link is w
 const target = href();
 ---
 
-<Base title={`${notFound.title ?? "Page not found"} · ${config.name}`} noindex>
+<Base page="not-found" title={`${notFound.title ?? "Page not found"} · ${config.name}`} noindex>
   {
     notFound.redirect && (
       <Fragment slot="head">

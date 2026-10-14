@@ -80,6 +80,7 @@ if (!process.env.NOTRA_DEPLOYMENTS_SURFACE_TEST_WORKER) {
   }));
   mock.module("../src/lib/hooks/use-site-deployments", () => ({
     useDeployLatest: () => ({ isPending: false, mutate: () => undefined }),
+    usePromoteDeployment: () => ({ isPending: false, mutate: () => undefined }),
   }));
   mock.module("../src/lib/navigation", () => ({
     useSearchParams: () =>

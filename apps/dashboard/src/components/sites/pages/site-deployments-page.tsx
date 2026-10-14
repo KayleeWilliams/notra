@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Alert02Icon,
   FilterHorizontalIcon,
   RefreshIcon,
   Rocket01Icon,
@@ -52,7 +53,10 @@ import {
   SITE_DEPLOYMENT_ENVIRONMENT_FILTERS,
   SITE_DEPLOYMENT_STATUS_FILTERS,
 } from "@/constants/sites";
-import { useDeployLatest } from "@/lib/hooks/use-site-deployments";
+import {
+  useDeployLatest,
+  usePromoteDeployment,
+} from "@/lib/hooks/use-site-deployments";
 import { useRouter, useSearchParams } from "@/lib/navigation";
 import type {
   SiteDeployment,
@@ -73,8 +77,11 @@ export function SiteDeploymentsPage() {
   const t = useTranslations("sites.deploymentsPage");
   const tDetail = useTranslations("sites.detail");
   const tKinds = useTranslations("sites.kinds");
+  const tRollback = useTranslations("sites.rollback");
+  const tActions = useTranslations("sites.deployments.actions");
   const scope = { organizationId, siteId };
   const deployLatest = useDeployLatest(scope);
+  const promote = usePromoteDeployment(scope);
   const searchParams = useSearchParams();
   const router = useRouter();
   const environment = searchParams.get("environment");
@@ -181,6 +188,43 @@ export function SiteDeploymentsPage() {
       >
         {deployButton("default")}
       </PageHeading>
+
+      {detail.site.rollbackActive ? (
+        <div
+          className="border-border bg-background from-background to-muted/60 text-popover-foreground dark:border-input dark:bg-muted dark:from-input dark:to-muted flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-linear-to-b p-3 text-sm shadow-sm [corner-shape:squircle]"
+          role="status"
+        >
+          <div className="flex min-w-0 flex-1 basis-full items-center gap-2.5 sm:basis-auto">
+            <span className="bg-warning/12 text-warning flex size-6 shrink-0 items-center justify-center rounded-lg [corner-shape:squircle]">
+              <HugeiconsIcon
+                aria-hidden="true"
+                className="size-3.5"
+                icon={Alert02Icon}
+                strokeWidth={2}
+              />
+            </span>
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <p className="leading-snug font-medium">
+                {tRollback("pausedTitle")}
+              </p>
+              <p className="text-muted-foreground text-xs leading-snug">
+                {tRollback("pausedDescription")}
+              </p>
+            </div>
+          </div>
+          {detail.canUndoRollback ? (
+            <Button
+              className="ml-8.5 sm:ml-0"
+              loading={promote.isPending}
+              onClick={() => promote.mutate()}
+              size="sm"
+              variant="outline"
+            >
+              {tActions("undoRollback")}
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
 
       <SiteDeploymentPreviewControls />
 

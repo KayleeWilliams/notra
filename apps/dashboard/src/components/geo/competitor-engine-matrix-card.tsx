@@ -1,5 +1,7 @@
 "use client";
 
+import { ArrowDown01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
   InstrumentEmpty,
   InstrumentModule,
@@ -9,8 +11,10 @@ import { type CSSProperties, type PointerEvent, useState } from "react";
 import { useTranslations } from "use-intl";
 
 import { CursorTooltip } from "@/components/analytics/cursor-tooltip";
+import { Button } from "@/components/button";
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { EngineIcon } from "@/components/geo/engine-icon";
+import { GEO_ENGINE_MATRIX_COLLAPSED_ROWS } from "@/constants/geo-competitors";
 import {
   useGeoCompetitorEngineMatrix,
   useGeoCompetitorRowNavigation,
@@ -27,7 +31,7 @@ import {
 } from "@/utils/geo-engine-matrix";
 
 const MATRIX_CELL_CLASS =
-  "flex h-10 items-center justify-center rounded-lg text-sm ring-inset transition-shadow hover:ring-2 hover:ring-foreground/20";
+  "flex h-9 items-center justify-center rounded-md text-sm ring-inset transition-shadow hover:ring-1 hover:ring-foreground/20";
 
 function MatrixCell({
   rate,
@@ -48,7 +52,7 @@ function MatrixCell({
   if (rate === null) {
     return (
       <span
-        className={cn(MATRIX_CELL_CLASS, "bg-muted/60 text-muted-foreground")}
+        className={cn(MATRIX_CELL_CLASS, "bg-muted/40 text-muted-foreground")}
         onPointerMove={onPointerMove}
       >
         <span aria-hidden="true">–</span>
@@ -91,6 +95,7 @@ export function CompetitorEngineMatrixCard({
     organizationId
   );
   const [tip, setTip] = useState<CursorTipState | null>(null);
+  const [expanded, setExpanded] = useState(false);
   const { data, isPending, isError } = useGeoCompetitorEngineMatrix(
     organizationId,
     range
@@ -109,6 +114,11 @@ export function CompetitorEngineMatrixCard({
   const isEmpty =
     matrix.rows.length === 0 ||
     matrix.columns.every((column) => column.checks === 0);
+  const collapsible = matrix.rows.length > GEO_ENGINE_MATRIX_COLLAPSED_ROWS;
+  const visibleRows =
+    collapsible && !expanded
+      ? matrix.rows.slice(0, GEO_ENGINE_MATRIX_COLLAPSED_ROWS)
+      : matrix.rows;
   let emptyMessage = t("empty");
   if (isError) {
     emptyMessage = t("loadFailed");
@@ -132,7 +142,7 @@ export function CompetitorEngineMatrixCard({
         />
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full border-separate border-spacing-1">
+          <table className="w-full border-separate border-spacing-[3px]">
             <caption className="sr-only">{t("tableLabel")}</caption>
             <thead>
               <tr>
@@ -141,14 +151,15 @@ export function CompetitorEngineMatrixCard({
                 </th>
                 {matrix.columns.map((column) => (
                   <th
-                    className="min-w-20 px-1 pt-1 pb-2 text-xs font-medium"
+                    className="min-w-20 px-1 pt-1 pb-1.5 text-xs font-medium"
                     key={column.family}
                     scope="col"
                   >
-                    <span className="flex flex-col items-center gap-2">
-                      <span className="bg-background ring-border flex size-7 items-center justify-center rounded-md ring-1">
-                        <EngineIcon className="size-4" engine={column.engine} />
-                      </span>
+                    <span className="flex items-center justify-center gap-1.5">
+                      <EngineIcon
+                        className="size-3.5 shrink-0"
+                        engine={column.engine}
+                      />
                       <span className="truncate">{column.label}</span>
                     </span>
                   </th>
@@ -156,7 +167,7 @@ export function CompetitorEngineMatrixCard({
               </tr>
             </thead>
             <tbody onPointerLeave={() => setTip(null)}>
-              {matrix.rows.map((row) => {
+              {visibleRows.map((row) => {
                 const openable = !row.own && Boolean(organizationSlug);
                 const cellDetail = (index: number) => {
                   const checks = matrix.columns[index]?.checks ?? 0;
@@ -202,7 +213,7 @@ export function CompetitorEngineMatrixCard({
                   >
                     <th
                       className={cn(
-                        "rounded-lg px-2 text-left text-sm font-normal transition-colors",
+                        "rounded-md px-2 text-left text-sm font-normal transition-colors",
                         row.own && "bg-primary/10 font-medium",
                         openable &&
                           "group-hover:bg-muted/60 group-focus-visible:bg-muted/60"
@@ -245,6 +256,28 @@ export function CompetitorEngineMatrixCard({
               })}
             </tbody>
           </table>
+          {collapsible ? (
+            <div className="flex justify-center pt-1">
+              <Button
+                aria-expanded={expanded}
+                onClick={() => setExpanded((current) => !current)}
+                size="xs"
+                variant="ghost"
+              >
+                {expanded
+                  ? t("showLess")
+                  : t("showAll", { count: matrix.rows.length })}
+                <HugeiconsIcon
+                  aria-hidden="true"
+                  className={cn(
+                    "size-3.5 transition-transform",
+                    expanded && "rotate-180"
+                  )}
+                  icon={ArrowDown01Icon}
+                />
+              </Button>
+            </div>
+          ) : null}
           <CursorTooltip tip={tip} />
         </div>
       )}

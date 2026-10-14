@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 
 import type { AreaPages } from "../../compiler/types/agent-files";
 import { authorsOf } from "../lib/authors";
-import { getBlogEntries, getChangelogEntries } from "../lib/entries";
+import { getBlogRoutes, getChangelogRoutes } from "../lib/entries";
 import { areaDescription, areaTitle, href, params } from "../lib/params";
 import { isoDate } from "../utils/dates";
 import { excerpt } from "../utils/excerpt";
@@ -15,7 +15,7 @@ export const GET: APIRoute = async () => {
   };
   const entries =
     params.area === "blog"
-      ? (await getBlogEntries()).map((entry) => ({
+      ? (await getBlogRoutes()).map((entry) => ({
           path: href(entry.id),
           title: entry.data.title,
           description: entry.data.description,
@@ -24,9 +24,14 @@ export const GET: APIRoute = async () => {
           updated: entry.data.updated ? isoDate(entry.data.updated) : undefined,
           authors: authorsOf(entry).map((author) => author.name),
           tags: entry.data.tags,
-          indexable: !(entry.data.draft || entry.data.noindex),
+          hidden: entry.data.hidden,
+          indexable: !(
+            entry.data.hidden ||
+            entry.data.draft ||
+            entry.data.noindex
+          ),
         }))
-      : (await getChangelogEntries()).map((entry) => ({
+      : (await getChangelogRoutes()).map((entry) => ({
           path: href(entry.id),
           title: entry.data.title,
           description: entry.data.description,
@@ -34,7 +39,8 @@ export const GET: APIRoute = async () => {
           date: isoDate(entry.data.date),
           version: entry.data.version,
           tags: entry.data.tags,
-          indexable: !entry.data.draft,
+          hidden: entry.data.hidden,
+          indexable: !(entry.data.hidden || entry.data.draft),
         }));
   return new Response(
     JSON.stringify({

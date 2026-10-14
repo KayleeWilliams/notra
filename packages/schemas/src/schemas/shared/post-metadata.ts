@@ -33,6 +33,7 @@ export const postMetadataPatchSchema = z
     authorIds: postAuthorIdsSchema.optional(),
     featured: z.boolean().optional(),
     noindex: z.boolean().optional(),
+    hidden: z.boolean().optional(),
     displayDate: postDisplayDatePatchSchema.optional(),
   })
   .refine((data) => Object.values(data).some((value) => value !== undefined), {
@@ -48,6 +49,7 @@ export const postMetadataSchema = z.object({
   authorIds: z.array(z.string()),
   featured: z.boolean(),
   noindex: z.boolean(),
+  hidden: z.boolean(),
   displayDate: z.string().nullable(),
 });
 

@@ -13,6 +13,22 @@ export interface TextEdit extends SourceRange {
   text: string;
 }
 
+export interface ClientDirective extends SourceRange {
+  name: string;
+  hasValue: boolean;
+}
+
+export interface ClientDirectiveElement {
+  name: string;
+  start: number;
+  directives: ClientDirective[];
+}
+
+export interface StaticDirectiveAnalysis {
+  edits: TextEdit[];
+  invalid: number[];
+}
+
 export interface MdxAnalysisContext {
   files: ReadonlySet<string>;
   componentExports: ReadonlyMap<string, readonly string[]>;

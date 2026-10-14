@@ -82,7 +82,8 @@ The `notra-overview` start page prioritizes AI spend, GEO and API latency: repor
 GEO scan usage value, separate live gateway/BYOK cards, customer cost rankings,
 API p95/errors, GEO cost trends and scan outcomes. Customer bars link back to the
 same dashboard with that opaque organization ID and the time/environment filters.
-Customer names are not collected. GEO history remains the frozen 3–10 October
+Organization names can be supplied separately for display (see below); they are
+not collected in cost telemetry. GEO history remains the frozen 3–10 October
 snapshot; live spend/latency still require telemetry activation. Historical scan
 costs are not combined with live call costs, avoiding double-counting.
 
@@ -100,6 +101,75 @@ top-ten customer cost/scan rankings and scan outcomes; live gateway/BYOK and API
 latency queries remain empty as expected before application telemetry activation.
 Only Grafana was deployed; no service settings, volumes or application releases
 were changed. Browser rendering remains unverified.
+
+### Organization display names
+
+Grafana accepts an optional `NOTRA_ORGANIZATION_NAMES` JSON object containing
+organization IDs and their display names, or the private file reference
+`@/var/lib/grafana/organization-names.json`. Its entrypoint adds exact-name field
+overrides to organization-series panels across the provisioned dashboards,
+including both customer cost rankings. Queries, cost grouping, organization
+filters and drill-down links still use IDs. Missing or blank names retain the ID;
+identical names do not merge organizations. Names never enter Loki or Prometheus.
+
+Export the mapping inside an existing trusted database environment using its
+existing `DATABASE_URL` (do not copy production credentials):
+
+```sh
+bun --no-env-file infra/observability/history/export-organization-names.ts /tmp/organization-names.json
+```
+
+The bounded read-only query reads only `organizations.id` and `organizations.name`.
+The exporter creates a new mode-0600 file and refuses to overwrite one. Keep that
+file outside source control. Railway limits a variable to 32,768 characters, so
+the full production mapping uses the private file reference: transfer the JSON
+over Railway SSH into `/var/lib/grafana/organization-names.json` on the existing
+Grafana volume, with mode 0600 and an atomic rename. Set the variable to
+`@/var/lib/grafana/organization-names.json`, then deploy only the Grafana Docker
+context. No new volume or volume configuration change is needed. Small mappings
+can instead use JSON directly, passed through stdin.
+File-backed mappings are copied into one private temporary snapshot per startup,
+so an atomic update cannot mix name versions across dashboards. That snapshot is
+removed after provisioning or on a rendering failure.
+Treat organization names as internal data; do not print or share the variable.
+The IaC definition preserves that variable; review a fresh plan before applying.
+Grafana gains no database credentials or database access.
+
+This is a display-name snapshot, not a background sync: export and update the
+mapping, then redeploy Grafana after additions or renames. Invalid mappings fail
+startup instead of silently applying a partial mapping. Display names are limited
+to 256 characters and cannot contain control characters or Grafana interpolation
+expressions. With no mapping, existing ID displays remain available.
+
+The Grafana-only deployment `d6db15f3-3a3f-49d5-9688-ff2974dcbfe1` reached
+`SUCCESS` on 2026-10-12. Its private mode-0600 mapping contains 1,798 organizations;
+the loaded dashboard API resolves all ten historical top-cost customers to their
+exact exported database names. All four live provisioned dashboards match the
+generated source, the proxied cost query succeeds unchanged, and drill-down links
+still use organization IDs. Other service deployment IDs and all four volume
+configurations/states remained unchanged. Both monitoring and ingest IaC plans
+report no changes. Production browser rendering was not checked; local Grafana
+rendering and the file-backed container startup were verified.
+
+### Private application telemetry
+
+Monitoring-to-monitoring connections already use the Railway private network.
+An application in **notra-prod / production** can send OTLP directly to
+`http://otel-collector.railway.internal:4318`; retain the existing
+`NOTRA_OTLP_TOKEN` bearer authentication. No new public domain or proxy is needed.
+Railway private DNS is scoped to the project/environment: the demo project and
+Vercel cannot use this address. Those deployments continue to use the authenticated
+`https://telemetry.usenotra.com` endpoint. Changing an endpoint does not by itself
+deploy or activate the staged application exporter.
+
+On 2026-10-12, the running production `ai-traffic-ingest` already had that private
+endpoint and a token configured. From that running service, private collector
+health and an authenticated empty OTLP logs request both returned HTTP 200; no
+application release or endpoint change was needed. The `ai-traffic` IaC declaration
+now preserves all three existing `NOTRA_OTLP_ENDPOINT`, `NOTRA_OTLP_TOKEN` and
+`NOTRA_TELEMETRY_SERVICE_NAME` variables. Before this correction, its live plan
+would have deleted them. Older rollout notes below describe the 2026-10-10 state,
+not the current runtime configuration.
 
 Numeric Loki queries retain only the event, filters, grouping and numeric fields
 they use. Cost/ranking and runtime queries use explicit JSON extraction. Queries
@@ -165,6 +235,58 @@ rather than implying complete coverage. Labels contain only project/environment
 and reviewed platform HTTP/cache/runtime dimensions: never IP, URLs, paths,
 headers, key IDs, session IDs, generation IDs, or captured AI content. Empty
 platform dimensions remain empty; missing dimensions become `unattributed`.
+
+#### Vercel validation and allocation contract
+
+Provider metadata is validated before grouping or status-label emission. Metric
+IDs use `vercel` plus two to four lowercase alphanumeric/underscore components;
+source events use one to four such components. IDs, metadata strings, dimension
+names and pagination cursors are limited to 160 characters. Dimension names are
+alphanumeric identifiers starting with a letter, with at most 64 names per metric.
+Aggregation arrays contain one to twelve reviewed entries: `avg`, `count`, `max`,
+`min`, `p50`, `p75`, `p90`, `p95`, `p99`, `stddev`, `sum`, `unique`.
+Reviewed units are `bytes`, `count`, `currency`, `gigabyte_hour`, `megabytes`,
+`milliseconds`, `percent`, `ratio`, `score`, `seconds`, `usd`. Unit validation is
+case-insensitive; output spelling and existing currency/USD sum selection stay
+unchanged. Unknown units or aggregations reject the catalog, not publish free text.
+
+Requested dimensions have field-specific contracts:
+
+- `projectId`: opaque `prj_` plus alphanumeric characters, at most 160 characters;
+  never project names, emails, URLs or numeric IDs.
+- `environment`: `production`, `preview`, `development`. Custom environments need
+  explicit privacy review and fixture additions before extending this list.
+- `httpStatus`: canonical decimal 100–599, as an integer or three-digit string.
+  No unknown sentinel is retained: `0`/`"0"` are rejected.
+- `requestMethod`: uppercase `CONNECT`, `DELETE`, `GET`, `HEAD`, `OPTIONS`, `PATCH`,
+  `POST`, `PUT`, `TRACE`.
+- `cacheResult`: `BYPASS`, `HIT`, `MISS`, `REVALIDATED`, `STALE`.
+- `runtime`: `edge`, `nodejsN.x` (one- or two-digit positive major), or `python3.N`
+  (one- or two-digit positive minor), without suffixes or free-text names.
+- `functionStartType`: `cold`, `hot`, `prewarmed`.
+
+For every requested field, empty strings stay empty; null/absent values become
+`unattributed`, never an invented environment. Unrequested sensitive dimensions
+are ignored. New provider units, aggregations, environments or runtime families
+require reviewed fixture additions. Native numeric values and measured zero are
+unchanged; null/non-finite observations remain omitted.
+
+Each decoded HTTP response is capped at **1 MiB**, enforced on actual streamed
+bytes before decoding/JSON parsing even with missing or incorrect Content-Length.
+Oversized advertised lengths can fail early; overflow cancels the response stream.
+Catalog pages accept at most **250 items**, the catalog at most **1,000 items** and
+ten pages. Summary arrays reject **500 or more rows** before mapping. An aggregate
+snapshot accepts at most **10,000 sample/status lines** and **4 MiB of UTF-8 bytes**,
+including each final newline, across both workers and all breakdowns.
+
+All limits fail visibly without silent truncation or scrub-and-publish behavior.
+Ordinary failed groups retain only fixed diagnostic categories and failure status,
+not partial measurements. A global snapshot-budget failure stops scheduling new
+groups, settles the other timeout-bounded request and invalidates the entire poll:
+no apparently complete partial snapshot or stale measurements are served. The
+next valid poll can recover. Provider values and response/error bodies are never
+included in diagnostics. Fixed-origin, redirect-refusal and 30-second timeout
+protections remain in place; `/healthz` remains liveness only.
 
 Measurements are **five-minute window gauges**, ending at least ten minutes
 before the poll to allow ingestion, not monotonic totals. Do not use
@@ -242,6 +364,7 @@ Environment: `276f8b24-ccd7-4bf3-a6b6-1dbe9f7fe5c6`.
 | `loki` | `loki` | 3100 | `/loki` |
 | `collector` | `otel-collector` | 4318, 8888, 8889; health 13133 | `/var/lib/otelcol` |
 | `blackbox` | `blackbox` | 9115 | — |
+| `blackbox` | `blackbox-eu` (source-only) | 9115 | — |
 | `tunnel` | `monitoring-tunnel` | health/metrics 2000 | — |
 | `vercel` | `vercel-metrics` (undeployed pending token) | 9091 | — |
 
@@ -260,6 +383,77 @@ Railway mounts volumes as root: persistent services start with
 `RAILWAY_RUN_UID=0`, initialize ownership, then drop to UID 472 (Grafana),
 65534 (Prometheus), or 10001 (Loki/collector). Only the collector recursively fixes
 ownership, to handle its pre-existing queue files. No data is deleted.
+
+### Regional API probes (source-only)
+
+The existing US East exporter and a new private EU West/Amsterdam exporter each
+perform two public HTTPS checks every 30 seconds: `/ping` must return HTTP 200
+and exactly `pong`; `/v1/me/workspaces` must return HTTP 200, JSON content type,
+API-key authentication context and an active current-workspace membership.
+The second check exercises authentication and a database read without writing
+data, querying pending invitations or triggering billed generation.
+Redirects fail both API checks rather than hiding routing problems or forwarding
+credentials. Responses are capped at 128 KB and probes time out after 10 seconds.
+The other four existing public probes remain on US East.
+
+Prometheus scrapes the exporters through their distinct private DNS names,
+`blackbox.railway.internal:9115` and `blackbox-eu.railway.internal:9115`, retaining
+`probe_region="us-east"|"eu-west"` and
+`probe_check="api_ping"|"api_workspace"`. Regional measurement happens inside
+the exporter, not on the collector-to-exporter network path. No second
+Prometheus/Grafana installation or custom ingestion process is needed.
+
+Provision a dedicated organization-scoped key as sealed `NOTRA_PROBE_API_KEY` on
+both exporters before deploying. Workspace discovery requires authentication but
+no granular scope; avoid write permissions and customer/administrator keys. The
+entrypoint writes the key to a non-root-owned, owner-only ephemeral file and
+removes it from the exporter process environment; the image/configuration contains
+only the credential file path. A missing key fails startup rather than reporting
+a public reachability check as evidence of authenticated availability. Rotate the
+sealed key and redeploy both exporters to rotate the runtime files.
+
+Exporters must remain private. Their `/probe` API accepts caller-selected targets,
+including for the authenticated module, so all services able to reach them must
+remain trusted. Never expose `/probe`, configuration/history pages or debug output
+publicly, and do not attach untrusted workloads to this private environment.
+
+The API/MCP dashboard adds a regional response-time chart, API-check status and
+separate collection health above the pending real-traffic panels. Failed checks
+are excluded from the successful-response latency chart, not counted as fast
+responses. Missing samples are not zero or success. The operations infrastructure
+panels also identify each region/check. These are controlled synthetic samples,
+not customer-request p95 or browser performance; customer/user filters do not
+scope the probes. Alert notifications remain unconfigured.
+
+The EU service is declared in `.railway/observability-probes.ts` under its own
+`observability-probes` partial. Obtain approval of the exact fresh plans before
+any apply; no production rollout is implied by these files. Deploy the two
+exporters first, then Prometheus and Grafana. Verify the live service settings
+show one US East and one Amsterdam replica, both with no public domains/proxies.
+Through the trusted private network, verify:
+
+```promql
+probe_success{job="http-probes",probe_check=~"api_ping|api_workspace"}
+up{job="http-probes",probe_check=~"api_ping|api_workspace"}
+up{job="blackbox",probe_region=~"us-east|eu-west"}
+```
+
+The first two queries must each return four distinct `(probe_region,probe_check)`
+series equal to 1; the last must return two exporter series equal to 1. Check
+both latency lines per region in `notra-surfaces`, and distinguish a revoked key
+(`probe_success=0`, collection healthy) from an unreachable exporter (`up=0`).
+Do not call fixture values production measurements. Local regression checks:
+
+The existing native CI validator also loads the pinned Blackbox configuration
+through its entrypoint as UID 65534 with a dummy key. It exits with
+`--config.check`: no exporter server is started and no real credentials or public
+targets are used.
+
+```sh
+bun --no-env-file run railway:check
+node --test infra/observability/*.test.mjs
+node infra/observability/validate-config.mjs
+```
 
 ### Live deployment verification (2026-10-10)
 

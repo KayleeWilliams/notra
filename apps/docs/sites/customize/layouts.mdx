@@ -27,7 +27,8 @@ The `blog` and `changelog` objects in `blog.json` set how the blog index, its po
   "hero": { "style": "wash", "eyebrow": "The Acme journal" },
   "featured": "latest",
   "card": { "image": "auto", "excerpt": true, "author": true, "date": true, "readingTime": false },
-  "post": { "toc": true, "authorCard": true, "readingTime": true, "pagination": true, "width": "wide" }
+  "post": { "toc": true, "authorCard": true, "readingTime": true, "pagination": true, "width": "wide", "header": "stacked", "cover": true },
+  "authorPage": "inline"
 }
 ```
 
@@ -37,13 +38,15 @@ The `blog` and `changelog` objects in `blog.json` set how the blog index, its po
 | --- | --- | --- |
 | `title` | The heading, up to 120 characters | `"Blog"` |
 | `description` | The line under it, up to 400 characters | The site's `description` |
-| `layout` | `grid`: cards in columns. `list`: date and title rows. `magazine`: one large card, then a grid | `grid` |
+| `layout` | `grid`: cards in columns. `list`: date and title rows. `magazine`: one large card, then a grid. `cards`: two columns of bordered, tinted cards | `grid` |
 | `hero.style` | `wash`: a tinted panel. `plain`: title only. `image`: `hero.image` behind the title. `none`: no hero | `plain` |
 | `hero.eyebrow` | A short line above the title, up to 60 characters | none |
 | `hero.image` | Background for the `image` style, like `/images/hero.jpg` | none |
 | `featured` | `"latest"`, `"none"` or up to 6 post paths like `["2026/launch"]`, pinned on top | `"none"` |
 
 With `featured` set to `"none"`, Notra pins posts that have `featured: true` in their [frontmatter](/sites/posts#blog-posts), up to the 6 newest. `"latest"` and a list of paths ignore that field. `magazine` features the latest post when nothing else is featured, and Notra skips a featured path that doesn't match a post and shows a warning in the build log.
+
+A `cards` card shows the title, up to three lines of excerpt, and the first author's avatar and name with the date at the bottom. It has no cover image, so `card.image` doesn't apply.
 
 ### Cards
 
@@ -61,13 +64,35 @@ With `featured` set to `"none"`, Notra pins posts that have `featured: true` in 
 
 | Setting | Shows | Default |
 | --- | --- | --- |
-| `post.toc` | "On this page" next to the post on wide screens when it has at least two `##` or `###` headings, only in the `wide` layout | `true` |
-| `post.authorCard` | The authors with avatar and title, beside the post (`wide`) or under the title (`narrow`) | `true` |
+| `post.toc` | "On this page" next to the post on wide screens when it has at least two `##` or `###` headings, only in the `wide` layout or with the compact header | `true` |
+| `post.authorCard` | The authors with avatar and title, beside the post (`wide`), under the title (`narrow`) or in the sidebar (compact header) | `true` |
 | `post.readingTime` | The reading time next to the date | `true` |
 | `post.pagination` | The previous and next post at the end | `true` |
 | `post.width` | `wide`: a sidebar with the table of contents. `narrow`: one reading column | `wide` |
+| `post.header` | `stacked`: date, title, description and authors stacked above the post. `compact`: see below | `stacked` |
+| `post.cover` | The post's `image` above the text. With `false`, the image is still used for share images | `true` |
 
-To hide the "Updated" date, set `"metadata": { "timestamp": false }`.
+To hide the "Updated" date, set `"metadata": { "timestamp": false }`. Dates read "Oct 12, 2026" by default, and `"metadata": { "dateFormat": "long" }` writes "October 12, 2026" everywhere.
+
+### Compact post header
+
+`"header": "compact"` gives each post a shorter header:
+
+- A "Back to blog" link, then one row with "Published Oct 12, 2026 · 5 min read" and the [page actions](/sites/customize/navigation#page-actions) on the right, labeled **Copy article**.
+- The title and a divider, without the description.
+- The authors move into the sidebar as a "Written by" card above the table of contents.
+- "On this page" shows from a single heading, on wide screens only, and there's no "On this page" menu on phones.
+
+The compact header always has a sidebar, so it ignores `post.width`.
+
+### Author pages
+
+`authorPage` sets the layout of the [author pages](/sites/posts#authors) at `/blog/author/<id>`.
+
+| Value | Layout |
+| --- | --- |
+| `inline` | Back link, then avatar and name side by side, the bio, profile links and the author's posts |
+| `stacked` | A large avatar on top, then the name, title, bio and the profile links as icon buttons. Below a divider, "3 posts" and the posts, as `cards` cards when `layout` is `cards` |
 
 ## Changelog
 

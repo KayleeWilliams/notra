@@ -8,7 +8,6 @@ import {
   updateUserInputSchema,
 } from "@notra/schemas/dashboard/auth/user-actions";
 import { isDemoMode } from "@notra/utils/demo-mode";
-import { redirect } from "@tanstack/react-router";
 import { getWorkOS } from "@workos/authkit-session";
 import { getAuthKitContext } from "@workos/authkit-tanstack-react-start";
 import { and, eq } from "drizzle-orm";
@@ -56,13 +55,13 @@ export async function signOut(options?: SignOutActionOptions) {
   // expires on its own.
   if (isDemoMode()) {
     await clearSignedCookie(DEMO_SESSION_COOKIE);
-    throw redirect({ href: DEMO_EXIT_URL });
+    return DEMO_EXIT_URL;
   }
   const identity = await getAuthIdentity().catch(() => null);
   if (identity) {
     await revokeSitePreviewSessions(identity.user.id);
   }
-  await signOutAuthSession(parsed.success ? parsed.data : undefined);
+  return signOutAuthSession(parsed.success ? parsed.data : undefined);
 }
 
 export async function updateUser(

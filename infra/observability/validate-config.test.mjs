@@ -11,7 +11,7 @@ test("native validators are digest-pinned, networkless and cannot mount producti
   const commands = validationCommands();
   assert.deepEqual(
     commands.map(({ service }) => service),
-    ["prometheus", "loki", "collector"]
+    ["prometheus", "loki", "collector", "blackbox"]
   );
   for (const { service, args } of commands) {
     assert.deepEqual(args.slice(0, 4), ["run", "--rm", "--network", "none"]);
@@ -21,8 +21,15 @@ test("native validators are digest-pinned, networkless and cannot mount producti
       args[args.indexOf("--entrypoint") + 2],
       /@sha256:[a-f0-9]{64}$/
     );
-    assert.equal(args.filter((arg) => arg === "--mount").length, 1);
-    assert.ok(args[args.indexOf("--mount") + 1].endsWith(",readonly"));
+    assert.equal(
+      args.filter((arg) => arg === "--mount").length,
+      service === "blackbox" ? 2 : 1
+    );
+    for (const [index, arg] of args.entries()) {
+      if (arg === "--mount") {
+        assert.ok(args[index + 1].endsWith(",readonly"));
+      }
+    }
     assert.ok(
       !args.includes("--volume") &&
         !args.includes("--env-file") &&
@@ -37,6 +44,25 @@ test("native validators are digest-pinned, networkless and cannot mount producti
       assert.equal(
         args[args.indexOf("--env") + 1],
         "NOTRA_OTLP_TOKEN=notra-config-validation-fixture-only"
+      );
+    } else if (service === "blackbox") {
+      assert.equal(args[args.indexOf("--user") + 1], "65534:65534");
+      assert.equal(args[args.indexOf("--entrypoint") + 1], "/bin/sh");
+      assert.match(
+        args[args.indexOf("--tmpfs") + 1],
+        /^\/tmp:rw,.*uid=65534,gid=65534,mode=0700$/
+      );
+      assert.equal(
+        args[args.indexOf("--env") + 1],
+        "NOTRA_PROBE_API_KEY=notra-config-validation-fixture-only"
+      );
+      assert.deepEqual(args.slice(-3), [
+        "/entrypoint.sh",
+        "--config.file=/etc/blackbox_exporter/config.yml",
+        "--config.check",
+      ]);
+      assert.ok(
+        args.some((arg) => arg.endsWith("target=/entrypoint.sh,readonly"))
       );
     } else {
       assert.ok(!args.includes("--env"));

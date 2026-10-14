@@ -9,6 +9,7 @@ export interface WriteOgImagesParams {
   entries: readonly SiteEntry[];
   publicFiles: readonly string[];
   includeDrafts: boolean;
+  publicOrigin: string;
 }
 
 export type OgManifest = Record<string, string>;
@@ -30,6 +31,22 @@ export interface OgCardContent {
   footer: string;
   appearance: "light" | "dark";
   accent: string;
+  background?: string;
+}
+
+export interface OgAuthor {
+  name: string;
+  title?: string;
+  avatar?: string;
+}
+
+export interface OgAuthorCardContent {
+  label: string;
+  title: string;
+  domain: string;
+  appearance: "light" | "dark";
+  logo?: string;
+  author?: OgAuthor;
   background?: string;
 }
 

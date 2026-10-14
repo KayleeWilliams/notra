@@ -48,9 +48,10 @@ export interface UiRouteOptions<T> {
   /**
    * Stream the page data into the first server-rendered document: the shell
    * and `pendingComponent` flush before `loader` resolves. Gated client
-   * navigations also defer data, with a page-local loading boundary.
+   * navigations also defer data, with a page-local loading boundary. Use
+   * `"ssr"` to keep client navigations in the router's loading boundary.
    */
-  stream?: boolean;
+  stream?: boolean | "ssr";
   /**
    * Awaited before a streamed loader starts, for redirects that must reach
    * the browser as HTTP redirects. Also runs before deferring client data,

@@ -60,6 +60,7 @@ export function toGeoSettings(
     trackWithoutSearch: row.trackWithoutSearch,
     pausedAutoPromptIds: row.pausedAutoPromptIds,
     removedAutoPromptIds: row.removedAutoPromptIds,
+    ignoredCompetitors: row.ignoredCompetitors,
     enabled: row.enabled,
     scanIntervalHours: row.scanIntervalHours,
     scanStartedAt,

@@ -115,6 +115,7 @@ export type PostMetadataColumns = Pick<
   | "authorIds"
   | "featured"
   | "noindex"
+  | "hidden"
   | "displayDate"
 >;
 

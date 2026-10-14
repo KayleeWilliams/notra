@@ -81,6 +81,8 @@ if (process.env.NOTRA_TRAFFIC_BASELINE_TEST_WORKER !== import.meta.url) {
       markdown_visits: 0,
       paths: row.visits > 0 ? 1 : 0,
       last_seen_at: "2026-10-07 00:00:00",
+      previous_markdown_visits: 0,
+      previous_paths: 0,
     }));
     const response = await Effect.runPromise(loadAiTraffic(scope, { days: 7 }));
     expect(response.sources).toHaveLength(4);
@@ -115,6 +117,8 @@ if (process.env.NOTRA_TRAFFIC_BASELINE_TEST_WORKER !== import.meta.url) {
       markdown_visits: 0,
       paths: 0,
       last_seen_at: "2026-10-07 00:00:00",
+      previous_markdown_visits: 0,
+      previous_paths: 0,
     }));
     for (let index = 0; index < 120; index += 1) {
       rows.push({
@@ -128,6 +132,8 @@ if (process.env.NOTRA_TRAFFIC_BASELINE_TEST_WORKER !== import.meta.url) {
         markdown_visits: 0,
         paths: 0,
         last_seen_at: "2026-10-07 00:00:00",
+        previous_markdown_visits: 0,
+        previous_paths: 0,
       });
     }
     const response = await Effect.runPromise(loadAiTraffic(scope, { days: 7 }));
@@ -139,5 +145,39 @@ if (process.env.NOTRA_TRAFFIC_BASELINE_TEST_WORKER !== import.meta.url) {
       rows.length
     );
     expect(response.totals.crawler).toBe(0);
+  });
+
+  test("previous markdown visits and pages map through, and stay absent for an older pipe", async () => {
+    const scope = await seedProject("previous-pages");
+    const row: GeoTrafficOverviewRow = {
+      source: "GPTBot",
+      visitor_type: "crawler",
+      agent: "GPTBot",
+      category: "training-crawler",
+      confidence: "verified",
+      visits: 12,
+      previous_visits: 8,
+      markdown_visits: 4,
+      paths: 6,
+      last_seen_at: "2026-10-07 00:00:00",
+      previous_markdown_visits: 2,
+      previous_paths: 3,
+    };
+    rows = [row];
+    const [mapped] = (
+      await Effect.runPromise(loadAiTraffic(scope, { days: 7 }))
+    ).sources;
+    expect(mapped).toMatchObject({
+      previousMarkdownVisits: 2,
+      previousPaths: 3,
+    });
+
+    const { previous_markdown_visits, previous_paths, ...legacy } = row;
+    rows = [legacy as GeoTrafficOverviewRow];
+    const [fallback] = (
+      await Effect.runPromise(loadAiTraffic(scope, { days: 7 }))
+    ).sources;
+    expect(fallback).not.toHaveProperty("previousMarkdownVisits");
+    expect(fallback).not.toHaveProperty("previousPaths");
   });
 }

@@ -4,6 +4,10 @@ import {
   GITHUB_INTERACTIVE_READ_TIMEOUT_MS,
 } from "@notra/ai/utils/octokit";
 import { siteDeployments, sites } from "@notra/db/schema";
+import {
+  SITE_IGNORE_FILENAME,
+  SITE_IGNORE_MAX_BYTES,
+} from "@notra/sites-core/constants/source";
 import type { SiteServingState } from "@notra/sites-core/types/deployment";
 import { fingerprintSiteInputs } from "@notra/sites-core/utils/input-fingerprint";
 import { stableStringify } from "@notra/sites-core/utils/stable-stringify";
@@ -54,15 +58,47 @@ export async function compareSmartDeployment(
   try {
     const snapshotId = getSitesBuilderSnapshotId();
     const year = new Date().getUTCFullYear();
-    const { data } = await createOctokit(access.token, {
+    const octokit = createOctokit(access.token, {
       requestTimeoutMs: GITHUB_INTERACTIVE_READ_TIMEOUT_MS,
-    }).request("GET /repos/{owner}/{repo}/git/trees/{tree_sha}", {
-      owner: access.repository.owner,
-      repo: access.repository.repo,
-      tree_sha: deployment.commitSha,
-      recursive: "1",
     });
+    const { data } = await octokit.request(
+      "GET /repos/{owner}/{repo}/git/trees/{tree_sha}",
+      {
+        owner: access.repository.owner,
+        repo: access.repository.repo,
+        tree_sha: deployment.commitSha,
+        recursive: "1",
+      }
+    );
+    const ignorePath = site.rootDirectory
+      ? `${site.rootDirectory}/${SITE_IGNORE_FILENAME}`
+      : SITE_IGNORE_FILENAME;
+    const ignoreFile = data.tree.find((entry) => entry.path === ignorePath);
+    let ignoreContent: string | undefined;
+    if (
+      ignoreFile?.type === "blob" &&
+      ["100644", "100755"].includes(ignoreFile.mode ?? "") &&
+      ignoreFile.sha &&
+      ignoreFile.size !== undefined &&
+      ignoreFile.size <= SITE_IGNORE_MAX_BYTES
+    ) {
+      const { data: blob } = await octokit.request(
+        "GET /repos/{owner}/{repo}/git/blobs/{file_sha}",
+        {
+          owner: access.repository.owner,
+          repo: access.repository.repo,
+          file_sha: ignoreFile.sha,
+        }
+      );
+      if (blob.encoding !== "base64") {
+        throw new Error(
+          `Cannot read ${SITE_IGNORE_FILENAME}: unsupported encoding`
+        );
+      }
+      ignoreContent = Buffer.from(blob.content, "base64").toString("utf8");
+    }
     const fingerprint = await fingerprintSiteInputs({
+      ignoreContent,
       tree: data.tree,
       truncated: data.truncated,
       rootDirectory: site.rootDirectory,
@@ -87,6 +123,9 @@ export async function compareSmartDeployment(
       return comparison;
     }
     const serving = await readServingState(site.id);
+    if (deployment.kind === "production" && serving?.state.productionRollback) {
+      return comparison;
+    }
     const baseline =
       serving?.state.status === "active"
         ? servingBaseline(serving.state, deployment)
@@ -210,6 +249,7 @@ export async function skipUnchangedDeployment(
         const live = servingBaseline(state, current);
         if (
           state.status !== "active" ||
+          (current.kind === "production" && state.productionRollback) ||
           !live ||
           live.deploymentId !== baseline.deploymentId ||
           live.generation !== baseline.generation ||
@@ -228,6 +268,7 @@ export async function skipUnchangedDeployment(
               production: {
                 ...state.production,
                 generation: current.generation,
+                buildGeneration: current.generation,
               },
               updatedAt: now,
             },

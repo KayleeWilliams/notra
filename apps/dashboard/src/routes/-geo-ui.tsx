@@ -1,7 +1,17 @@
 import { HydrationBoundary } from "@tanstack/react-query";
 import { type AnyRoute, redirect } from "@tanstack/react-router";
 
-import { PageContainer } from "@/components/layout/container";
+import ReadinessLoading from "@/app/(dashboard)/[slug]/geo/agent-readiness/loading";
+import { GeoCompetitorsSkeleton as CompetitorsLoading } from "@/app/(dashboard)/[slug]/geo/competitors/skeleton";
+import GapsLoading from "@/app/(dashboard)/[slug]/geo/gaps/loading";
+import PersonasLoading from "@/app/(dashboard)/[slug]/geo/personas/loading";
+import PromptsLoading from "@/app/(dashboard)/[slug]/geo/prompts/loading";
+import ShelfLoading from "@/app/(dashboard)/[slug]/geo/shelf-space/loading";
+import { GeoPageSkeleton } from "@/app/(dashboard)/[slug]/geo/skeleton";
+import TrafficLoading from "@/app/(dashboard)/[slug]/geo/traffic/loading";
+import WriteLoading from "@/app/(dashboard)/[slug]/geo/write/loading";
+import { geoCompetitorDetailPath } from "@/utils/geo-competitors";
+import { withGeoProject } from "@/utils/geo-paths";
 import { lazyPage } from "@/utils/lazy-page";
 import { geoSettingsPath } from "@/utils/settings-path";
 
@@ -10,11 +20,6 @@ import { createUiRoute } from "./-ui-route";
 
 const Overview = lazyPage(
   () => import("@/app/(dashboard)/[slug]/geo/page-client")
-);
-const CompetitorDetailView = lazyPage(() =>
-  import("@/components/geo/competitor-detail-view").then((module) => ({
-    default: module.CompetitorDetailView,
-  }))
 );
 const Traffic = lazyPage(
   () => import("@/app/(dashboard)/[slug]/geo/traffic/page-client")
@@ -43,40 +48,6 @@ const Shelf = lazyPage(
 const Write = lazyPage(
   () => import("@/app/(dashboard)/[slug]/geo/write/page-client")
 );
-const OverviewLoading = lazyPage(() =>
-  import("@/app/(dashboard)/[slug]/geo/skeleton").then((module) => ({
-    default: module.GeoPageSkeleton,
-  }))
-);
-const TrafficLoading = lazyPage(
-  () => import("@/app/(dashboard)/[slug]/geo/traffic/loading")
-);
-const CompetitorsLoading = lazyPage(() =>
-  import("@/app/(dashboard)/[slug]/geo/competitors/skeleton").then(
-    (module) => ({ default: module.GeoCompetitorsSkeleton })
-  )
-);
-const CompetitorLoading = lazyPage(
-  () => import("@/app/(dashboard)/[slug]/geo/competitors/[competitor]/loading")
-);
-const ReadinessLoading = lazyPage(
-  () => import("@/app/(dashboard)/[slug]/geo/agent-readiness/loading")
-);
-const GapsLoading = lazyPage(
-  () => import("@/app/(dashboard)/[slug]/geo/gaps/loading")
-);
-const PersonasLoading = lazyPage(
-  () => import("@/app/(dashboard)/[slug]/geo/personas/loading")
-);
-const PromptsLoading = lazyPage(
-  () => import("@/app/(dashboard)/[slug]/geo/prompts/loading")
-);
-const ShelfLoading = lazyPage(
-  () => import("@/app/(dashboard)/[slug]/geo/shelf-space/loading")
-);
-const WriteLoading = lazyPage(
-  () => import("@/app/(dashboard)/[slug]/geo/write/loading")
-);
 
 export function createGeoUiRoutes(parent: AnyRoute) {
   return [
@@ -84,11 +55,11 @@ export function createGeoUiRoutes(parent: AnyRoute) {
       parent,
       path: "/",
       title: { namespace: "common", key: "labels.geo" },
-      pendingComponent: OverviewLoading,
+      pendingComponent: GeoPageSkeleton,
       loaderSearchKeys: ["project", "range"],
       loader: (input) => loadGeoPage({ data: { ...input, kind: "overview" } }),
       gate: (input) => gateGeoPage({ data: { ...input, kind: "overview" } }),
-      stream: true,
+      stream: "ssr",
       preload: Overview.preload,
       component: ({ data, params }) => (
         <HydrationBoundary state={data.state}>
@@ -104,7 +75,7 @@ export function createGeoUiRoutes(parent: AnyRoute) {
       loaderSearchKeys: ["project", "range", "host"],
       loader: (input) => loadGeoPage({ data: { ...input, kind: "traffic" } }),
       gate: (input) => gateGeoPage({ data: { ...input, kind: "traffic" } }),
-      stream: true,
+      stream: "ssr",
       preload: Traffic.preload,
       component: ({ data, params }) => (
         <HydrationBoundary state={data.state}>
@@ -122,24 +93,19 @@ export function createGeoUiRoutes(parent: AnyRoute) {
     }),
     createUiRoute({
       parent,
+      // Old full-page detail links now open the sheet over the index.
       path: "competitors/$competitor",
       title: { namespace: "geo.shared", key: "competitor" },
-      pendingComponent: CompetitorLoading,
-      preload: CompetitorDetailView.preload,
-      component: ({ params }) => {
-        // The router already decodes path params.
-        const competitor = params.competitor;
-        return (
-          <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
-            <div className="w-full px-4 lg:px-6">
-              <CompetitorDetailView
-                competitor={competitor}
-                organizationSlug={params.slug}
-                variant="page"
-              />
-            </div>
-          </PageContainer>
-        );
+      component: () => null,
+      loader: async ({ params, searchParams }) => {
+        throw redirect({
+          href: withGeoProject(
+            geoCompetitorDetailPath(params.slug ?? "", params.competitor ?? ""),
+            typeof searchParams.project === "string"
+              ? searchParams.project
+              : undefined
+          ),
+        });
       },
     }),
     createUiRoute({
@@ -154,7 +120,7 @@ export function createGeoUiRoutes(parent: AnyRoute) {
       parent,
       path: "directions",
       title: { namespace: "geo.shared", key: "geoDirections" },
-      pendingComponent: OverviewLoading,
+      pendingComponent: GeoPageSkeleton,
       preload: Directions.preload,
       component: () => <Directions />,
     }),

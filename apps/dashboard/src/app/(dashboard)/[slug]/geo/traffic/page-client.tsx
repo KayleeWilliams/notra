@@ -26,6 +26,7 @@ import { WebVisitorsSection } from "@/components/geo/web-visitors-section";
 import { PageContainer } from "@/components/layout/container";
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { SkeletonCrossfade } from "@/components/skeleton-crossfade";
 import {
   EMPTY_STATE_TABLE_COLUMNS,
   EMPTY_STATE_TABLE_ROWS,
@@ -268,27 +269,28 @@ export default function PageClient({ organizationSlug }: GeoPageClientProps) {
     });
   }, [hasSettings, isEmptyTraffic, rangePreset, ready]);
 
-  if (showSkeleton) {
-    return <GeoTrafficSkeleton geoRange={geoRange} />;
-  }
-
   return (
-    <TrafficPageView
-      geoRange={geoRange}
-      ingestSetup={ingestSetup}
-      isEmptyTraffic={isEmptyTraffic}
-      isPagesPending={isPagesPending || isPagesPlaceholder}
-      isTrafficPending={isTrafficPending || isTrafficPlaceholder}
-      knownHosts={knownHosts}
-      knownPaths={knownPaths}
-      pathQuery={pathQuery}
-      organizationId={organizationId}
-      organizationSlug={organizationSlug}
-      projectId={projectId}
-      settings={settings}
-      traffic={traffic}
-      trafficPages={trafficPages?.pages ?? []}
-      web={web}
-    />
+    <SkeletonCrossfade
+      loading={showSkeleton}
+      skeleton={<GeoTrafficSkeleton geoRange={geoRange} />}
+    >
+      <TrafficPageView
+        geoRange={geoRange}
+        ingestSetup={ingestSetup}
+        isEmptyTraffic={isEmptyTraffic}
+        isPagesPending={isPagesPending || isPagesPlaceholder}
+        isTrafficPending={isTrafficPending || isTrafficPlaceholder}
+        knownHosts={knownHosts}
+        knownPaths={knownPaths}
+        pathQuery={pathQuery}
+        organizationId={organizationId}
+        organizationSlug={organizationSlug}
+        projectId={projectId}
+        settings={settings}
+        traffic={traffic}
+        trafficPages={trafficPages?.pages ?? []}
+        web={web}
+      />
+    </SkeletonCrossfade>
   );
 }

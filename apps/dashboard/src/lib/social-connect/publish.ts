@@ -11,6 +11,7 @@ import { recordPublishedSocialPost } from "@/lib/analytics/record-post";
 import {
   getSocialConnectClient,
   isSocialConnectConfigured,
+  isSocialConnectPlatformConfigured,
 } from "@/lib/social-connect/client";
 import {
   isSocialDeliveryUnknown,
@@ -18,6 +19,7 @@ import {
   SocialConnectDeliveryUnknownError,
   SocialConnectRequestError,
 } from "@/lib/social-connect/errors";
+import { assertAllowedSocialMediaUrls } from "@/lib/social-connect/media-urls";
 import type { PublishSocialPostParams } from "@/types/services/social-connect";
 
 const RESULT_POLL_ATTEMPTS = 5;
@@ -100,6 +102,17 @@ const publishDemoPost = Effect.fn("publishDemoPost")(function* (
 export const publishSocialPost = Effect.fn("publishSocialPost")(function* (
   params: PublishSocialPostParams
 ) {
+  yield* Effect.try({
+    try: () =>
+      assertAllowedSocialMediaUrls(params.mediaUrls, params.organizationId),
+    catch: (cause) =>
+      cause instanceof SocialConnectRequestError
+        ? cause
+        : new SocialConnectRequestError({
+            message: "Invalid media URL",
+            cause: null,
+          }),
+  });
   if (isDemoMode()) {
     return yield* publishDemoPost(params);
   }
@@ -147,6 +160,15 @@ export const publishSocialPost = Effect.fn("publishSocialPost")(function* (
       })
     );
   }
+  // The check above passes when either platform has a key; this account
+  // needs its own platform's key.
+  if (!isSocialConnectPlatformConfigured(parsedPlatform.data)) {
+    return yield* Effect.fail(
+      new SocialConnectConfigError({
+        message: "Social account linking is not configured",
+      })
+    );
+  }
   const client = getSocialConnectClient(parsedPlatform.data);
 
   // Creating a post is not idempotent, so the SDK must not resend it on a
@@ -157,6 +179,9 @@ export const publishSocialPost = Effect.fn("publishSocialPost")(function* (
         {
           caption: params.content,
           social_accounts: [account.providerAccountId],
+          ...(params.mediaUrls?.length
+            ? { media: params.mediaUrls.map((url) => ({ url })) }
+            : {}),
         },
         { maxRetries: 0 }
       ),

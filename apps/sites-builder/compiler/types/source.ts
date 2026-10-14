@@ -8,6 +8,7 @@ export interface SiteSourceFile {
 }
 
 export interface CollectedSource {
+  ignoreContent: string | null;
   files: SiteSourceFile[];
   totalBytes: number;
   diagnostics: SiteDiagnostic[];
@@ -22,7 +23,7 @@ export interface PrepareSiteParams {
   siteRoot: string;
   workDir: string;
   defaultConfig?: SiteConfig;
-  stableAssetNames?: boolean;
+  incremental?: boolean;
 }
 
 export interface PreparedSite {

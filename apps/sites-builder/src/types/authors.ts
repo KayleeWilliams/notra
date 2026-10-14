@@ -14,6 +14,19 @@ export interface AuthorFields {
   x?: string;
   linkedin?: string;
   github?: string;
+  youtube?: string;
+}
+
+export type AuthorSocialKind =
+  | "x"
+  | "linkedin"
+  | "github"
+  | "youtube"
+  | "website";
+
+export interface AuthorSocial {
+  kind: AuthorSocialKind;
+  url: string;
 }
 
 export interface ResolvedAuthor {
@@ -24,6 +37,7 @@ export interface ResolvedAuthor {
   avatar?: string;
   href?: string;
   links: string[];
+  socials: AuthorSocial[];
   url?: string;
 }
 

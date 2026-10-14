@@ -1,13 +1,14 @@
 import { siteDeployments } from "@notra/db/schema";
 import { SITE_DEPLOYMENT_IN_PROGRESS_STATUSES } from "@notra/sites-core/constants/sites";
-import { and, desc, eq, gt, inArray, isNull, or } from "drizzle-orm";
+import { and, eq, gt, inArray, isNull, or } from "drizzle-orm";
 
 import { readLiveDeployments } from "./activation";
+import { DEPLOYMENT_SETTLE_MS } from "./constants/deployments";
 import {
-  DEPLOYMENT_SETTLE_MS,
-  ROLLBACK_HISTORY,
-} from "./constants/deployments";
-import { getSite, transitionDeployment } from "./deployments";
+  getProductionDeploymentHistory,
+  getSite,
+  transitionDeployment,
+} from "./deployments";
 import { r2DeletePrefix, r2ListPrefixes } from "./r2";
 import type { SiteStorageTransaction } from "./types/deployments";
 import type { SiteCleanupResult } from "./types/sites";
@@ -42,24 +43,6 @@ async function listUnsettledDeploymentIds(
     );
 }
 
-async function listRollbackDeploymentIds(
-  siteId: string,
-  tx: SiteStorageTransaction
-) {
-  return await tx
-    .select({ id: siteDeployments.id })
-    .from(siteDeployments)
-    .where(
-      and(
-        eq(siteDeployments.siteId, siteId),
-        eq(siteDeployments.kind, "production"),
-        eq(siteDeployments.status, "ready")
-      )
-    )
-    .orderBy(desc(siteDeployments.generation))
-    .limit(ROLLBACK_HISTORY);
-}
-
 export async function cleanupSiteDeployments(
   siteId: string
 ): Promise<SiteCleanupResult> {
@@ -70,7 +53,7 @@ export async function cleanupSiteDeployments(
     }
     const [unsettled, history] = await Promise.all([
       listUnsettledDeploymentIds(site.id, tx),
-      listRollbackDeploymentIds(site.id, tx),
+      getProductionDeploymentHistory(site.id, tx),
     ]);
     const { ids: protectedIds } = await readLiveDeployments(site.id);
     for (const row of [...unsettled, ...history]) {

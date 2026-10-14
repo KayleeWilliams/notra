@@ -59,6 +59,7 @@ export interface SiteStatusBadgeConfig {
   variant: NonNullable<ComponentProps<typeof Badge>["variant"]>;
   icon?: IconSvgElement;
   square?: boolean;
+  spin?: boolean;
 }
 export type SiteSection = (typeof SITE_DETAIL_TABS)[number];
 
@@ -197,10 +198,6 @@ export type SiteDomainChipStatus =
   | "proxyRequired"
   | "verifying"
   | "failed";
-
-export type SiteDomainRow =
-  | { id: string; kind: "alias"; isPrimary: boolean }
-  | { id: string; kind: "domain"; domain: SiteDomain };
 
 export interface SiteChoiceOption<T extends string> {
   value: T;

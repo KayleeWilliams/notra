@@ -62,6 +62,8 @@ import type {
   AiTrafficResponse,
   GeoChangesResponse,
   GeoChangeScan,
+  GeoCompetitorDomainFillInput,
+  GeoCompetitorIgnoreInput,
   GeoCompetitor,
   GeoCompetitorDetailResponse,
   GeoCompetitorMerge,
@@ -112,6 +114,7 @@ import {
   toGeoScanCheckSnapshot,
 } from "../utils/geo-changes";
 import {
+  competitorBrandFoldKeys,
   competitorCanonicalMap,
   isGeoOwnBrandName,
 } from "../utils/geo-competitor-names";
@@ -139,7 +142,7 @@ import { toGeoPromptResult } from "../utils/geo-prompt-results";
 import { normalizePromptTags } from "../utils/geo-prompt-tags";
 import { groupGeoSparklinePoints } from "../utils/geo-sparkline";
 import { memoizeGeoRequest } from "../utils/request-memo";
-import { competitorKey } from "./domain";
+import { competitorKey, normalizeCompetitorDomain } from "./domain";
 import { geoDb, geoQuery, geoRequiredQuery, geoSkip } from "./effect";
 import {
   GeoCompetitorLimitError,
@@ -476,6 +479,32 @@ export const upsertGeoCompetitor = Effect.fn("geo.competitorUpsert")(function* (
   return response;
 });
 
+/**
+ * Stores looked-up websites for competitors that still have none. Checked
+ * against the stored rows inside the reconcile transaction, so a website
+ * someone entered meanwhile is never replaced.
+ */
+export const fillGeoCompetitorDomains = Effect.fn("geo.competitorDomainsFill")(
+  function* (input: GeoCompetitorDomainFillInput) {
+    const domains = new Map(
+      input.domains.flatMap((entry) => {
+        const domain = normalizeCompetitorDomain(entry.domain);
+        return domain ? [[competitorKey(entry.name), domain] as const] : [];
+      })
+    );
+    const competitors = yield* reconcileGeoCompetitors(input, (current) =>
+      current.map((competitor) => {
+        const domain = domains.get(competitorKey(competitor.name));
+        return competitor.domain || !domain
+          ? competitor
+          : { ...competitor, domain };
+      })
+    );
+    const response: GeoCompetitorsResponse = { competitors };
+    return response;
+  }
+);
+
 export const deleteGeoCompetitor = Effect.fn("geo.competitorDelete")(function* (
   scopeInput: GeoScopeInput,
   name: string
@@ -487,6 +516,35 @@ export const deleteGeoCompetitor = Effect.fn("geo.competitorDelete")(function* (
   const response: GeoCompetitorsResponse = { competitors };
   return response;
 });
+
+/**
+ * Dismisses a discovered brand from the competitor suggestions (or brings it
+ * back). Stored lowercased so name variants that differ in case stay hidden.
+ */
+export const setGeoCompetitorIgnored = Effect.fn("geo.competitorIgnore")(
+  function* (input: GeoCompetitorIgnoreInput) {
+    const scope = yield* requireGeoProject(input);
+    const key = competitorKey(input.name);
+    const column = geoSettings.ignoredCompetitors;
+    const next = input.ignored
+      ? sql`CASE WHEN ${key} = ANY(${column}) THEN ${column} ELSE array_append(${column}, ${key}) END`
+      : sql`array_remove(${column}, ${key})`;
+    const updated = yield* geoDb("ignore competitor suggestion failed", () =>
+      db
+        .update(geoSettings)
+        .set({ ignoredCompetitors: next })
+        .where(eq(geoSettings.projectId, scope.projectId))
+        .returning({ ignoredCompetitors: geoSettings.ignoredCompetitors })
+    );
+    const row = updated[0];
+    if (!row) {
+      return yield* Effect.fail(
+        new GeoSettingsMissingError({ organizationId: scope.organizationId })
+      );
+    }
+    return { ignoredCompetitors: row.ignoredCompetitors };
+  }
+);
 
 export const importGeoCompetitors = Effect.fn("geo.competitorsImport")(
   function* (
@@ -1154,11 +1212,16 @@ export const loadGeoCompetitorDetail = Effect.fn("geo.competitorDetail")(
       settingsRow?.companyName,
       settingsRow?.aliases ?? []
     );
+    const tracked =
+      own || !scope.projectId
+        ? []
+        : yield* loadCompetitorsByProject(scope.projectId);
+    const brandKeys = competitorBrandFoldKeys(brand, tracked);
     if (summaryOnly) {
       const summary = yield* geoDb("competitor summary query failed", () =>
         queryGeoCheckCompetitorPromptSummary(
           checkScope,
-          brand,
+          brandKeys,
           resolvedWindow,
           own
         )
@@ -1182,13 +1245,18 @@ export const loadGeoCompetitorDetail = Effect.fn("geo.competitorDetail")(
         geoDb("competitor timeseries query failed", () =>
           queryGeoCheckCompetitorTimeseries(
             checkScope,
-            brand,
+            brandKeys,
             resolvedWindow,
             own
           )
         ),
         geoDb("competitor prompts query failed", () =>
-          queryGeoCheckCompetitorPrompts(checkScope, brand, resolvedWindow, own)
+          queryGeoCheckCompetitorPrompts(
+            checkScope,
+            brandKeys,
+            resolvedWindow,
+            own
+          )
         ),
       ],
       { concurrency: "unbounded" }
@@ -1293,7 +1361,13 @@ export const loadAiTraffic = Effect.fn("geo.aiTraffic")(function* (
       ? {}
       : { previousVisits: Number(row.previous_visits) }),
     markdownVisits: Number(row.markdown_visits),
+    ...(row.previous_markdown_visits == null
+      ? {}
+      : { previousMarkdownVisits: Number(row.previous_markdown_visits) }),
     paths: Number(row.paths),
+    ...(row.previous_paths == null
+      ? {}
+      : { previousPaths: Number(row.previous_paths) }),
     lastSeenAt: row.last_seen_at,
   }));
 

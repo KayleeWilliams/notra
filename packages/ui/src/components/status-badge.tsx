@@ -2,6 +2,7 @@
 
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@notra/ui/components/ui/badge";
+import { cn } from "@notra/ui/lib/utils";
 
 import type { StatusBadgeProps } from "@notra/ui/types/status-badge";
 
@@ -23,6 +24,7 @@ export function StatusBadge({ label, appearance }: StatusBadgeProps) {
       {appearance.icon && !appearance.square ? (
         <HugeiconsIcon
           aria-hidden="true"
+          className={cn(appearance.spin && "motion-safe:animate-spin")}
           icon={appearance.icon}
           strokeWidth={1.5}
         />

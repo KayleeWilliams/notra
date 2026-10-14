@@ -9,7 +9,7 @@ const STORED = { successful_rows: 1, quarantined_rows: 0 };
 const ingestGeoTrafficEvents = mock(
   async (): Promise<typeof STORED | null> => STORED
 );
-const isGeoIngestIdentityActive = mock(async () => true);
+const getGeoIngestTokenGeneration = mock(async (): Promise<number | null> => 1);
 const loadIngestAllowedHosts = mock(
   async (_identity?: GeoIngestIdentity): Promise<string[] | null> => [
     "example.com",
@@ -73,12 +73,9 @@ mock.module("@notra/geo-core/geo/ingest", () => ({
   verifyGeoIngestToken,
   verifyGeoIngestSiteToken,
   isGeoIngestSiteToken: (token: string) => token.startsWith("nst."),
-  getGeoIngestTokenGeneration: async () => 1,
+  getGeoIngestTokenGeneration,
   geoIngestHostsCacheKey: () => "hosts:key",
   getGeoIngestSecret: () => "test-secret",
-}));
-mock.module("../src/ingest/identity", () => ({
-  isGeoIngestIdentityActive,
 }));
 mock.module("../src/ingest/hosts", () => ({
   loadIngestAllowedHosts,
@@ -133,7 +130,7 @@ describe("runGeoIngest ordering", () => {
   beforeEach(() => {
     for (const m of [
       ingestGeoTrafficEvents,
-      isGeoIngestIdentityActive,
+      getGeoIngestTokenGeneration,
       loadIngestAllowedHosts,
       ratelimitLimit,
       trackGeoIngestAnalytics,
@@ -151,7 +148,7 @@ describe("runGeoIngest ordering", () => {
       generation: 1,
     }));
     resolveJourneyId.mockClear();
-    isGeoIngestIdentityActive.mockImplementation(async () => true);
+    getGeoIngestTokenGeneration.mockImplementation(async () => 1);
     loadIngestAllowedHosts.mockImplementation(
       async (identity?: GeoIngestIdentity) =>
         identity?.site ? identity.site.hosts : ["example.com"]
@@ -229,7 +226,7 @@ describe("runGeoIngest ordering", () => {
   });
 
   test("rejects revoked identities for tracked traffic with 401", async () => {
-    isGeoIngestIdentityActive.mockImplementation(async () => false);
+    getGeoIngestTokenGeneration.mockImplementation(async () => 2);
 
     const outcome = await run(ingestRequest());
 
@@ -286,7 +283,7 @@ describe("runGeoIngest ordering", () => {
   });
 
   test("keeps 401 authoritative when a revoked token sends a malformed payload", async () => {
-    isGeoIngestIdentityActive.mockImplementation(async () => false);
+    getGeoIngestTokenGeneration.mockImplementation(async () => null);
 
     const outcome = await run(ingestRequest({ method: "GET" }));
 
@@ -298,7 +295,7 @@ describe("runGeoIngest ordering", () => {
   });
 
   test("keeps 401 authoritative when a revoked token sends an unparseable url", async () => {
-    isGeoIngestIdentityActive.mockImplementation(async () => false);
+    getGeoIngestTokenGeneration.mockImplementation(async () => null);
 
     const outcome = await run(ingestRequest({ method: "GET", url: ":::" }));
 
@@ -417,17 +414,17 @@ describe("runGeoIngest ordering", () => {
       success: { outcome: "dropped", reason: "visitor_type" },
     });
     expect(ingestWebPageViews).not.toHaveBeenCalled();
-    expect(isGeoIngestIdentityActive).not.toHaveBeenCalled();
+    expect(getGeoIngestTokenGeneration).not.toHaveBeenCalled();
   });
 
   test("site visitor counting still rejects revoked tokens and ignores wrong hosts", async () => {
-    isGeoIngestIdentityActive.mockImplementation(async () => false);
+    getGeoIngestTokenGeneration.mockImplementation(async () => null);
     const revoked = await run(ingestRequest(SITE_PAGE, SITE_TOKEN));
     expect(revoked._tag === "Failure" && revoked.failure).toBeInstanceOf(
       GeoIngestInvalidTokenError
     );
     expect(ingestWebPageViews).not.toHaveBeenCalled();
-    isGeoIngestIdentityActive.mockImplementation(async () => true);
+    getGeoIngestTokenGeneration.mockImplementation(async () => 1);
     expect(
       await run(
         ingestRequest({ ...SITE_PAGE, url: "https://example.com/" }, SITE_TOKEN)
@@ -460,7 +457,7 @@ describe("runGeoIngest ordering", () => {
       success: { outcome: "dropped", reason: "visitor_type" },
     });
     expect(ingestWebPageViews).not.toHaveBeenCalled();
-    expect(isGeoIngestIdentityActive).not.toHaveBeenCalled();
+    expect(getGeoIngestTokenGeneration).not.toHaveBeenCalled();
     expect(loadIngestAllowedHosts).not.toHaveBeenCalled();
   });
 
@@ -471,7 +468,7 @@ describe("runGeoIngest ordering", () => {
       success: { outcome: "dropped", reason: "web_rate_limited" },
     });
     expect(ingestWebPageViews).not.toHaveBeenCalled();
-    expect(isGeoIngestIdentityActive).not.toHaveBeenCalled();
+    expect(getGeoIngestTokenGeneration).not.toHaveBeenCalled();
     expect(ratelimitLimit).not.toHaveBeenCalled();
   });
 

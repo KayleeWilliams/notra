@@ -6,7 +6,8 @@ import { blogOptions } from "../lib/options";
 import { assetUrl, config, href } from "../lib/params";
 import { entryTags } from "../lib/tags";
 import { logoFor } from "../lib/theme";
-import { formatDate, isoDate } from "../utils/dates";
+import { formatDate } from "../lib/dates";
+import { isoDate } from "../utils/dates";
 import { excerpt } from "../utils/excerpt";
 import { readingMinutes } from "../utils/reading-time";
 import AuthorAvatar from "./AuthorAvatar.astro";
@@ -29,8 +30,34 @@ const titleClass = "font-heading text-balance decoration-foreground/25 decoratio
 ---
 
 {
-  variant === "row" ? (
-    <article class="group relative grid gap-1.5 py-7 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-8">
+  variant === "box" ? (
+    <article class="post-card post-card-box group relative isolate flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-[color-mix(in_oklab,var(--color-primary)_6%,transparent)] p-6 transition-colors duration-150 hover:border-[color-mix(in_oklab,var(--color-primary)_40%,transparent)] hover:bg-[color-mix(in_oklab,var(--color-primary)_10%,transparent)]" data-post-card={entry.id}>
+      <div class="flex flex-col gap-3">
+        {featured && <p class="text-sm font-medium text-primary">Featured</p>}
+        <Heading class="post-card-title font-heading text-xl font-medium tracking-[-0.015em] text-balance text-foreground transition-colors duration-150 group-hover:text-primary sm:text-2xl">
+          <a href={href(entry.id)} class={linkClass}>{entry.data.title}</a>
+        </Heading>
+        {summary && <p class="post-card-excerpt line-clamp-3 text-base leading-7 text-pretty text-muted-foreground">{summary}</p>}
+        <TagList tags={tags} overlay />
+      </div>
+      {hasMeta && (
+        <div class="post-card-meta mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-6 text-sm text-muted-foreground tabular-nums">
+          {author && (
+            <a href={author.href} class:list={["relative z-20 flex items-center gap-2 rounded-sm", author.href ? "transition-colors duration-150 hover:text-foreground" : "pointer-events-none"]}>
+              <AuthorAvatar author={author} size={24} />
+              <span>{author.name}</span>
+            </a>
+          )}
+          {author && show.date && <span aria-hidden="true">·</span>}
+          {show.date && <time datetime={isoDate(entry.data.date)}>{formatDate(entry.data.date)}</time>}
+          {minutes !== undefined && (author || show.date) && <span aria-hidden="true">·</span>}
+          {minutes !== undefined && <span>{minutes} min read</span>}
+          {entry.data.draft && <span class="text-warning">· Draft</span>}
+        </div>
+      )}
+    </article>
+  ) : variant === "row" ? (
+    <article data-post-card={entry.id} class="group relative grid gap-1.5 py-7 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-8">
       <div class="text-sm text-muted-foreground tabular-nums sm:pt-1">
         {show.date && <time datetime={isoDate(entry.data.date)}>{formatDate(entry.data.date)}</time>}
         {featured && <p class="font-medium text-primary">Featured</p>}
@@ -58,6 +85,7 @@ const titleClass = "font-heading text-balance decoration-foreground/25 decoratio
     </article>
   ) : (
     <article
+      data-post-card={entry.id}
       class:list={[
         "group relative isolate flex h-full",
         variant === "feature" ? (framed ? "flex-col gap-6 md:grid md:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] md:items-center md:gap-10" : "flex-col border-t border-border pt-8") : "flex-col gap-5 max-sm:flex-row-reverse max-sm:items-start max-sm:gap-4",

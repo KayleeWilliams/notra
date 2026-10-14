@@ -88,6 +88,7 @@ const generateContent: ContentTaskTool = defineWorkflowTool<
   typeof contentTaskInputSchema,
   Promise<ContentTaskResult>
 >({
+  label: { start: () => "Researching and drafting content" },
   description:
     "Generate and save content through the content-writer, waiting durably for its final created/skipped/failed result. Use this for automated content tasks instead of calling the background content-writer subagent directly. Pass the complete task, sources, and lookback context in message. For a task about one specific feature, also pass codeResearch so the code-researcher reads the repository first.",
   inputSchema: contentTaskInputSchema,

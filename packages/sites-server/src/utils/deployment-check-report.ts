@@ -21,6 +21,14 @@ export function deploymentCheckReport(
         liveUrl: url,
       };
     }
+    case "held":
+      return {
+        conclusion: "neutral",
+        title: "Automatic publishing paused",
+        summary:
+          "This build completed successfully, but a rollback has paused automatic publishing. Promote the latest successful build to resume publishing.",
+        liveUrl: null,
+      };
     case "not_live":
       return {
         conclusion: "neutral",

@@ -1,11 +1,14 @@
 import { db } from "@notra/db/drizzle";
 import { organizations, siteDeployments, sites } from "@notra/db/schema";
 import { and, desc, eq, sql } from "drizzle-orm";
+import { Effect } from "effect";
 
 import {
   CHECK_RUN_ANNOTATION_MAX_LENGTH,
+  CHECK_RUN_LOCK_TIMEOUT_MS,
   CHECK_RUN_NAME,
   CHECK_RUN_SUMMARY_MAX_LENGTH,
+  CHECK_RUN_STATE_TIMEOUT_MS,
 } from "./constants/github";
 import {
   completeCheckRun,
@@ -13,11 +16,13 @@ import {
   siteRepositoryAccess,
   upsertPreviewComment,
 } from "./github";
+import { readServingStateEffect } from "./state";
 import type { DeploymentOutcome, SiteDeployment } from "./types/deployments";
 import type { Site } from "./types/sites";
 import { deploymentCheckReport } from "./utils/deployment-check-report";
 import { errorMessage } from "./utils/errors";
 import { previewCommentBody } from "./utils/preview-comment";
+import { runSitesEffect } from "./utils/run-sites-effect";
 import { deploymentDashboardUrl } from "./utils/urls";
 
 async function safely<T>(
@@ -92,37 +97,59 @@ export async function reportOutcome(
   if (!checkRunId) {
     return;
   }
-  const check = deploymentCheckReport(deployment, outcome);
   await safely("check_complete", async () => {
     const { repository, token } = await siteRepositoryAccess(site, {
       checks: "write",
     });
-    await completeCheckRun(repository, token, {
-      checkRunId,
-      conclusion: check.conclusion,
-      title: check.title,
-      summary: check.summary.slice(0, CHECK_RUN_SUMMARY_MAX_LENGTH),
-      detailsUrl: check.liveUrl ?? (await dashboardUrl(site, deployment)),
-      annotations:
-        outcome.kind === "failed"
-          ? outcome.diagnostics
-              .filter((diagnostic) => diagnostic.file)
-              .map((diagnostic) => ({
-                path: [site.rootDirectory, diagnostic.file]
-                  .filter(Boolean)
-                  .join("/"),
-                start_line: diagnostic.line ?? 1,
-                end_line: diagnostic.line ?? 1,
-                annotation_level:
-                  diagnostic.severity === "error"
-                    ? ("failure" as const)
-                    : ("warning" as const),
-                message: diagnostic.message.slice(
-                  0,
-                  CHECK_RUN_ANNOTATION_MAX_LENGTH
-                ),
-              }))
-          : undefined,
+    const fallbackUrl = await dashboardUrl(site, deployment);
+    await db.transaction(async (tx) => {
+      await tx.execute(
+        sql`select set_config('lock_timeout', ${`${CHECK_RUN_LOCK_TIMEOUT_MS}ms`}, true)`
+      );
+      await tx.execute(
+        sql`select pg_advisory_xact_lock(hashtextextended(${`sites-check:${checkRunId}`}, 0))`
+      );
+      let currentOutcome = outcome;
+      if (outcome.kind === "held" && deployment.kind === "production") {
+        const serving = await runSitesEffect(
+          readServingStateEffect(site.id).pipe(
+            Effect.timeout(CHECK_RUN_STATE_TIMEOUT_MS)
+          )
+        );
+        if (serving?.state.production?.deploymentId === deployment.id) {
+          currentOutcome = { kind: "live" };
+        } else if (serving && !serving.state.productionRollback) {
+          currentOutcome = { kind: "not_live" };
+        }
+      }
+      const check = deploymentCheckReport(deployment, currentOutcome);
+      await completeCheckRun(repository, token, {
+        checkRunId,
+        conclusion: check.conclusion,
+        title: check.title,
+        summary: check.summary.slice(0, CHECK_RUN_SUMMARY_MAX_LENGTH),
+        detailsUrl: check.liveUrl ?? fallbackUrl,
+        annotations:
+          outcome.kind === "failed"
+            ? outcome.diagnostics
+                .filter((diagnostic) => diagnostic.file)
+                .map((diagnostic) => ({
+                  path: [site.rootDirectory, diagnostic.file]
+                    .filter(Boolean)
+                    .join("/"),
+                  start_line: diagnostic.line ?? 1,
+                  end_line: diagnostic.line ?? 1,
+                  annotation_level:
+                    diagnostic.severity === "error"
+                      ? ("failure" as const)
+                      : ("warning" as const),
+                  message: diagnostic.message.slice(
+                    0,
+                    CHECK_RUN_ANNOTATION_MAX_LENGTH
+                  ),
+                }))
+            : undefined,
+      });
     });
   });
 }

@@ -42,6 +42,7 @@ import type {
 
 export interface SitesPageShellProps {
   children: ReactNode;
+  className?: string;
 }
 
 export interface ProjectSitesListProps {
@@ -339,10 +340,14 @@ export interface SiteDeploymentMenuProps {
     "id" | "kind" | "live" | "status" | "url" | "commitSha"
   >;
   canRollback: boolean;
+  canPromote: boolean;
+  canUndoRollback: boolean;
   detailHref?: string;
   redeployPending: boolean;
   onRedeploy: () => void;
   onRollback: () => void;
+  promotePending: boolean;
+  onPromote: () => void;
   preview?: SitePreviewRow;
   onOpenPreview?: () => void;
   onCopyShareLink?: () => void;
@@ -362,6 +367,16 @@ export interface SiteDeploymentsTableProps {
   previewRows?: SitePreviewRow[];
 }
 
+export type SiteDeploymentProductionActionsProps = Pick<
+  SiteDeploymentMenuProps,
+  | "canRollback"
+  | "canPromote"
+  | "canUndoRollback"
+  | "onRollback"
+  | "onPromote"
+  | "promotePending"
+>;
+
 export interface SiteDeploymentDetailPageProps {
   deploymentId: string;
 }
@@ -376,7 +391,6 @@ export interface SiteDeploymentActionsProps extends SiteScope {
   deployment: SiteDeploymentRecord;
   live: boolean;
   primaryUrl: string;
-  rollbackEntry: SiteDeployment | null;
   onRollback: () => void;
 }
 
@@ -501,12 +515,10 @@ export interface SiteProxySetupProps {
   hostname: string;
   aliasOrigin: string;
   mounts: SiteMounts;
-  checkAction?: ReactNode;
 }
 
 export interface SiteDnsSetupProps extends SiteScope {
   domain: SiteDomain;
-  checkAction: ReactNode;
 }
 
 export interface SiteDnsRecordValueProps {
@@ -524,13 +536,14 @@ export interface SiteDnsProviderButtonProps {
   oneClick?: boolean;
 }
 
-export interface SiteDomainSetupProps extends SiteScope {
+export interface SiteDomainCardProps extends SiteScope {
   domain: SiteDomain;
   aliasOrigin: string;
   mounts: SiteMounts;
+  onRemove: (domain: SiteDomain) => void;
 }
 
-export interface SiteDomainStatusDotProps {
+export interface SiteDomainStatusBadgeProps {
   status: SiteDomainChipStatus;
 }
 
@@ -540,18 +553,18 @@ export interface SiteDomainCheckButtonProps {
   variant?: "ghost" | "outline";
 }
 
-export interface SiteDomainRowMenuProps {
+export interface SiteDomainMenuProps {
   hostname: string;
   url: string;
   canOpen: boolean;
-  onRemove?: () => void;
+  onRemove: () => void;
 }
 
-export interface SiteDomainsTableProps extends SiteScope {
-  aliasOrigin: string;
+export interface SiteDomainAddFormProps extends SiteScope {
   mounts: SiteMounts;
-  domains: SiteDomain[];
-  onRemove: (domain: SiteDomain) => void;
+  autoFocus?: boolean;
+  onAdded?: () => void;
+  renderActions: (state: { canSubmit: boolean; pending: boolean }) => ReactNode;
 }
 
 export interface SiteDomainAddDialogProps extends SiteScope {

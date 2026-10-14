@@ -23,13 +23,11 @@ import { useTranslations } from "use-intl";
 import { Button } from "@/components/button";
 import { DeleteAccountDialog } from "@/components/settings/delete-account-dialog";
 import { authClient } from "@/lib/auth/client";
-import { useRouter } from "@/lib/navigation";
 import { getUserAvatarUrl } from "@/utils/avatar";
 
 export function OnboardingAccountMenu() {
   const t = useTranslations("onboarding.accountMenu");
   const tCommon = useTranslations("common");
-  const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
   const signOut = authClient.useSignOut();
   const user = session?.user;
@@ -41,14 +39,7 @@ export function OnboardingAccountMenu() {
   async function handleSignOut() {
     setIsSigningOut(true);
     try {
-      await signOut({
-        fetchOptions: {
-          onSuccess: () => {
-            toast.success(tCommon("labels.signedOutSuccessfully"));
-            router.push("/login");
-          },
-        },
-      });
+      await signOut();
     } catch {
       toast.error(tCommon("labels.failedToSignOut"));
       setIsSigningOut(false);

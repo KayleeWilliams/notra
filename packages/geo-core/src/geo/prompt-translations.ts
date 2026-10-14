@@ -6,7 +6,7 @@ import { and, eq } from "drizzle-orm";
 import { Effect } from "effect";
 
 import {
-  GEO_JUDGE_MODEL,
+  GEO_TRANSLATION_MODEL,
   GEO_LANGUAGE_MAX_PROMPTS,
   GEO_SCAN_CONCURRENCY,
 } from "../constants/geo";
@@ -372,7 +372,7 @@ export const translateGeoPromptTranslations = Effect.fn(
         reservation: gate,
         action,
         usage,
-        fallbackModelId: GEO_JUDGE_MODEL,
+        fallbackModelId: GEO_TRANSLATION_MODEL,
         properties: {
           source: "geo_prompt_translations",
           run_id: runId,

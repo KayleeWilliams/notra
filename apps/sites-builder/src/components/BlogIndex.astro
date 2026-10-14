@@ -19,7 +19,7 @@ const images = cardImages(entries);
 const twoColumns = rest.length % 3 !== 0 && rest.length % 2 === 0;
 ---
 
-<div class="flex flex-col items-center gap-10 md:gap-14">
+<div class="blog-index flex flex-col items-center gap-10 md:gap-14">
   <SiteSlot name="blog-hero" data={{ site: slotSite(), area: slotArea() }} class="w-full">
     <AreaHero title={areaTitle("blog")} description={areaDescription("blog")} />
   </SiteSlot>
@@ -30,6 +30,14 @@ const twoColumns = rest.length % 3 !== 0 && rest.length % 2 === 0;
         <h2 class="font-heading text-lg font-(--font-heading-weight) tracking-[-0.015em]">No posts yet</h2>
         <p class="mt-2 text-sm leading-6 text-muted-foreground">Add a Markdown file to blog/ and push.</p>
       </div>
+    ) : layout === "cards" ? (
+      <ul class="blog-cards grid w-full max-w-(--layout-index) grid-cols-1 gap-6 sm:grid-cols-2">
+        {[...featured, ...rest].map((entry) => (
+          <li class="h-full">
+            <PostCard entry={entry} variant="box" featured={featured.includes(entry)} />
+          </li>
+        ))}
+      </ul>
     ) : layout === "list" ? (
       <ul class="w-full max-w-(--layout-index) divide-y divide-border border-t border-border">
         {[...featured, ...rest].map((entry) => (

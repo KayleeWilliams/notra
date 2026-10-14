@@ -4,7 +4,6 @@ import { GEO_JOURNEY_OVERVIEW_ROWS } from "@notra/geo-core/constants/geo";
 import type { GeoJourney } from "@notra/geo-core/types/geo";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { InstrumentGrid } from "@notra/ui/components/instrument/instrument-grid";
-import { InstrumentReveal } from "@notra/ui/components/instrument/instrument-reveal";
 import { DataTableSkeleton } from "@notra/ui/components/ui/data-table";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useMemo, useState } from "react";
@@ -16,6 +15,7 @@ import { JourneyOverviewCard } from "@/components/geo/journey-overview-card";
 import { JourneyPathsCard } from "@/components/geo/journey-paths-card";
 import { JourneysCard } from "@/components/geo/journeys-card";
 import { GeoSectionSkeleton } from "@/components/geo/skeleton-parts";
+import { SkeletonCrossfade } from "@/components/skeleton-crossfade";
 import { trackEvent } from "@/lib/analytics/posthog-client";
 import { usePrefetchGeoJourneyDetail } from "@/lib/hooks/use-geo";
 import type { GeoJourneyGroupSelection, JourneysTabProps } from "@/types/geo";
@@ -70,8 +70,8 @@ export function JourneysTab({
   loading,
   organizationId,
   organizationSlug,
-  revealActive,
 }: JourneysTabProps) {
+  const showSkeleton = loading && journeys.length === 0;
   const sources = journeyStats?.sources ?? [];
   const pages = journeyStats?.pages ?? [];
   const days = useMemo(
@@ -103,73 +103,74 @@ export function JourneysTab({
     Math.min(GEO_JOURNEY_OVERVIEW_ROWS, Math.max(activeSources, pages.length))
   );
 
-  if (loading && journeys.length === 0) {
-    return <JourneysTabSkeleton />;
-  }
-
   return (
-    <div className="mt-6 flex flex-col gap-6">
-      <InstrumentGrid className="grid-cols-1 items-stretch gap-4 lg:grid-cols-2">
-        <InstrumentReveal active={revealActive} className="h-full" order={0}>
-          <JourneyOverviewCard
-            failed={journeyStatsFailed}
+    <SkeletonCrossfade
+      loading={showSkeleton}
+      skeleton={<JourneysTabSkeleton />}
+    >
+      <div className="mt-6 flex flex-col gap-6">
+        <InstrumentGrid className="grid-cols-1 items-stretch gap-4 lg:grid-cols-2">
+          <div className="flex h-full min-w-0 flex-col">
+            <JourneyOverviewCard
+              failed={journeyStatsFailed}
+              loading={loading}
+              onOpenSource={(row) =>
+                setGroup({
+                  kind: "source",
+                  source: row.source,
+                  visitorType: row.visitorType,
+                })
+              }
+              previewRows={previewRows}
+              sources={sources}
+            />
+          </div>
+          <div className="flex h-full min-w-0 flex-col">
+            <JourneyPathsCard
+              failed={journeyStatsFailed}
+              loading={loading}
+              onOpenPath={(row) => setGroup({ kind: "page", path: row.path })}
+              pages={pages}
+              previewRows={previewRows}
+              previousTotalPages={journeyStats?.previousTotalPages ?? 0}
+              totalPages={journeyStats?.totalPages ?? 0}
+            />
+          </div>
+        </InstrumentGrid>
+        <div className="flex min-w-0 flex-col">
+          <JourneysCard
+            failed={journeysFailed}
+            journeys={journeys}
             loading={loading}
-            onOpenSource={(row) =>
-              setGroup({
-                kind: "source",
-                source: row.source,
-                visitorType: row.visitorType,
-              })
-            }
-            previewRows={previewRows}
-            sources={sources}
+            organizationSlug={organizationSlug}
+            onOpenJourney={openJourney}
+            onPrefetchJourney={prefetchJourney}
           />
-        </InstrumentReveal>
-        <InstrumentReveal active={revealActive} className="h-full" order={1}>
-          <JourneyPathsCard
-            failed={journeyStatsFailed}
-            loading={loading}
-            onOpenPath={(row) => setGroup({ kind: "page", path: row.path })}
-            pages={pages}
-            previewRows={previewRows}
-            previousTotalPages={journeyStats?.previousTotalPages ?? 0}
-            totalPages={journeyStats?.totalPages ?? 0}
-          />
-        </InstrumentReveal>
-      </InstrumentGrid>
-      <InstrumentReveal active={revealActive} order={2}>
-        <JourneysCard
-          failed={journeysFailed}
+        </div>
+        <JourneyGroupSheet
+          days={days}
           journeys={journeys}
-          loading={loading}
-          organizationSlug={organizationSlug}
+          stats={journeyStats}
+          onOpenChange={(open) => {
+            if (!open) {
+              setGroup(null);
+            }
+          }}
           onOpenJourney={openJourney}
           onPrefetchJourney={prefetchJourney}
+          selection={group}
         />
-      </InstrumentReveal>
-      <JourneyGroupSheet
-        days={days}
-        journeys={journeys}
-        stats={journeyStats}
-        onOpenChange={(open) => {
-          if (!open) {
-            setGroup(null);
-          }
-        }}
-        onOpenJourney={openJourney}
-        onPrefetchJourney={prefetchJourney}
-        selection={group}
-      />
-      <JourneyDetailSheet
-        journey={selectedJourney}
-        onOpenChange={(open) => {
-          if (!open) {
-            setSelectedJourney(null);
-          }
-        }}
-        open={selectedJourney !== null}
-        organizationId={organizationId}
-      />
-    </div>
+        <JourneyDetailSheet
+          journey={selectedJourney}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelectedJourney(null);
+            }
+          }}
+          open={selectedJourney !== null}
+          organizationId={organizationId}
+        />
+      </div>
+    </SkeletonCrossfade>
   );
 }

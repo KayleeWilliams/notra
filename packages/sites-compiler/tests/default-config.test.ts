@@ -8,7 +8,11 @@ describe("default config snapshots", () => {
   test("validates and stages frozen values without changing source or snapshot", () => {
     const defaultConfig = createDefaultSiteConfig("Frozen name");
     defaultConfig.colors.primary = "#123456";
-    defaultConfig.appearance = { default: "dark", strict: true };
+    defaultConfig.appearance = {
+      ...defaultConfig.appearance,
+      default: "dark",
+      strict: true,
+    };
     defaultConfig.security.contentSecurityPolicy = false;
     const snapshot = JSON.stringify(defaultConfig);
     const files = new Map<string, string | null>();

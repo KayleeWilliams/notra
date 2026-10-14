@@ -12,6 +12,7 @@ import {
   groupTrafficSources,
   trafficGroupCurrentMembers,
   trafficGroupPathsAreLowerBound,
+  trafficGroupPathsDelta,
   trafficGroupPreviousVisits,
   trafficGroupPurposeTotals,
 } from "./ai-traffic-groups";
@@ -129,4 +130,33 @@ test("real crawler and cited agent IDs keep independent trends", () => {
     70,
   ]);
   expect(buildTrafficGroupSeries(points, cited, ["2026-10-07"])).toEqual([30]);
+});
+
+test("pages trend only compares single-bot groups with known previous pages", () => {
+  const withPaths = (
+    agent: string,
+    visits: number,
+    previousVisits: number,
+    paths: number,
+    previousPaths?: number
+  ): GeoTrafficSource => ({
+    ...source(agent, visits, previousVisits, paths),
+    ...(previousPaths === undefined ? {} : { previousPaths }),
+  });
+  const pathsDelta = (...members: GeoTrafficSource[]): number | null => {
+    const [group] = groupTrafficSources(members);
+    if (group === undefined) {
+      throw new Error("Expected a visible group");
+    }
+    return trafficGroupPathsDelta(group);
+  };
+  expect(pathsDelta(withPaths("GPTBot", 10, 5, 3, 2))).toBe(50);
+
+  expect(
+    pathsDelta(
+      withPaths("GPTBot", 10, 5, 6, 5),
+      withPaths("OAI-SearchBot", 0, 5, 0, 5)
+    )
+  ).toBeNull();
+  expect(pathsDelta(withPaths("GPTBot", 10, 5, 3))).toBeNull();
 });

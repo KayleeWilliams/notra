@@ -20,7 +20,7 @@
     "@notra/posthog": "workspace:*",
     "@notra/tools": "workspace:*",
     "ai": "7.0.105",
-    "drizzle-orm": "^0.45.2",
+    "drizzle-orm": "^0.45.3",
     "effect": "4.0.0",
     "eve": "0.27.13",
     "pg": "^8.23.1",

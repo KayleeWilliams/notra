@@ -19,6 +19,7 @@ export function applyMetadataPatch(
     authorIds: patch.authorIds ?? metadata.authorIds,
     featured: patch.featured ?? metadata.featured,
     noindex: patch.noindex ?? metadata.noindex,
+    hidden: patch.hidden ?? metadata.hidden,
     displayDate:
       patch.displayDate === undefined
         ? metadata.displayDate

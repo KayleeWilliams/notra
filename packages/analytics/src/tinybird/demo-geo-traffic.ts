@@ -127,6 +127,8 @@ function overview(
       markdown_visits: number;
       paths: Set<string>;
       last_seen_at: string | null;
+      previous_markdown_visits: number;
+      previous_paths: Set<string>;
     }
   >();
   for (const event of events) {
@@ -149,6 +151,8 @@ function overview(
         markdown_visits: 0,
         paths: new Set(),
         last_seen_at: null,
+        previous_markdown_visits: 0,
+        previous_paths: new Set(),
       };
       groups.set(key, group);
     }
@@ -159,6 +163,8 @@ function overview(
       group.last_seen_at = maxTime(group.last_seen_at, event.captured_at);
     } else {
       group.previous_visits++;
+      group.previous_markdown_visits += event.wants_markdown ? 1 : 0;
+      group.previous_paths.add(event.path);
     }
   }
   return [...groups.values()]
@@ -167,6 +173,7 @@ function overview(
     .map((group) => ({
       ...group,
       paths: group.paths.size,
+      previous_paths: group.previous_paths.size,
       last_seen_at: group.last_seen_at ?? "",
     }));
 }

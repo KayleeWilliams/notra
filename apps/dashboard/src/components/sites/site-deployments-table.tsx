@@ -1,6 +1,7 @@
 "use client";
 
 import { HugeiconsIcon } from "@hugeicons/react";
+import { Badge } from "@notra/ui/components/ui/badge";
 import {
   DataTable,
   type TableColumn,
@@ -20,7 +21,10 @@ import {
   SITE_TABLE_EMPTY_HEIGHT,
 } from "@/constants/sites";
 import { useNow } from "@/lib/hooks/use-now";
-import { useRedeployDeployment } from "@/lib/hooks/use-site-deployments";
+import {
+  usePromoteDeployment,
+  useRedeployDeployment,
+} from "@/lib/hooks/use-site-deployments";
 import { useSitePreviewLinks } from "@/lib/hooks/use-site-preview-links";
 import { useRouter } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
@@ -54,6 +58,7 @@ export function SiteDeploymentsTable({
   const router = useRouter();
   const scope = { organizationId, siteId };
   const redeploy = useRedeployDeployment(scope);
+  const promote = usePromoteDeployment(scope);
   const { openPreview, copyShareLink } = useSitePreviewLinks(scope);
   const [deleteTarget, setDeleteTarget] = useState<SitePreviewRow | null>(null);
   const now = useNow(hasDeploymentInProgress(deployments));
@@ -147,16 +152,23 @@ export function SiteDeploymentsTable({
       sortable: true,
       sortValue: (deployment) => deployment.status,
       cell: (deployment) => (
-        <SiteStatusBadge
-          duration={
-            deployment.status === "ready" ||
-            deployment.status === "building" ||
-            deployment.status === "uploading"
-              ? formatBuildDuration(deploymentElapsedMs(deployment, now))
-              : null
-          }
-          status={deployment.status}
-        />
+        <span className="flex flex-wrap items-center gap-1.5">
+          <SiteStatusBadge
+            duration={
+              deployment.status === "ready" ||
+              deployment.status === "building" ||
+              deployment.status === "uploading"
+                ? formatBuildDuration(deploymentElapsedMs(deployment, now))
+                : null
+            }
+            status={deployment.status}
+          />
+          {deployment.kind === "production" && deployment.live ? (
+            <Badge shape="rounded" variant="success">
+              {tDeployments("live")}
+            </Badge>
+          ) : null}
+        </span>
       ),
     },
     {
@@ -209,10 +221,14 @@ export function SiteDeploymentsTable({
           >
             <SiteDeploymentMenu
               canRollback={deployment.canRollback}
+              canPromote={deployment.canPromote}
+              canUndoRollback={deployment.canUndoRollback}
               deployment={deployment}
               detailHref={href(deployment)}
               onRedeploy={() => redeploy.mutate(deployment.id)}
               onRollback={() => setRollbackTarget(deployment)}
+              onPromote={() => promote.mutate()}
+              promotePending={promote.isPending}
               redeployPending={redeploy.isPending}
               preview={preview}
               onOpenPreview={preview ? () => openPreview(preview) : undefined}

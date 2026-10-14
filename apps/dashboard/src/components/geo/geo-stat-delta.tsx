@@ -41,14 +41,13 @@ export function GeoStatDelta({
     <TrendBadge
       appearance={variant === "plain" ? "plain" : "badge"}
       className={className}
-      shape="pill"
       showIcon={!isNew}
       tone={tone}
     >
       {displayedValue}
     </TrendBadge>
   );
-  // The whole pill swaps, background included, so tone changes never blend
+  // The whole badge swaps, background included, so tone changes never blend
   // green into red mid-transition.
   const content = animated ? (
     <FadeSwap swapKey={`${tone}:${formatted}`} value={delta}>

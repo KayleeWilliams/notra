@@ -46,9 +46,20 @@ export const serveManifest = Effect.fn("Sites.serveManifest")(function* (
       analytics: resolved.isPreview
         ? null
         : analyticsScriptTag(resolved, loaded, url.pathname),
-      llmsLink: llmsLinkHeader(loaded.files, area?.mount ?? "/"),
       status: 200,
     },
   });
-  return Option.getOrElse(answered, () => html(notFoundPage(), 404));
+  const response = Option.getOrElse(answered, () => html(notFoundPage(), 404));
+  const mount = area?.mount ?? "/";
+  const llmsLink = llmsLinkHeader(loaded.files, mount);
+  if (!llmsLink) {
+    return response;
+  }
+  const headers = new Headers(response.headers);
+  headers.append("Link", llmsLink);
+  const llmsPath = joinMountPath(mount, "llms.txt");
+  if (loaded.files.has(llmsPath)) {
+    headers.set("X-Llms-Txt", llmsPath);
+  }
+  return new Response(response.body, { status: response.status, headers });
 });

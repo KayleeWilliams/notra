@@ -54,6 +54,7 @@ import type {
   EngineFamilyBrandScope,
   EngineFamilyPromptHit,
   EngineFamilySheetProps,
+  GeoPromptCoverage,
 } from "@/types/geo";
 import { formatFullDayLabel } from "@/utils/analytics-charts";
 import { geoModeFillClass, seriesColors } from "@/utils/chart-colors";
@@ -93,17 +94,19 @@ function Stat({
   return (
     <div className="flex min-w-0 flex-col gap-2">
       <p className="text-muted-foreground text-xs">{label}</p>
-      <p className="text-2xl leading-none font-semibold tracking-tight tabular-nums">
-        {value}
-      </p>
-      {/* Fixed height so a stat without a delta keeps the row aligned. */}
-      <div className="flex h-5 items-center">
-        <GeoStatDelta
-          delta={delta}
-          hint={tGeoShared2("vsFirstHalfOfThis")}
-          kind={kind}
-          label={label}
-        />
+      {/* Matches the overview headline: the delta sits beside the number. */}
+      <div className="flex items-end gap-2">
+        <p className="text-2xl leading-none font-semibold tracking-tight tabular-nums">
+          {value}
+        </p>
+        <span className="mb-0.5 inline-flex">
+          <GeoStatDelta
+            delta={delta}
+            hint={tGeoShared2("vsFirstHalfOfThis")}
+            kind={kind}
+            label={label}
+          />
+        </span>
       </div>
     </div>
   );
@@ -112,15 +115,17 @@ function Stat({
 function FamilyStats({
   family,
   points,
+  promptCoverage,
 }: {
   family: GeoEngineFamily;
   points: readonly GeoTimeseriesPoint[];
+  promptCoverage: GeoPromptCoverage | null;
 }) {
   const totals = engineFamilyTotals(family);
   const position = engineFamilyAvgPosition(family);
   const trends = engineFamilyStatTrends(points, family.family);
+  const t = useTranslations("geo.engineFamilySheet");
   const tGeoShared = useTranslations("geo.shared");
-  const tCommon = useTranslations("common");
 
   return (
     <div className="@container/stats">
@@ -132,10 +137,14 @@ function FamilyStats({
           value={totals ? formatMentionRate(totals.rate) : "—"}
         />
         <Stat
-          delta={trends.visibilityDelta}
+          delta={null}
           kind="mentions"
-          label={tCommon("labels.visibility")}
-          value={totals ? `${totals.visible}/${totals.checks}` : "—"}
+          label={t("visiblePrompts")}
+          value={
+            promptCoverage
+              ? `${promptCoverage.mentioned}/${promptCoverage.total}`
+              : "—"
+          }
         />
         <Stat
           delta={trends.positionDelta}
@@ -466,6 +475,7 @@ function EngineFamilySheetSession({
     selectedRow,
     selectedEngine,
     promptHits,
+    promptCoverage,
     brandScope,
     brandRows,
     writeOpen,
@@ -501,7 +511,11 @@ function EngineFamilySheetSession({
             </div>
           </SheetHeader>
           <div className="min-h-0 flex-1 space-y-8 overflow-y-auto px-4 pt-2 pb-6">
-            <FamilyStats family={family} points={points} />
+            <FamilyStats
+              family={family}
+              points={points}
+              promptCoverage={promptCoverage}
+            />
             <FamilyTrend family={family} points={points} />
             <FamilyBrands
               answers={promptHits.length}

@@ -180,8 +180,10 @@ export const siteThumbnailsSchema = z
     appearance: z.enum(["light", "dark"]).default("light"),
     background: sitePathSchema.optional(),
     font: z.string().trim().max(80).optional(),
+    layout: z.enum(["default", "author"]).default("default"),
+    label: z.string().trim().min(1).max(40).optional(),
   })
-  .default({ enabled: true, appearance: "light" });
+  .default({ enabled: true, appearance: "light", layout: "default" });
 
 export const siteMarkdownSchema = z
   .object({
@@ -220,7 +222,7 @@ const blogHeroSchema = z
 export const siteBlogSchema = z.object({
   title: z.string().trim().min(1).max(120).optional(),
   description: z.string().trim().max(400).optional(),
-  layout: z.enum(["grid", "list", "magazine"]).default("grid"),
+  layout: z.enum(["grid", "list", "magazine", "cards"]).default("grid"),
   hero: blogHeroSchema,
   featured: z
     .union([
@@ -243,6 +245,7 @@ export const siteBlogSchema = z.object({
       date: true,
       readingTime: false,
     }),
+  authorPage: z.enum(["inline", "stacked"]).default("inline"),
   post: z
     .object({
       toc: z.boolean().default(true),
@@ -250,6 +253,8 @@ export const siteBlogSchema = z.object({
       readingTime: z.boolean().default(true),
       pagination: z.boolean().default(true),
       width: z.enum(["narrow", "wide"]).default("wide"),
+      header: z.enum(["stacked", "compact"]).default("stacked"),
+      cover: z.boolean().default(true),
     })
     .default({
       toc: true,
@@ -257,6 +262,8 @@ export const siteBlogSchema = z.object({
       readingTime: true,
       pagination: true,
       width: "wide",
+      header: "stacked",
+      cover: true,
     }),
 });
 
@@ -271,5 +278,6 @@ export const siteChangelogSchema = z.object({
 export const siteMetadataSchema = z
   .object({
     timestamp: z.boolean().default(true),
+    dateFormat: z.enum(["short", "long"]).default("short"),
   })
-  .default({ timestamp: true });
+  .default({ timestamp: true, dateFormat: "short" });

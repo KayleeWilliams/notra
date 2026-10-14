@@ -27,6 +27,7 @@ import type {
   ModuleScan,
   TextEdit,
 } from "./types/mdx";
+import { analyzeStaticDirectives } from "./utils/client-directives";
 import { hasErrors } from "./utils/diagnostics";
 import {
   errorMessage,
@@ -38,6 +39,7 @@ import {
   declaredNames,
   exportedDeclarationNames,
   forbiddenUsage,
+  jsxClientDirectives,
   nodeRange,
   referencedIdentifiers,
 } from "./utils/estree";
@@ -273,7 +275,30 @@ function walkContent(pass: MdxPass, tree: Root, scan: ModuleScan): Set<string> {
   const usedBuiltins = new Set<string>();
   const propEdits = new Map<number, TextEdit>();
   visit(tree, (node) => {
-    for (const program of expressionPrograms(node)) {
+    const programs = expressionPrograms(node);
+    const elements = programs.flatMap(jsxClientDirectives);
+    const directives = isMdxJsxElement(node) ? clientDirectives(node) : [];
+    if (isMdxJsxElement(node) && node.name) {
+      elements.push({
+        name: node.name,
+        start: node.position?.start.offset ?? 0,
+        directives,
+      });
+    }
+    const { edits, invalid } = analyzeStaticDirectives(elements, scan.hydrated);
+    for (const start of invalid) {
+      report(
+        pass,
+        "static_component",
+        "Use client:static without a value on an imported JSX or inline component, and do not combine it with another client directive.",
+        start
+      );
+    }
+    if (invalid.length > 0) {
+      return;
+    }
+    pass.edits.push(...edits);
+    for (const program of programs) {
       checkForbidden(pass, program);
       if (!pass.context.isEntry) {
         for (const edit of snippetPropEdits(program, localNames)) {
@@ -296,31 +321,6 @@ function walkContent(pass: MdxPass, tree: Root, scan: ModuleScan): Set<string> {
       );
       return;
     }
-    const directives = clientDirectives(node);
-    const staticDirective = directives.find(
-      (attribute) => attribute.name === "client:static"
-    );
-    if (staticDirective) {
-      if (
-        !COMPONENT_NAME.test(root) ||
-        !scan.hydrated.has(root) ||
-        staticDirective.value !== null ||
-        directives.length !== 1
-      ) {
-        report(
-          pass,
-          "static_component",
-          "Use client:static without a value on an imported JSX or inline component, and do not combine it with another client directive.",
-          start
-        );
-        return;
-      }
-      pass.edits.push({
-        start: staticDirective.position?.start.offset ?? start,
-        end: staticDirective.position?.end.offset ?? start,
-        text: "",
-      });
-    }
     if (!COMPONENT_NAME.test(root)) {
       return;
     }
@@ -340,7 +340,17 @@ function walkContent(pass: MdxPass, tree: Root, scan: ModuleScan): Set<string> {
       );
     }
   });
-  pass.edits.push(...propEdits.values());
+  const removed = pass.edits.filter(
+    (edit) => edit.text === "" && edit.end > edit.start
+  );
+  pass.edits.push(
+    ...[...propEdits.values()].filter(
+      (edit) =>
+        !removed.some(
+          (range) => range.start <= edit.start && edit.start < range.end
+        )
+    )
+  );
   return usedBuiltins;
 }
 

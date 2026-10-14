@@ -1,7 +1,8 @@
 export const MAX_DRAFT_BYTES = 512 * 1024;
+export const SITE_EDITOR_READ_CONCURRENCY = 4;
 export const EDITABLE_TEXT_FILE = /\.(?:mdx?|jsx?|json|css)$/i;
 export const EDITABLE_PATH_SEGMENT = /^[A-Za-z0-9._@()+ -]+$/;
-export const VALIDATED_SOURCE_FILE = /\.jsx?$/i;
+export const VALIDATED_SOURCE_FILE = /\.(?:mdx?|jsx?)$/i;
 export const SITE_EDIT_BRANCH_PREFIX = "notra/site-edit-";
 export const MAX_PUBLISH_HEADLINE_LENGTH = 200;
 export const DEFAULT_PUBLISH_HEADLINE = "Update site content";

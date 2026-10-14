@@ -182,7 +182,23 @@ export async function checkPrometheusResources(
           selected.every((target) => target.lastScrapeDuration < 2),
           "Scrape exceeds fixture timeout"
         );
-        return selected;
+        const samples = await Promise.all(
+          selected.map((target) =>
+            json(
+              `/api/v1/query?${new URLSearchParams({ query: `up{job="${target.labels.job}"}` })}`
+            )
+          )
+        );
+        if (
+          samples.every(
+            (data) =>
+              data.resultType === "vector" &&
+              data.result.length === 1 &&
+              Number(data.result[0].value[1]) === (health === "up" ? 1 : 0)
+          )
+        ) {
+          return selected;
+        }
       }
       await delay(250);
     }
@@ -217,7 +233,10 @@ export async function checkPrometheusResources(
             return `    ${key}: ${value}\n`;
           })
           .join("");
-        return `  - job_name: ${job}\n${limits}    metrics_path: /${job}\n    static_configs:\n      - targets: ["fixture-exporter:9091"]\n`;
+        const probeLabels = ["blackbox", "http-probes"].includes(job)
+          ? `        labels:\n          probe_region: "${windowFixtureDimensions.probeRegion}"\n${job === "http-probes" ? `          probe_check: "${windowFixtureDimensions.probeCheck}"\n` : ""}`
+          : "";
+        return `  - job_name: ${job}\n${limits}    metrics_path: /${job}\n    static_configs:\n      - targets: ["fixture-exporter:9091"]\n${probeLabels}`;
       })
       .join("")}`;
     writeFileSync(resolve(directory, "prometheus.yml"), fixtureConfig, {
@@ -313,8 +332,8 @@ export async function checkPrometheusResources(
       })
       .map(({ expr, legendFormat }) => ({
         expression: expr
-          .replaceAll(`\${environment}`, "validation")
-          .replaceAll(`\${project:regex}`, "fixture_project")
+          .replaceAll(`\${environment}`, windowFixtureDimensions.environment)
+          .replaceAll(`\${project:regex}`, windowFixtureDimensions.projectId)
           .replaceAll(`\${metric}`, "vercel.request.count"),
         legendFormat,
       }));

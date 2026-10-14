@@ -144,6 +144,7 @@ export const socialAccountsRouter = {
           organizationId: input.organizationId,
           accountId: input.accountId,
           content: input.content,
+          mediaUrls: input.mediaUrls,
         }),
         { logLabel: "Failed to publish post", reconnectHint: true }
       );
@@ -157,6 +158,7 @@ export const socialAccountsRouter = {
           platform: result.platform,
           from: input.from ?? null,
           account_id: input.accountId,
+          has_video: (input.mediaUrls?.length ?? 0) > 0,
         },
       });
 

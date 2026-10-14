@@ -9,13 +9,3 @@ export const HTTP_PROTOCOL = /^https?$/;
 export const FRONTMATTER_FEATURED_LIMIT = 6;
 
 export const EDGE_SLASHES = /^\/+|\/+$/g;
-
-export const AUTHOR_FIELDS = [
-  "title",
-  "bio",
-  "avatar",
-  "url",
-  "x",
-  "linkedin",
-  "github",
-] as const;

@@ -41,8 +41,13 @@ For chat, the root agent picks its model per turn with eve's `autoModel`
 to choose between the options in `ASSISTANT_AUTO_MODEL_OPTIONS`: a fast model
 for turns answered from general knowledge, the everyday model for anything
 touching the user's content or connected data, and a deep model for long-form
-or research-heavy work. The option descriptions are the entire routing policy —
-the evaluator sees only them plus recent message text.
+or research-heavy work. The evaluator sees the option descriptions and recent
+message text. The resolver retains the session's current model when the
+classifier proposes a lower tier, and upgrades when it proposes a higher one
+(fast → everyday → deep). A new session starts without a retained model.
+This avoids switching away from reusable prompt caches on short follow-ups;
+it does not guarantee a cache hit or track provider cache expiry. Once a chat
+uses the deep model, it stays there until the session ends or routing is disabled.
 
 The choice is made once per turn and reused for the turn's tool-loop steps. eve
 does not expose the resolved model to hooks, so the resolver records it in
@@ -94,12 +99,20 @@ Model access needs no key on Vercel (AI Gateway OIDC); off Vercel set `AI_GATEWA
 
 The Slack transport is Eve's native Slack channel. Eve owns signed webhook verification, durable thread sessions, progress messages, and human-in-the-loop buttons while using Vercel Chat SDK card primitives for rich messages. The bot credentials belong to the Notra Slack app directly; Vercel Connect is not involved.
 
-1. Create the Slack app in the Notra workspace and add these bot scopes: `assistant:write`, `app_mentions:read`, `chat:write`, `channels:history`, `channels:read`, `groups:history`, `groups:read`, `im:history`, and `files:read`. `assistant:write` enables Slack's App Agent experience, the history scopes support Eve's thread context, the `channels:read`/`groups:read` scopes let the app resolve channel visibility via `conversations.info` for dashboard mirroring (mention events do not carry `channel_type`), and `files:read` supports its default inbound attachment handling. Add `files:write` only when the bot needs to upload files, and `im:write` only when authorization challenges are overridden to open a new DM.
+1. Create the Slack app in the Notra workspace and add these bot scopes: `assistant:write`, `app_mentions:read`, `chat:write`, `channels:history`, `channels:read`, `groups:history`, `groups:read`, `im:history`, `files:read`, and `files:write`. `assistant:write` enables Slack's App Agent experience, the history scopes support Eve's thread context, the `channels:read`/`groups:read` scopes let the app resolve channel visibility via `conversations.info` for dashboard mirroring (mention events do not carry `channel_type`), `files:read` supports inbound attachments, and `files:write` enables chart uploads. Existing installations must reauthorize to grant `files:write`. Add `im:write` only when authorization challenges are overridden to open a new DM.
 2. Under **Event Subscriptions**, set the HTTPS Request URL to `{agent deployment URL}/eve/v1/slack` and subscribe to `app_mention`, `message.im`, `message.channels`, and `message.groups`. The channel and group message events let Eve continue an active public or private channel thread without requiring another mention. Under **Interactivity & Shortcuts**, enable interactivity with the same Request URL so Eve's approval buttons work. Leave Socket Mode off.
 3. Under **App Home**, enable the Messages tab and allow users to send messages to the app. Install or reinstall the app to the Notra workspace.
 4. Copy the **Bot User OAuth Token** into `SLACK_AGENT_BOT_TOKEN` and the signing secret from **Basic Information → App Credentials** into `SLACK_AGENT_SIGNING_SECRET` on the agent project.
 5. Set `SLACK_AGENT_ORGANIZATION_ID` and `SLACK_AGENT_TEAM_ID`. Set `SLACK_AGENT_ALLOWED_CHANNEL_IDS` for a limited rollout, then deploy the agent.
 6. Mention the app in an allowed channel, or DM it when the DM channel is allowed. Once Eve owns a channel thread, ordinary replies in that thread continue the same durable session without another mention; unrelated channel messages remain ignored.
+
+For production, both **Event Subscriptions** and **Interactivity & Shortcuts** must use `https://agent.usenotra.com/eve/v1/slack`. Keep development tunnels on a separate Slack test app so a local test cannot redirect production events. The webhook URL must be publicly reachable without Vercel deployment authentication.
+
+Slack shows the current tool activity through its native thinking status without exposing reasoning text or tool arguments. One buttons-only control card is updated in place for each conversation, before setting the native status so posting the card does not clear it: **Stop request** cooperatively cancels the active request and its tasks, while **Stop replying here** retires the thread session, including pending approvals. Neither action undoes work already saved or published. A new mention starts a fresh session after leaving. The same controls are available as whole-message commands: `stop` / `stopp`, or `stop replying` / `nicht mehr antworten`.
+
+Stop buttons are scoped to the displayed request's activity cohort, including resumed approvals and delegated work. Text-only `stop` cancels all current work in the thread session. Controls use the app installation's workspace policy, not a Slack Connect actor's workspace. Ordinary replies are delivered to the exact session that admitted them, so an in-flight reply cannot recreate a session after Leave. Control cards carry recovery metadata; thread history access is required to recover a post whose response was lost without creating a duplicate.
+
+`patches/eve@0.58.1.patch` preserves these native lifecycle boundaries: it exposes the Slack installation identity, permits exact-session inbound delivery, scopes cancellation across active and parked execution, and settles overlapping task activity. Retirement waits for the owning activity collector to clean up and close before releasing the session's thread alias, so late activity cannot revive old controls or clear a replacement session's status. The existing model-router provider-options patch remains included. Run the regressions with `bun --no-env-file test apps/agent/tests` when changing or upgrading Eve.
 
 Tool approval cards in shared channels are collaborative: any Slack member who can see the card can act on it for the bound organization. Use `SLACK_AGENT_ALLOWED_CHANNEL_IDS` to limit the bot to channels whose members are trusted to approve those actions.
 

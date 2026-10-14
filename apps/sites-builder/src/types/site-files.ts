@@ -34,8 +34,18 @@ export interface SlotChangelogEntry {
   url: string;
 }
 
+/** The kind of page being rendered, passed to header.mdx, footer.mdx and page-wide slots. */
+export type SitePageKind = "index" | "entry" | "author" | "tag" | "not-found";
+
+export interface SitePageContext {
+  page: SitePageKind;
+  area: "blog" | "changelog";
+  path: string;
+}
+
 export interface CustomChromeProps {
   part: "header" | "footer";
+  context: SitePageContext;
 }
 
 export interface SiteSlotProps {

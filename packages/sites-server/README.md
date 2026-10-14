@@ -32,6 +32,47 @@ Visitor → sites worker → hosts/{host}.json → sites/{site}/state.json (re-r
 
 The cron `/api/cron/sites` (every minute) re-dispatches jobs whose dispatch was lost or whose lease expired. `/api/cron/sites-cleanup` (daily) deletes deployments that are neither live, an open preview, still building, nor in the last 10 production releases.
 
+## Production rollbacks
+
+Owners and admins can roll back to any of the last ten successful production
+builds. Rollback switches the serving pointer without changing Git commits or
+starting another build. The serving state records `productionRollback: true`;
+subsequent builds still finish and appear in the deployment history, but cannot
+replace the live build. Smart-deployment skipping is disabled for pinned
+production so it cannot advance the rollback baseline. Previews remain independent.
+
+Both **Promote** on the newest successful build and **Undo rollback** on the live
+build select the newest successful production build at execution time and resume
+automatic publishing. Failed, skipped and preview builds do not count toward the
+ten-build window. A build must still have its stored manifest and match the
+current domain, mounts and branding configuration; incompatible builds require
+a redeploy instead.
+
+Production pointers retain the source `buildGeneration` separately from the
+monotonic switch `generation`. A newer build already running when promotion
+happens can still become live when it finishes; an older build finishing late
+cannot overwrite it. Switch generations remain reserved outside the storage
+transaction so a database retry cannot reuse a generation already published to R2.
+
+If concurrent activations exhaust their bounded generation-reservation pass,
+activation fails transiently so the build job retries instead of completing an
+unpublished newer build. Completed builds retry finalization independently of
+the construction attempt budget and do not reserve sandbox build capacity.
+An already-served build is an idempotent activation:
+retries repair the SQL production projection without moving the R2 switch fence
+or clearing a rollback. Repeating an already-applied rollback also repairs that
+projection, including when the pinned build has fallen outside the history window.
+Held successful builds report **Automatic publishing paused** in GitHub checks,
+separately from genuinely superseded builds. Promotion refreshes the selected
+build's check to **Live** after the production switch commits.
+
+Rollback eligibility and artifact retention use the same ten-build history.
+Cleanup additionally protects the currently live build, even if newer builds
+push it outside that window, all active previews, in-progress builds and builds
+within the existing 24-hour settlement period. It expires removed deployments
+instead of deleting the history and diagnostic telemetry. Older serving-state
+objects without `productionRollback` default to automatic publishing.
+
 ## R2 layout (private bucket)
 
 ```
@@ -133,6 +174,14 @@ access controls or require provider API keys. A theme update requires the snapsh
 roll above and a new build of each Site; existing immutable deployments do not change.
 
 **Rotate the preview secret.** Generate a new value, set `SITES_PREVIEW_SECRET` (dashboard) and `PREVIEW_SECRET` (worker: `wrangler secret put PREVIEW_SECRET`) together. Existing preview sessions and share links stop working.
+
+**AI resource discovery.** The worker advertises existing `llms.txt` and
+`llms-full.txt` artifacts through `Link` headers on manifest-routed responses,
+including HTML and Markdown 404s. `X-Llms-Txt` points to the section's `llms.txt`
+(or the root index outside a section). Both files have `/.well-known/` redirect
+aliases at the root and section mounts. Missing artifacts are not advertised,
+and protected previews still require access before discovery or file serving.
+These worker changes do not require a builder snapshot roll or a site rebuild.
 
 **Preview access.** Protected previews open with a Notra login (member session), a share link (7 days) or, if set, the preview password.
 

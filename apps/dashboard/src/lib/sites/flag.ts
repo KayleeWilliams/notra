@@ -2,7 +2,6 @@ import { Effect } from "effect";
 
 import {
   SITES_BULK_IMPORT_FLAG_KEY,
-  SITES_FLAG_KEY,
   SITES_FLAG_TIMEOUT_MS,
 } from "@/constants/sites";
 import { resolveGeoFlagState } from "@/lib/geo/flag";
@@ -19,11 +18,7 @@ function isFlagEnabledForOrganization(
   ).catch(() => false);
 }
 
-export function isSitesEnabledForOrganization(
-  organizationId: string
-): Promise<boolean> {
-  return isFlagEnabledForOrganization(SITES_FLAG_KEY, organizationId);
-}
+export { isSitesEnabledForOrganization } from "@notra/ai/utils/sites-access";
 
 export function isSitesBulkImportEnabled(
   organizationId: string

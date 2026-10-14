@@ -1,3 +1,8 @@
+export interface OrganizationNameRow {
+  id: string;
+  name: string;
+}
+
 export interface ScanHistoryRow {
   id: string;
   organization_id: string;

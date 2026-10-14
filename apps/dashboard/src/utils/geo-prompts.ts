@@ -218,6 +218,47 @@ export function engineFamilyPromptHits(
   });
 }
 
+/**
+ * Share of the enabled tracked prompts whose latest answer on the engine family
+ * shows the brand. Paused or removed prompts drop out, and enabled prompts the
+ * engine has not answered yet count as not visible. Without a prompt list
+ * (`null`, e.g. design-system fixtures) the answered prompts stand in for it.
+ */
+export function engineFamilyPromptCoverage(
+  hits: readonly EngineFamilyPromptHit[],
+  trackedPrompts: readonly GeoTrackedPrompt[] | null
+): GeoPromptCoverage | null {
+  const isVisible = (hit: EngineFamilyPromptHit) =>
+    hit.mentioned || Boolean(hit.ownedSourceCited);
+  if (trackedPrompts === null) {
+    if (hits.length === 0) {
+      return null;
+    }
+    const visible = hits.filter(isVisible).length;
+    return {
+      mentioned: visible,
+      total: hits.length,
+      rate: visible / hits.length,
+    };
+  }
+  const enabledScanIds = new Set(
+    trackedPrompts
+      .filter((prompt) => prompt.enabled)
+      .map((prompt) => trackedPromptScanId(prompt))
+  );
+  if (enabledScanIds.size === 0) {
+    return null;
+  }
+  const visible = hits.filter(
+    (hit) => enabledScanIds.has(hit.promptId) && isVisible(hit)
+  ).length;
+  return {
+    mentioned: visible,
+    total: enabledScanIds.size,
+    rate: visible / enabledScanIds.size,
+  };
+}
+
 export function promptTableRowForId(
   promptId: string,
   results: readonly GeoPromptResultSummary[]

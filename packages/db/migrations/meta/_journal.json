@@ -827,6 +827,20 @@
       "when": 1791804537449,
       "tag": "0117_blog_post_metadata",
       "breakpoints": true
+    },
+    {
+      "idx": 118,
+      "version": "7",
+      "when": 1791888032345,
+      "tag": "0118_geo_ignored_competitors",
+      "breakpoints": true
+    },
+    {
+      "idx": 119,
+      "version": "7",
+      "when": 1791897041544,
+      "tag": "0119_post_hidden",
+      "breakpoints": true
     }
   ]
 }

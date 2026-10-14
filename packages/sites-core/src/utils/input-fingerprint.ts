@@ -1,6 +1,11 @@
 import { SITE_BUILD_LIMITS } from "../constants/sites";
+import {
+  SITE_IGNORE_FILENAME,
+  SITE_IGNORE_MAX_BYTES,
+} from "../constants/source";
 import type { SiteInputFingerprintParams } from "../types/smart-deployments";
 import { sha256Hex } from "./hash";
+import { createSiteIgnore } from "./site-ignore";
 import { isCollectedSiteSourcePath } from "./source-files";
 import { stableStringify } from "./stable-stringify";
 
@@ -30,6 +35,27 @@ export async function fingerprintSiteInputs(
     return null;
   }
   const prefix = rootDirectory ? `${rootDirectory}/` : "";
+  const ignoreFile = tree.find(
+    (entry) => entry.path === `${prefix}${SITE_IGNORE_FILENAME}`
+  );
+  if (
+    ignoreFile &&
+    (ignoreFile.type !== "blob" ||
+      !["100644", "100755"].includes(ignoreFile.mode ?? "") ||
+      !ignoreFile.sha ||
+      ignoreFile.size === undefined ||
+      !Number.isSafeInteger(ignoreFile.size) ||
+      ignoreFile.size < 0 ||
+      ignoreFile.size > SITE_IGNORE_MAX_BYTES ||
+      params.ignoreContent == null ||
+      new TextEncoder().encode(params.ignoreContent).length !== ignoreFile.size)
+  ) {
+    return null;
+  }
+  if (!ignoreFile && params.ignoreContent != null) {
+    return null;
+  }
+  const isIgnored = createSiteIgnore(params.ignoreContent ?? "");
   const files: [string, string][] = [];
   const seen = new Set<string>();
   let bytes = 0;
@@ -41,7 +67,11 @@ export async function fingerprintSiteInputs(
       continue;
     }
     const path = entry.path.slice(prefix.length);
-    if (!isCollectedSiteSourcePath(path)) {
+    if (path === SITE_IGNORE_FILENAME) {
+      files.push([path, entry.sha]);
+      continue;
+    }
+    if (!isCollectedSiteSourcePath(path) || isIgnored(path)) {
       continue;
     }
     if (entry.type === "tree") {
@@ -64,7 +94,7 @@ export async function fingerprintSiteInputs(
     bytes += entry.size;
     if (
       bytes > SITE_BUILD_LIMITS.maxSourceBytes ||
-      files.length >= SITE_BUILD_LIMITS.maxSourceFiles
+      seen.size >= SITE_BUILD_LIMITS.maxSourceFiles
     ) {
       return null;
     }

@@ -78,7 +78,7 @@ function JourneyGroupHeading({
             <span className="min-w-0 truncate">
               {formatGeoSource(selection.source)}
             </span>
-            <Badge variant="secondary">
+            <Badge shape="rounded" size="md" variant="secondary">
               {selection.visitorType === "crawler"
                 ? tGeoShared("crawler")
                 : tGeoShared("aiReferral")}

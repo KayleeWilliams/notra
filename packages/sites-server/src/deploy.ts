@@ -1,12 +1,9 @@
-import { hashBuildTarget } from "@notra/sites-core/utils/build-target";
-
-import { restoreProductionDeployment } from "./activation";
+import { selectProductionDeployment } from "./activation";
 import { enqueueSiteDeployment, getDeployment } from "./deployments";
 import { SiteInputError } from "./errors";
 import { getBranchHead, siteRepositoryAccess } from "./github";
 import type { DeployBranchHeadOptions, Site } from "./types/sites";
 import { redeploymentInput } from "./utils/deployments";
-import { buildTargetForDeployment } from "./utils/urls";
 
 export async function deployBranchHead(
   site: Site,
@@ -51,32 +48,9 @@ export async function rollbackToDeployment(
   site: Site,
   deploymentId: string
 ): Promise<void> {
-  const target = await getDeployment(deploymentId);
-  if (
-    !(
-      target &&
-      target.siteId === site.id &&
-      target.kind === "production" &&
-      target.status === "ready"
-    )
-  ) {
-    throw new SiteInputError(
-      "Only finished production deployments can be restored"
-    );
-  }
-  const currentTarget = buildTargetForDeployment({
-    site,
-    kind: "production",
-    previewKey: null,
-  });
-  if ((await hashBuildTarget(currentTarget)) !== target.configHash) {
-    throw new SiteInputError(
-      "This deployment was built for a different domain, path or branding setting. Redeploy its commit instead."
-    );
-  }
-  if ((await restoreProductionDeployment(site, target)) !== "live") {
-    throw new SiteInputError(
-      "This deployment's files were already cleaned up. Redeploy its commit instead."
-    );
-  }
+  await selectProductionDeployment(site, deploymentId);
+}
+
+export async function promoteLatestDeployment(site: Site): Promise<void> {
+  await selectProductionDeployment(site, null);
 }

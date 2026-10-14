@@ -69,6 +69,7 @@ export const siteManifestSchema = z.object({
 export const siteServingPointerSchema = z.object({
   deploymentId: z.string(),
   generation: z.number().int().nonnegative(),
+  buildGeneration: z.number().int().nonnegative().optional(),
   activatedAt: z.string(),
 });
 
@@ -95,6 +96,7 @@ export const siteServingStateSchema = z.object({
   slug: z.string(),
   status: z.enum(SITE_STATUSES),
   production: siteServingPointerSchema.nullable(),
+  productionRollback: z.boolean().default(false),
   previews: z.record(z.string(), sitePreviewPointerSchema),
   removedPreviews: z
     .record(z.string(), z.number().int().nonnegative())

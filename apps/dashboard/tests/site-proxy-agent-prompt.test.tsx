@@ -98,24 +98,10 @@ if (!process.env.NOTRA_PROXY_PROMPT_TEST_WORKER) {
       expect(html).toContain("enabled mounts: /journal.");
       expect(html).toContain("fixed upstream https://alias.example");
       expect(html).toContain(messages.sites.domainsPage.proxy.manualSetup);
-      expect(html).toContain("<details>");
-      expect(html).not.toContain("<details open");
-      const disclosures = [
-        ...html.matchAll(/<details\b[^>]*>[\s\S]*?<\/details>/g),
-      ].map((match) => match[0]);
-      expect(disclosures).toHaveLength(2);
-      expect(disclosures[0]).toContain(
-        messages.sites.domainsPage.proxy.viewPrompt
-      );
-      expect(disclosures[0]).toContain("<textarea");
-      expect(disclosures[0]).toContain("enabled mounts: /journal.");
-      expect(disclosures[1]).toContain("vercel.json");
-      const primary = html.slice(0, html.indexOf("<details>"));
-      expect(primary).toContain(messages.common.labels.copyAgentPrompt);
-      expect(primary).not.toContain("<textarea");
-      expect(html).toContain(
-        `aria-label="${messages.sites.domainsPage.proxy.platform}"`
-      );
+      expect(html).not.toContain("<details");
+      expect(html).toContain(messages.sites.domainsPage.proxy.agentTab);
+      expect(html).toContain(messages.common.labels.copyAgentPrompt);
+      expect(html).toContain("<textarea");
     }
   );
 }

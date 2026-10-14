@@ -52,6 +52,6 @@ const jsonLd = [
 ];
 ---
 
-<Base title={pageTitle(title, true)} description={areaDescription(params.area)} markdown={markdownHref()} jsonLd={jsonLd}>
+<Base page="index" title={pageTitle(title, true)} description={areaDescription(params.area)} markdown={markdownHref()} jsonLd={jsonLd}>
   {params.area === "blog" ? <BlogIndex /> : <ChangelogIndex />}
 </Base>

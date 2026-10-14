@@ -26,7 +26,15 @@ if (process.env.NOTRA_BUILD_TELEMETRY_ACCESS_WORKER !== "1") {
     expect(child.status, child.stderr?.toString()).toBe(0);
   }, 35_000);
 } else {
-  const site = { id: "site_telemetry", organizationId: "org" } as Site;
+  const site = {
+    id: "site_telemetry",
+    organizationId: "org",
+    name: "Telemetry site",
+    publicOrigin: "https://example.test",
+    mounts: { blog: "/blog" },
+    showBranding: true,
+    status: "active",
+  } as Site;
   let deployment: SiteDeployment;
   let r2Fails = false;
   let durable = true;
@@ -59,6 +67,7 @@ if (process.env.NOTRA_BUILD_TELEMETRY_ACCESS_WORKER !== "1") {
     ...deployments,
     getSite: async () => site,
     getDeployment: async () => deployment,
+    getProductionDeploymentHistory: async () => [],
   }));
   const r2 = await import("@notra/sites-server/r2");
   mock.module("@notra/sites-server/r2", () => ({

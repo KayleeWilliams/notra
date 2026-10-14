@@ -10,10 +10,15 @@ import {
   isNull,
   lt,
   lte,
+  not,
   or,
   sql,
 } from "drizzle-orm";
 
+import {
+  BUILD_FINALIZATION_JOB,
+  BUILD_FINALIZATION_STATUSES,
+} from "./constants/job-finalization";
 import {
   CAPACITY_RETRY_MS,
   DEFAULT_LEASE_MS,
@@ -40,7 +45,10 @@ async function reserveBuildCapacity(
         )
       )
       .limit(1);
-    if (deployment?.status === "skipped") {
+    if (
+      deployment &&
+      BUILD_FINALIZATION_STATUSES.some((status) => status === deployment.status)
+    ) {
       return true;
     }
   }
@@ -51,7 +59,7 @@ async function reserveBuildCapacity(
     sql`not exists (
       select 1 from ${siteDeployments}
       where ${siteDeployments.id} = ${siteJobs.deploymentId}
-      and ${siteDeployments.status} = 'skipped'
+      and ${inArray(siteDeployments.status, BUILD_FINALIZATION_STATUSES)}
     )`
   );
   const [counts] = await tx
@@ -95,6 +103,7 @@ export async function claimSiteJob(jobId: string): Promise<SiteJob | null> {
       eq(siteJobs.id, jobId),
       or(
         eq(siteJobs.kind, "sync_state"),
+        BUILD_FINALIZATION_JOB,
         lt(siteJobs.attempts, siteJobs.maxAttempts)
       ),
       or(
@@ -148,10 +157,35 @@ export async function completeSiteJob(job: SiteJob): Promise<void> {
 export async function failSiteJob(
   job: SiteJob,
   error: unknown,
-  permanent: boolean
+  permanent: boolean,
+  finalizationComplete = false
 ): Promise<"retrying" | "failed" | "skipped"> {
-  const exhausted =
+  let exhausted =
     permanent || (job.kind !== "sync_state" && job.attempts >= job.maxAttempts);
+  if (
+    exhausted &&
+    !permanent &&
+    !finalizationComplete &&
+    job.kind === "build" &&
+    job.deploymentId
+  ) {
+    const [deployment] = await db
+      .select()
+      .from(siteDeployments)
+      .where(
+        and(
+          eq(siteDeployments.id, job.deploymentId),
+          eq(siteDeployments.siteId, job.siteId)
+        )
+      )
+      .limit(1);
+    if (
+      deployment &&
+      BUILD_FINALIZATION_STATUSES.some((status) => status === deployment.status)
+    ) {
+      exhausted = false;
+    }
+  }
   const updated = await db
     .update(siteJobs)
     .set({
@@ -190,6 +224,7 @@ export async function takeExhaustedSiteJobs(): Promise<SiteJob[]> {
       and(
         eq(siteJobs.status, "running"),
         sql`${siteJobs.kind} <> 'sync_state'`,
+        not(BUILD_FINALIZATION_JOB),
         lt(siteJobs.leaseUntil, sql`now()`),
         sql`${siteJobs.attempts} >= ${siteJobs.maxAttempts}`
       )
@@ -216,6 +251,7 @@ export async function listDispatchableSiteJobs(): Promise<SiteJob[]> {
       and(
         or(
           eq(siteJobs.kind, "sync_state"),
+          BUILD_FINALIZATION_JOB,
           lt(siteJobs.attempts, siteJobs.maxAttempts)
         ),
         or(

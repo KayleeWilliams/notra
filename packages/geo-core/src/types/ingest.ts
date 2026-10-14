@@ -23,6 +23,21 @@ import type {
 
 export type GeoIngestDefer = (task: () => Promise<void>) => void;
 
+export interface GeoIngestAuthContext {
+  readonly organizationId?: string;
+  readonly projectId?: string | null;
+  readonly siteId?: string;
+}
+
+export type GeoIngestAuthRejectionReason =
+  | "invalid_signature"
+  | "identity_missing"
+  | "token_revoked"
+  | "site_inactive"
+  | "site_token_not_allowed";
+
+export type GeoIngestAuthLookupStage = "identity_lookup" | "site_lookup";
+
 /** Write buffer between the ingest pipeline and Tinybird. */
 export interface GeoIngestBuffer {
   /**

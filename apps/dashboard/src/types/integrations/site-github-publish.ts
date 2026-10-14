@@ -30,6 +30,7 @@ export interface SiteEntryMetadata {
   authors?: SiteEntryAuthor[];
   featured?: boolean;
   noindex?: boolean;
+  hidden?: boolean;
   /** Date shown on the site, chosen in Notra. */
   date?: Date | null;
 }

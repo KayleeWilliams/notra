@@ -4,6 +4,7 @@ import { PlusSignIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ConfirmDialog } from "@notra/ui/components/shared/confirm-dialog";
 import { PageHeading } from "@notra/ui/components/shared/page-heading";
+import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -12,7 +13,8 @@ import { useTranslations } from "use-intl";
 import { Button } from "@/components/button";
 import { useSite } from "@/components/sites/site-context";
 import { SiteDomainAddDialog } from "@/components/sites/site-domain-add-dialog";
-import { SiteDomainsTable } from "@/components/sites/site-domains-table";
+import { SiteDomainAddForm } from "@/components/sites/site-domain-add-form";
+import { SiteDomainCard } from "@/components/sites/site-domain-card";
 import { useDomainConnectOutcomeToast } from "@/lib/hooks/use-domain-connect-outcome-toast";
 import { useInvalidateSites } from "@/lib/hooks/use-sites";
 import { dashboardOrpc } from "@/lib/orpc/query";
@@ -84,25 +86,47 @@ export function SiteDomainsPage() {
   return (
     <div className="space-y-6">
       <PageHeading description={t("description")} title={t("title")}>
-        <Button onClick={() => setAddOpen(true)}>
-          <HugeiconsIcon
-            aria-hidden="true"
-            data-icon="inline-start"
-            icon={PlusSignIcon}
-            strokeWidth={1.5}
-          />
-          {t("addDomain")}
-        </Button>
+        {domains.length > 0 ? (
+          <Button onClick={() => setAddOpen(true)}>
+            <HugeiconsIcon
+              aria-hidden="true"
+              data-icon="inline-start"
+              icon={PlusSignIcon}
+              strokeWidth={1.5}
+            />
+            {t("addDomain")}
+          </Button>
+        ) : null}
       </PageHeading>
 
-      <SiteDomainsTable
-        aliasOrigin={site.aliasOrigin}
-        domains={domains}
-        mounts={site.mounts}
-        onRemove={setRemoveTarget}
-        organizationId={organizationId}
-        siteId={siteId}
-      />
+      {domains.length === 0 ? (
+        <TitleCard as="section" heading={t("connectTitle")} headingAs="h2">
+          <SiteDomainAddForm
+            mounts={site.mounts}
+            organizationId={organizationId}
+            renderActions={({ canSubmit, pending }) => (
+              <div className="flex justify-end">
+                <Button disabled={!canSubmit} loading={pending} type="submit">
+                  {t("connectSubmit")}
+                </Button>
+              </div>
+            )}
+            siteId={siteId}
+          />
+        </TitleCard>
+      ) : (
+        domains.map((domain) => (
+          <SiteDomainCard
+            aliasOrigin={site.aliasOrigin}
+            domain={domain}
+            key={domain.id}
+            mounts={site.mounts}
+            onRemove={setRemoveTarget}
+            organizationId={organizationId}
+            siteId={siteId}
+          />
+        ))
+      )}
 
       <SiteDomainAddDialog
         mounts={site.mounts}

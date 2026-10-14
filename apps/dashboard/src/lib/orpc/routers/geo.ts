@@ -67,6 +67,8 @@ import {
   addGeoTrackedLanguage,
   createGeoPrompt,
   deleteGeoCompetitor,
+  fillGeoCompetitorDomains,
+  setGeoCompetitorIgnored,
   deleteGeoPrompt,
   importGeoCompetitors,
   importGeoPrompts,
@@ -164,6 +166,8 @@ import {
   aiTrafficInputSchema,
   geoBrandSearchInputSchema,
   geoCompetitorDeleteInputSchema,
+  geoCompetitorDomainFillInputSchema,
+  geoCompetitorIgnoreInputSchema,
   geoCompetitorShareInputSchema,
   geoCompetitorsImportInputSchema,
   geoCompetitorDetailInputSchema,
@@ -1065,6 +1069,24 @@ export const geoRouter = {
             input,
             event: POSTHOG_EVENTS.GEO_COMPETITOR_DELETED,
             properties: { competitor_count: output.competitors.length },
+          });
+        }
+      )
+    ),
+  competitorDomainsFill: authorizedProcedure
+    .input(geoCompetitorDomainFillInputSchema)
+    .handler(geoOpenHandler((input) => fillGeoCompetitorDomains(input))),
+  competitorIgnore: authorizedProcedure
+    .input(geoCompetitorIgnoreInputSchema)
+    .handler(
+      geoOpenHandler(
+        (input) => setGeoCompetitorIgnored(input),
+        ({ context, input }) => {
+          trackGeoRouterEvent({
+            context,
+            input,
+            event: POSTHOG_EVENTS.GEO_COMPETITOR_SUGGESTION_IGNORED,
+            properties: { ignored: input.ignored },
           });
         }
       )

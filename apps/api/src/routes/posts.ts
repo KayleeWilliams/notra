@@ -73,7 +73,7 @@ const getPostsRoute = createRoute({
   operationId: "listPosts",
   summary: "List posts",
   description:
-    "Returns posts for the organization the API key belongs to, newest first by default. Only published posts are included unless you pass status=draft,published. Blog posts and changelogs include a metadata object with cover image, tags, excerpt, authors, featured, noindex and displayDate; it is null for other content types.",
+    "Returns posts for the organization the API key belongs to, newest first by default. Only published posts are included unless you pass status=draft,published. Blog posts and changelogs include a metadata object with cover image, tags, excerpt, authors, featured, noindex, hidden and displayDate; it is null for other content types.",
   request: {
     params: getPostsParamsSchema,
     query: getPostsOpenApiQuerySchema,
@@ -102,7 +102,7 @@ const getPostRoute = createRoute({
   operationId: "getPost",
   summary: "Get a single post",
   description:
-    "Returns the post. When no post with this ID exists in your organization, the response is still 200 with post set to null. Blog posts and changelogs include a metadata object with cover image, tags, excerpt, authors, featured, noindex and displayDate; it is null for other content types.",
+    "Returns the post. When no post with this ID exists in your organization, the response is still 200 with post set to null. Blog posts and changelogs include a metadata object with cover image, tags, excerpt, authors, featured, noindex, hidden and displayDate; it is null for other content types.",
   request: {
     params: getPostParamsSchema,
   },

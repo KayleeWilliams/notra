@@ -1,19 +1,11 @@
 "use client";
 
-import { Calendar03Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@notra/ui/components/ui/popover";
-import { useId, useState } from "react";
+import { useId } from "react";
 import { useTranslations } from "use-intl";
 
-import { Button } from "@/components/button";
-import { Calendar } from "@/components/calendar";
+import { DateField } from "@/components/date-field";
+import { TimeField } from "@/components/time-field";
 import { useLocalDateFormat } from "@/lib/hooks/use-local-date-format";
 import type { ScheduleSlotFieldProps } from "@/types/content/schedule";
 
@@ -32,7 +24,6 @@ export function ScheduleSlotField({
   const dateId = useId();
   const dateLabelId = useId();
   const timeId = useId();
-  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   return (
     <section className="space-y-3">
@@ -47,66 +38,35 @@ export function ScheduleSlotField({
           <Label className="sr-only" id={dateLabelId}>
             {t("date")}
           </Label>
-          <Popover onOpenChange={setDatePickerOpen} open={datePickerOpen}>
-            <PopoverTrigger
-              render={
-                <Button
-                  // "Date", then the picked date the button shows.
-                  aria-labelledby={`${dateLabelId} ${dateId}`}
-                  className="w-full justify-start gap-2 font-normal"
-                  id={dateId}
-                  type="button"
-                  variant="outline"
-                />
-              }
-            >
-              <HugeiconsIcon
-                className="text-muted-foreground size-4"
-                icon={Calendar03Icon}
-              />
-              {date ? (
-                formatDate(date, {
-                  weekday: "short",
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })
-              ) : (
-                <span className="text-muted-foreground">{t("pickDate")}</span>
-              )}
-            </PopoverTrigger>
-            <PopoverContent
-              align="start"
-              className="w-auto overflow-hidden p-0"
-              initialFocus={false}
-            >
-              <Calendar
-                defaultMonth={date}
-                disabled={{ before: earliestDate }}
-                mode="single"
-                onSelect={(next) => {
-                  onDateChange(next);
-                  setDatePickerOpen(false);
-                }}
-                // Clicking the picked day again would clear it and silently
-                // disable "Schedule".
-                required
-                selected={date}
-                weekStartsOn={1}
-              />
-            </PopoverContent>
-          </Popover>
+          <DateField
+            // "Date", then the picked date the button shows.
+            aria-labelledby={`${dateLabelId} ${dateId}`}
+            disabledDays={{ before: earliestDate }}
+            display={
+              date
+                ? formatDate(date, {
+                    weekday: "short",
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })
+                : null
+            }
+            id={dateId}
+            onSelect={onDateChange}
+            placeholder={t("pickDate")}
+            selected={date}
+          />
         </div>
         <div>
           <Label className="sr-only" htmlFor={timeId}>
             {t("time")}
           </Label>
-          <Input
-            className="bg-background w-full appearance-none tabular-nums sm:w-32 [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+          <TimeField
+            className="sm:w-32"
             id={timeId}
-            onChange={(event) => onTimeChange(event.target.value)}
+            onChange={onTimeChange}
             required
-            type="time"
             value={time}
           />
         </div>

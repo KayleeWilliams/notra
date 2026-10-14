@@ -29,12 +29,14 @@ These are the size and build limits for every site, followed by the build errors
 | Size of the built site | 500 MB |
 | Builds at the same time | 2 per site |
 | Deployments per workspace | 300 per 24 hours |
-| Restorable production deployments | The last 10, plus all from the last 24 hours |
+| Rollback history | The last 10 successful production builds |
 | Redirect rules | 500 |
 | Allowed origins | 32 |
 | Inline scripts per site | 100 |
 
 Builds run without network access, so a component can't fetch data while the site builds and has to fetch it in the browser with `useEffect` instead.
+
+Failed, skipped and preview builds don't count toward the rollback history. The live build, active previews, in-progress builds and builds within the 24-hour cleanup grace period are protected from deletion. That protection doesn't make a build outside the ten-build window eligible for rollback. See [Roll back to an earlier deployment](/sites/publishing#roll-back-to-an-earlier-deployment).
 
 ## Reading a failed build
 

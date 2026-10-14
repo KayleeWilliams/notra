@@ -9,6 +9,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@notra/ui/components/ui/select";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@notra/ui/components/ui/tabs";
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import { useState } from "react";
 import { useTranslations } from "use-intl";
@@ -24,7 +30,6 @@ export function SiteProxySetup({
   hostname,
   aliasOrigin,
   mounts,
-  checkAction,
 }: SiteProxySetupProps) {
   const t = useTranslations("sites.domainsPage.proxy");
   const recipes = buildProxyRecipes(aliasOrigin, mounts);
@@ -34,21 +39,19 @@ export function SiteProxySetup({
   const prompt = buildSiteProxyAgentPrompt(hostname, aliasOrigin, mounts);
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-muted-foreground text-sm text-pretty">
-          {t("agentPromptDescription")}
-        </p>
-        <div className="flex items-center gap-2">
-          <CopyPromptButton prompt={prompt} />
-          {checkAction}
-        </div>
-      </div>
-      <details>
-        <summary className="text-muted-foreground hover:text-foreground cursor-pointer text-xs">
-          {t("viewPrompt")}
-        </summary>
-        <div className="pt-2">
+    <Tabs defaultValue="agent">
+      <TabsList aria-label={t("setupLabel")}>
+        <TabsTrigger value="agent">{t("agentTab")}</TabsTrigger>
+        <TabsTrigger value="manual">{t("manualSetup")}</TabsTrigger>
+      </TabsList>
+      <TabsContent className="mt-3" value="agent">
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-muted-foreground text-sm text-pretty">
+              {t("agentPromptDescription")}
+            </p>
+            <CopyPromptButton prompt={prompt} />
+          </div>
           <Textarea
             aria-label={t("agentPromptLabel")}
             className="field-sizing-fixed resize-none"
@@ -57,12 +60,9 @@ export function SiteProxySetup({
             value={prompt}
           />
         </div>
-      </details>
-      <details>
-        <summary className="text-muted-foreground hover:text-foreground cursor-pointer text-xs">
-          {t("manualSetup")}
-        </summary>
-        <div className="space-y-3 pt-3">
+      </TabsContent>
+      <TabsContent className="mt-3" value="manual">
+        <div className="space-y-3">
           <p className="text-muted-foreground text-sm text-pretty">
             {t.rich("description", {
               paths: paths.join(", "),
@@ -123,7 +123,7 @@ export function SiteProxySetup({
             {t("noCookies")}
           </p>
         </div>
-      </details>
-    </div>
+      </TabsContent>
+    </Tabs>
   );
 }

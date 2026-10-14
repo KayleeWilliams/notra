@@ -38,7 +38,7 @@ function metaLines(entry: AreaPageEntry, url: string): string[] {
   return lines;
 }
 
-function entryMarkdown(
+export function entryMarkdown(
   entry: AreaPageEntry,
   url: string,
   body: string
@@ -61,14 +61,15 @@ function entryLink(entry: AreaPageEntry, origin: string): string {
   return `- [${entry.title}](${new URL(`${entry.path}.md`, origin)})${description} (${details})`;
 }
 
-function indexMarkdown(pages: AreaPages, origin: string): string {
+export function indexMarkdown(pages: AreaPages, origin: string): string {
+  const entries = pages.entries.filter((entry) => !entry.hidden);
   const parts = [`# ${pages.title}`];
   if (pages.description) {
     parts.push(`> ${pages.description}`);
   }
   parts.push(
-    pages.entries.length > 0
-      ? pages.entries.map((entry) => entryLink(entry, origin)).join("\n")
+    entries.length > 0
+      ? entries.map((entry) => entryLink(entry, origin)).join("\n")
       : "_No entries yet._"
   );
   return `${parts.join("\n\n")}\n`;
@@ -124,7 +125,9 @@ export function llmsTxt(params: LlmsTxtParams): string {
     ].join(" ")
   );
   for (const area of params.areas) {
-    const entries = area.entries.filter((entry) => entry.indexable);
+    const entries = area.entries.filter(
+      (entry) => !entry.hidden && entry.indexable
+    );
     parts.push(
       [
         `## ${area.title}`,
@@ -167,7 +170,7 @@ export async function writeAgentFiles(
           instructions ? `${markdown}\n${instructions}\n` : markdown
         )
       );
-      if (entry.indexable) {
+      if (!entry.hidden && entry.indexable) {
         texts.push(markdown);
       }
     }

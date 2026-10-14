@@ -40,7 +40,7 @@ export function BadgeShowcase() {
         <p className="text-muted-foreground text-sm">Status variants</p>
         <div className="flex flex-wrap gap-2">
           <StatusBadge appearance={{ variant: "info", icon: Clock01Icon }} label="Queued" />
-          <StatusBadge appearance={{ variant: "warning", icon: Loading03Icon }} label="Building" />
+          <StatusBadge appearance={{ variant: "warning", icon: Loading03Icon, spin: true }} label="Building" />
           <StatusBadge appearance={{ variant: "destructive", icon: Cancel01Icon, square: true }} label="Failed" />
           <StatusBadge appearance={{ variant: "secondary" }} label="Canceled" />
         </div>

@@ -1,3 +1,10 @@
+import type { Node as EstreeNode } from "estree";
+
+export type JsxElementName = Extract<
+  EstreeNode,
+  { type: "JSXOpeningElement" }
+>["name"];
+
 export interface SourceRange {
   start: number;
   end: number;

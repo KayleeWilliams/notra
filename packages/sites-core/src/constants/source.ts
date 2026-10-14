@@ -1,5 +1,8 @@
 import { SITE_SOURCE_EXTENSIONS } from "./sites";
 
+export const SITE_IGNORE_FILENAME = ".notraignore";
+export const SITE_IGNORE_MAX_BYTES = 512 * 1024;
+
 export const SITE_SOURCE_ALLOWED_EXTENSIONS: ReadonlySet<string> = new Set(
   SITE_SOURCE_EXTENSIONS
 );

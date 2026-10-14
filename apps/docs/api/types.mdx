@@ -123,6 +123,7 @@ export type PostMetadata = {
   authors: PostAuthor[];
   featured: boolean;
   noindex: boolean;
+  hidden: boolean;
   /** YYYY-MM-DD. Null means the publish date is shown. */
   displayDate: string | null;
 };
@@ -177,6 +178,7 @@ export type NotraPostMetadataUpdate = {
   authorIds?: string[];
   featured?: boolean;
   noindex?: boolean;
+  hidden?: boolean;
   /** YYYY-MM-DD, or null to show the publish date. */
   displayDate?: string | null;
 };
@@ -275,6 +277,7 @@ export const PostMetadataSchema = z.object({
   authors: z.array(PostAuthorSchema),
   featured: z.boolean(),
   noindex: z.boolean(),
+  hidden: z.boolean(),
   displayDate: z.string().nullable(),
 });
 
@@ -331,6 +334,7 @@ export const PostMetadataUpdateSchema = z
     authorIds: z.array(z.string().min(1)).max(5).optional(),
     featured: z.boolean().optional(),
     noindex: z.boolean().optional(),
+    hidden: z.boolean().optional(),
     displayDate: z.iso.date().nullable().optional(),
   })
   .refine((data) => Object.values(data).some((value) => value !== undefined), {

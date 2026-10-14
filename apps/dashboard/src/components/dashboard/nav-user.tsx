@@ -27,7 +27,6 @@ import { flushTrackEvent } from "@/lib/analytics/posthog-client";
 import { authClient } from "@/lib/auth/client";
 import { useHidePersonalData } from "@/lib/hooks/use-privacy-preferences";
 import { useSettingsModal } from "@/lib/hooks/use-settings-modal";
-import { useRouter } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 import { getUserAvatarUrl } from "@/utils/avatar";
 
@@ -38,7 +37,6 @@ const getServerSnapshot = () => false;
 export function NavUser() {
   const t = useTranslations("nav.user");
   const tCommon = useTranslations("common");
-  const router = useRouter();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const hasHydrated = useSyncExternalStore(
     emptySubscribe,
@@ -57,14 +55,7 @@ export function NavUser() {
     setIsSigningOut(true);
     await flushTrackEvent(POSTHOG_EVENTS.LOGOUT);
     try {
-      await signOut({
-        fetchOptions: {
-          onSuccess: () => {
-            toast.success(tCommon("labels.signedOutSuccessfully"));
-            router.push("/login");
-          },
-        },
-      });
+      await signOut();
     } catch (_error) {
       toast.error(tCommon("labels.failedToSignOut"));
       setIsSigningOut(false);

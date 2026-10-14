@@ -6,6 +6,8 @@ export interface StatusBadgeAppearance {
   variant: NonNullable<ComponentProps<typeof Badge>["variant"]>;
   icon?: IconSvgElement;
   square?: boolean;
+  /** Rotates the icon, for in-progress states. */
+  spin?: boolean;
 }
 
 export interface StatusBadgeProps {

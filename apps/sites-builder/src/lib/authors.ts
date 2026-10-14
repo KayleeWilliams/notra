@@ -1,10 +1,10 @@
-import { AUTHOR_FIELDS } from "../constants/entries";
 import type {
   AuthorFields,
   EntryAuthorRef,
   ResolvedAuthor,
 } from "../types/authors";
 import type { BlogEntry, ChangelogEntry } from "../types/entries";
+import { mergeAuthorFields } from "../utils/merge-author-fields";
 import { absoluteUrl, assetUrl, config, href } from "./params";
 
 function configAuthor(id: string): AuthorFields | undefined {
@@ -16,9 +16,22 @@ function authorHref(id: string): string {
 }
 
 function resolved(id: string | null, author: AuthorFields): ResolvedAuthor {
-  const links = [author.url, author.x, author.linkedin, author.github].filter(
-    (link): link is string => Boolean(link)
-  );
+  const links = [
+    author.url,
+    author.x,
+    author.linkedin,
+    author.github,
+    author.youtube,
+  ].filter((link): link is string => Boolean(link));
+  const socials = (
+    [
+      ["x", author.x],
+      ["linkedin", author.linkedin],
+      ["github", author.github],
+      ["youtube", author.youtube],
+      ["website", author.url],
+    ] as const
+  ).flatMap(([kind, url]) => (url ? [{ kind, url }] : []));
   return {
     id,
     name: author.name,
@@ -27,23 +40,9 @@ function resolved(id: string | null, author: AuthorFields): ResolvedAuthor {
     avatar: assetUrl(author.avatar),
     href: id ? authorHref(id) : undefined,
     links,
+    socials,
     url: author.url ?? links[0],
   };
-}
-
-/** blog.json wins for every field it sets; the frontmatter fills the rest. */
-function mergedFields(
-  fallback: AuthorFields,
-  preferred: AuthorFields | undefined
-): AuthorFields {
-  if (!preferred) {
-    return fallback;
-  }
-  const merged: AuthorFields = { ...fallback, name: preferred.name };
-  for (const field of AUTHOR_FIELDS) {
-    merged[field] = preferred[field] ?? fallback[field];
-  }
-  return merged;
 }
 
 function resolveAuthor(value: EntryAuthorRef): ResolvedAuthor {
@@ -51,13 +50,13 @@ function resolveAuthor(value: EntryAuthorRef): ResolvedAuthor {
     const known = configAuthor(value);
     return known
       ? resolved(value, known)
-      : { id: null, name: value, links: [] };
+      : { id: null, name: value, links: [], socials: [] };
   }
   const { id, ...fields } = value;
   if (!id) {
     return resolved(null, fields);
   }
-  return resolved(id, mergedFields(fields, configAuthor(id)));
+  return resolved(id, mergeAuthorFields(fields, configAuthor(id)));
 }
 
 function authorRefs(entry: BlogEntry): EntryAuthorRef[] {
@@ -68,8 +67,20 @@ function authorRefs(entry: BlogEntry): EntryAuthorRef[] {
   return Array.isArray(author) ? author : [author];
 }
 
-export function authorsOf(entry: BlogEntry): ResolvedAuthor[] {
-  return authorRefs(entry).map(resolveAuthor);
+export function authorsOf(
+  entry: BlogEntry,
+  listedEntries?: BlogEntry[]
+): ResolvedAuthor[] {
+  return authorRefs(entry).map((ref) => {
+    const author = resolveAuthor(ref);
+    if (
+      listedEntries &&
+      !listedEntries.some((listed) => authoredBy(listed, author.id))
+    ) {
+      author.href = undefined;
+    }
+    return author;
+  });
 }
 
 export function authorNamesOf(entry: BlogEntry | ChangelogEntry): string[] {
@@ -92,11 +103,11 @@ export function allAuthors(entries: BlogEntry[]): ResolvedAuthor[] {
       }
       const { id, ...fields } = ref;
       const newer = inline.get(id);
-      inline.set(id, newer ? mergedFields(fields, newer) : fields);
+      inline.set(id, newer ? mergeAuthorFields(fields, newer) : fields);
     }
   }
   const known = Object.entries(config.authors).map(([id, author]) =>
-    resolved(id, mergedFields(inline.get(id) ?? author, author))
+    resolved(id, mergeAuthorFields(inline.get(id) ?? author, author))
   );
   const inlineOnly = [...inline]
     .filter(([id]) => !configAuthor(id))

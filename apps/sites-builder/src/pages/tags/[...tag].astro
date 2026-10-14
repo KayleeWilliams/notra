@@ -39,7 +39,7 @@ const jsonLd = [
 ];
 ---
 
-<Base title={pageTitle(props.kind === "index" ? `Tags · ${area}` : `${title} · ${area}`)} description={description} jsonLd={jsonLd} noindex={noindex}>
+<Base page="tag" title={pageTitle(props.kind === "index" ? `Tags · ${area}` : `${title} · ${area}`)} description={description} jsonLd={jsonLd} noindex={noindex}>
   <div class:list={["mx-auto flex flex-col gap-10 pt-0 sm:pt-2 lg:pt-4", params.area === "blog" ? "max-w-(--layout-index)" : "max-w-(--layout-reading)"]}>
     <header>
       {props.kind === "index" ? <BackLink href={href()} label={area} /> : <BackLink href={tagsHref()} label="All tags" />}

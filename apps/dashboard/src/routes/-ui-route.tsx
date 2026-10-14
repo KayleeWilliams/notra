@@ -104,7 +104,11 @@ export function createUiRoute<T = undefined>({
         params,
         searchParams: uiRouteSearch(location.search as Record<string, unknown>),
       };
-      if (stream && loader && (import.meta.env.SSR || gate)) {
+      if (
+        stream &&
+        loader &&
+        (import.meta.env.SSR || (stream === true && gate))
+      ) {
         await gate?.(input);
         const pending = loader({ ...input, gated: gate !== undefined });
         void pending.catch(() => undefined);
@@ -174,12 +178,17 @@ export function createUiRoute<T = undefined>({
         </Suspense>
       );
     }
-    return (
+    const page = (
       <Page
         data={data as T}
         params={uiPageParams(params)}
         searchParams={searchParams}
       />
+    );
+    return pendingComponent ? (
+      <Suspense fallback={createElement(pendingComponent)}>{page}</Suspense>
+    ) : (
+      page
     );
   }
   // The router calls `component.preload` while the route preloads or loads.

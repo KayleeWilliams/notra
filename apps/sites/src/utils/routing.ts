@@ -134,10 +134,13 @@ export function wellKnownLlmsTxtTarget(
   files: Map<string, SiteManifestFile>,
   path: string
 ): string | null {
-  if (!path.endsWith("/.well-known/llms.txt")) {
+  const resource = LLMS_LINKS.find(({ file }) =>
+    path.endsWith(`/.well-known/${file}`)
+  );
+  if (!resource) {
     return null;
   }
-  const target = `${path.slice(0, -"/.well-known/llms.txt".length)}/llms.txt`;
+  const target = `${path.slice(0, -`/.well-known/${resource.file}`.length)}/${resource.file}`;
   return files.has(target) ? target : null;
 }
 

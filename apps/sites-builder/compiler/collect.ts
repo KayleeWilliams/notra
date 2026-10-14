@@ -1,9 +1,15 @@
-import { lstat, opendir } from "node:fs/promises";
+import { constants } from "node:fs";
+import { lstat, open, opendir } from "node:fs/promises";
 import { join } from "node:path";
 
 import { SITE_BUILD_LIMITS } from "@notra/sites-core/constants/sites";
-import { SITE_SOURCE_SAFE_SEGMENT } from "@notra/sites-core/constants/source";
+import {
+  SITE_IGNORE_FILENAME,
+  SITE_IGNORE_MAX_BYTES,
+  SITE_SOURCE_SAFE_SEGMENT,
+} from "@notra/sites-core/constants/source";
 import type { SiteDiagnostic } from "@notra/sites-core/types/build";
+import { createSiteIgnore } from "@notra/sites-core/utils/site-ignore";
 import {
   isSiteContentPath,
   isCollectedSiteSourcePath,
@@ -21,6 +27,37 @@ export async function collectSiteSource(
   const files: SiteSourceFile[] = [];
   const diagnostics: SiteDiagnostic[] = [];
   let totalBytes = 0;
+  let ignoreContent: string | null = null;
+  try {
+    const file = await open(
+      join(siteRoot, SITE_IGNORE_FILENAME),
+      constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK
+    );
+    try {
+      const stats = await file.stat();
+      if (!stats.isFile() || stats.size > SITE_IGNORE_MAX_BYTES) {
+        throw new Error(
+          `${SITE_IGNORE_FILENAME} must be a regular file of at most ${SITE_IGNORE_MAX_BYTES / 1024} KB`
+        );
+      }
+      ignoreContent = await file.readFile("utf8");
+    } finally {
+      await file.close();
+    }
+  } catch (error) {
+    if (
+      !(error instanceof Error && "code" in error && error.code === "ENOENT")
+    ) {
+      diagnostics.push({
+        severity: "error",
+        file: SITE_IGNORE_FILENAME,
+        code: "ignore_file_invalid",
+        message: `Cannot read ${SITE_IGNORE_FILENAME}: ${error instanceof Error ? error.message : String(error)}`,
+      });
+      return { files, totalBytes, diagnostics, ignoreContent };
+    }
+  }
+  const isIgnored = createSiteIgnore(ignoreContent ?? "");
 
   async function inspect(relativePath: string): Promise<Inspected> {
     const name = relativePath.slice(relativePath.lastIndexOf("/") + 1);
@@ -44,6 +81,9 @@ export async function collectSiteSource(
       };
     }
     const stats = await lstat(join(siteRoot, relativePath));
+    if (isIgnored(stats.isDirectory() ? `${relativePath}/` : relativePath)) {
+      return { kind: "skip" };
+    }
     if (stats.isSymbolicLink()) {
       return {
         kind: "diagnostic",
@@ -121,5 +161,5 @@ export async function collectSiteSource(
   }
 
   files.sort((a, b) => a.path.localeCompare(b.path));
-  return { files, totalBytes, diagnostics };
+  return { files, totalBytes, diagnostics, ignoreContent };
 }

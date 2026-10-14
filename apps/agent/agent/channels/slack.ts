@@ -1,9 +1,19 @@
 import { disableSlackIntegrationByTeamId } from "@notra/ai/integrations/slack-workspace";
+import { logError } from "@notra/ai/utils/server-log";
 import { getLinkedTwitterAccounts } from "@notra/tools/utils/social-accounts";
 import { Effect } from "effect";
-import { type SlackChannelConfig, slackChannel } from "eve/channels/slack";
+import {
+  experimental_slackActivityRenderer,
+  experimental_slackActivityStatus,
+  type SlackChannelConfig,
+  slackChannel,
+} from "eve/channels/slack";
 
 import { CREATE_POST_TOOL_NAMES } from "../lib/constants/slack";
+import {
+  SLACK_LEAVE_ACTION_ID,
+  SLACK_STOP_ACTION_ID,
+} from "../lib/constants/slack-controls";
 import {
   POST_TO_X_ACCOUNT_ACTION_PREFIX,
   POST_TO_X_CANCEL_ACTION_PREFIX,
@@ -20,7 +30,14 @@ import {
   isIrisInteraction,
 } from "../lib/utils/iris-interaction";
 import { buildNotraSlackAuth } from "../lib/utils/slack-auth";
+import { uploadSlackChart } from "../lib/utils/slack-chart";
 import { mirrorPublicSlackThread } from "../lib/utils/slack-chat-mirror";
+import {
+  createSlackControlsRenderer,
+  handleSlackControl,
+  handleSlackControlAction,
+  parseSlackControlMessage,
+} from "../lib/utils/slack-controls";
 import { createSlackAgentCredentials } from "../lib/utils/slack-credentials";
 import { handleSlackInputRequested } from "../lib/utils/slack-input-request";
 import {
@@ -51,10 +68,12 @@ const onSlackMessage: NonNullable<SlackChannelConfig["onAppMention"]> = async (
   ctx,
   message
 ) => {
-  if (!message.teamId) {
+  if (!ctx.slack.installationTeamId || message.author?.isBot) {
     return null;
   }
-  const installation = await resolveSlackInstallation(message.teamId);
+  const installation = await resolveSlackInstallation(
+    ctx.slack.installationTeamId
+  );
   if (!installation) {
     return null;
   }
@@ -78,7 +97,14 @@ const onSlackMessage: NonNullable<SlackChannelConfig["onAppMention"]> = async (
   }
 
   return runWithSlackInstallation(installation, async () => {
-    await ctx.thread.startTyping("Thinking...");
+    const control = parseSlackControlMessage(
+      message.text,
+      ctx.isBotMentioned()
+    );
+    if (control) {
+      await handleSlackControl(control, ctx);
+      return null;
+    }
     const chatId = await Effect.runPromise(
       mirrorPublicSlackThread(ctx, message, installation.organizationId)
     );
@@ -99,16 +125,38 @@ const onSlackThreadReply: NonNullable<SlackChannelConfig["onMessage"]> = async (
   ctx,
   message
 ) => {
-  if (message.author?.isBot || !(await ctx.isSubscribed())) {
+  if (message.author?.isBot) {
     return null;
   }
-
-  return onSlackMessage(ctx, message);
+  const session = await ctx.resolveSession();
+  if (!session) {
+    return null;
+  }
+  const result = await onSlackMessage(
+    { ...ctx, resolveSession: async () => session },
+    message
+  );
+  return result ? { ...result, session } : null;
 };
 
 const onSlackInteraction: NonNullable<
   SlackChannelConfig["onInteraction"]
 > = async (action, ctx) => {
+  if (
+    action.actionId === SLACK_STOP_ACTION_ID ||
+    action.actionId === SLACK_LEAVE_ACTION_ID
+  ) {
+    const installation = ctx.slack.installationTeamId
+      ? await resolveSlackInstallation(ctx.slack.installationTeamId)
+      : null;
+    if (!installation || !isChannelAllowed(installation, ctx.slack.channelId)) {
+      return;
+    }
+    await runWithSlackInstallation(installation, () =>
+      handleSlackControlAction(action, ctx)
+    );
+    return;
+  }
   if (isIrisInteraction(action.actionId)) {
     await handleIrisInteraction(action, ctx);
     return;
@@ -178,8 +226,18 @@ const onSlackEvent: NonNullable<SlackChannelConfig["onEvent"]> = async (
   );
 };
 
+const credentials = createSlackAgentCredentials();
+
 export default slackChannel({
-  credentials: createSlackAgentCredentials(),
+  credentials,
+  activity: {
+    renderers: [
+      experimental_slackActivityRenderer(
+        createSlackControlsRenderer(credentials.botToken)
+      ),
+      experimental_slackActivityStatus(),
+    ],
+  },
   events: {
     "action.result": async (data, channel, ctx) => {
       await mirrorToolResult(ctx, data);
@@ -210,6 +268,22 @@ export default slackChannel({
 
       if (result.toolName === "add_reference") {
         state.notraReferenceCompletionTurnId = data.turnId;
+        return;
+      }
+
+      if (result.toolName === "create_chart") {
+        try {
+          await uploadSlackChart(
+            channel.slack,
+            result.output,
+            JSON.stringify([ctx.session.id, data.turnId])
+          );
+        } catch (error) {
+          logError("Slack chart delivery failed", error, {
+            sessionId: ctx.session.id,
+          });
+          state.notraChartFailureTurnId = data.turnId;
+        }
         return;
       }
 
@@ -245,6 +319,12 @@ export default slackChannel({
         await mirrorSessionStatus(ctx, "idle");
         channel.state.pendingToolCallMessage = null;
         const state = getNotraSlackState(channel.state);
+        if (state.notraChartFailureTurnId === data.turnId) {
+          state.notraChartFailureTurnId = undefined;
+          await channel.thread.post(
+            "I couldn't render or upload the chart. Check that the Slack app has files:write permission, then try again."
+          );
+        }
         const completion = state.notraDraftCompletion;
         const postToXTurnId = state.notraPostToXTurnId;
         const referenceCompletionTurnId = state.notraReferenceCompletionTurnId;
@@ -284,9 +364,6 @@ export default slackChannel({
     "turn.started": (_data, channel, ctx) =>
       runWithSlackTeam(channel.state.teamId, async () => {
         channel.state.pendingToolCallMessage = null;
-        channel.state.lastReasoningTypingAtMs = null;
-        channel.state.lastReasoningTypingStatus = null;
-        await channel.thread.startTyping("Working...");
         await mirrorSessionStatus(ctx, "working");
       }),
   },

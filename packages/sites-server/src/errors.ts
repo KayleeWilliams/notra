@@ -18,6 +18,10 @@ export class SiteNotBuildableError extends Error {
   readonly name = "SiteNotBuildableError";
 }
 
+export class SiteActivationContentionError extends Error {
+  readonly name = "SiteActivationContentionError";
+}
+
 export class SitePublishConflictError extends Error {
   readonly name = "SitePublishConflictError";
   readonly paths: string[];

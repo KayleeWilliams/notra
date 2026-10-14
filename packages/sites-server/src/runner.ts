@@ -37,13 +37,20 @@ async function loadJobDeployment(job: SiteJob): Promise<JobDeployment | null> {
   return deployment && site ? { site, deployment } : null;
 }
 
-async function runBuildJob(job: SiteJob): Promise<SiteJobOutcome> {
+async function runBuildJob(
+  job: SiteJob,
+  onFinalized: () => void
+): Promise<SiteJobOutcome> {
   const loaded = await loadJobDeployment(job);
   if (!(loaded && BUILDABLE_STATUSES.has(loaded.deployment.status))) {
     await completeSiteJob(job);
     return { status: "skipped" };
   }
-  const outcome = await runDeploymentPipeline(loaded.site, loaded.deployment);
+  const outcome = await runDeploymentPipeline(
+    loaded.site,
+    loaded.deployment,
+    onFinalized
+  );
   await completeSiteJob(job);
   return { status: "done", outcome: outcome.kind };
 }
@@ -166,13 +173,16 @@ export async function runSiteJob(jobId: string): Promise<SiteJobOutcome> {
   if (!job) {
     return { status: "skipped" };
   }
+  let finalizationComplete = false;
   try {
     if (job.kind === "sync_state") {
       return await runSettingsJob(job);
     }
     return job.kind === "remove_preview"
       ? await runRemovePreviewJob(job)
-      : await runBuildJob(job);
+      : await runBuildJob(job, () => {
+          finalizationComplete = true;
+        });
   } catch (error) {
     const message = errorMessage(error);
     console.error("sites.job_failed", {
@@ -193,7 +203,12 @@ export async function runSiteJob(jobId: string): Promise<SiteJobOutcome> {
       error: error instanceof Error ? error.stack : message,
     });
     const permanent = error instanceof SitePermanentBuildError;
-    const result = await failSiteJob(job, error, permanent);
+    const result = await failSiteJob(
+      job,
+      error,
+      permanent,
+      finalizationComplete
+    );
     if (result === "failed") {
       await failJobDeployment(
         job,

@@ -26,7 +26,6 @@ export const markdownNotFoundRoute = Effect.fn("Sites.route.markdownNotFound")(
           path,
           indexPath: area ? joinMountPath(area.mount, "index.md") : null,
           llmsPath: joinMountPath(area?.mount ?? "/", "llms.txt"),
-          llmsLink: fileParams.llmsLink,
         })
       );
     }

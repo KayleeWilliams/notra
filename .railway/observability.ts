@@ -26,6 +26,7 @@ export default defineRailway((ctx) => {
     env: {
       GF_SECURITY_ADMIN_PASSWORD: preserve(),
       GF_SECURITY_SECRET_KEY: preserve(),
+      NOTRA_ORGANIZATION_NAMES: preserve(),
       PORT: "3000",
       RAILWAY_RUN_UID: "0",
     },
@@ -56,7 +57,11 @@ export default defineRailway((ctx) => {
   const blackbox = service("blackbox", {
     ...monitoringService,
     healthcheck: "/",
-    env: { PORT: "9115", RAILWAY_RUN_UID: "65534" },
+    env: {
+      NOTRA_PROBE_API_KEY: preserve(),
+      PORT: "9115",
+      RAILWAY_RUN_UID: "65534",
+    },
   });
   const tunnel = service("monitoring-tunnel", {
     ...monitoringService,

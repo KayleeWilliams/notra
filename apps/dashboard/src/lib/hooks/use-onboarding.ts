@@ -1,6 +1,11 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   useCallback,
   useEffect,
@@ -45,16 +50,25 @@ export function useOnboardingStatus(
   );
 }
 
-export function useCompanyLogo(domain: string | null, name?: string | null) {
+function companyLogoQueryOptions(domain: string | null, name?: string | null) {
   const query = domain ?? name?.trim() ?? "";
-  return useQuery(
-    dashboardOrpc.onboarding.companyLogo.queryOptions({
-      input: { query, searchByName: !domain },
-      enabled: !domain && query.length > 0,
-      staleTime: COMPANY_LOGO_STALE_TIME_MS,
-      retry: false,
-    })
-  );
+  return dashboardOrpc.onboarding.companyLogo.queryOptions({
+    input: { query, searchByName: !domain },
+    enabled: !domain && query.length > 0,
+    staleTime: COMPANY_LOGO_STALE_TIME_MS,
+    retry: false,
+  });
+}
+
+export function useCompanyLogo(domain: string | null, name?: string | null) {
+  return useQuery(companyLogoQueryOptions(domain, name));
+}
+
+/** Name lookups for many brands; shares the cache with `useCompanyLogo`. */
+export function useCompanyLogosByName(names: readonly string[]) {
+  return useQueries({
+    queries: names.map((name) => companyLogoQueryOptions(null, name)),
+  });
 }
 
 export function useOnboardingAgentRun(

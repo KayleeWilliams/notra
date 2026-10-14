@@ -49,6 +49,11 @@ export interface MetricSummary {
   values: Record<string, unknown>;
 }
 
+export interface SnapshotBudget {
+  lines: number;
+  bytes: number;
+}
+
 export type VercelApi = (
   path: string,
   body?: MetricQueryBody

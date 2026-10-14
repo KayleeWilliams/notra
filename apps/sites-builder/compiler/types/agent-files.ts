@@ -16,6 +16,7 @@ export interface AreaPages {
     version?: string;
     tags: string[];
     indexable: boolean;
+    hidden?: boolean;
   }>;
 }
 

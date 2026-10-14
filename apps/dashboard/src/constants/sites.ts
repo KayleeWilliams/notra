@@ -1,4 +1,5 @@
 import {
+  Alert02Icon,
   Analytics01Icon,
   DashboardSquare01Icon,
   FileEditIcon,
@@ -26,7 +27,7 @@ import type {
 } from "@/types/sites";
 
 export const SITES_NAV_LINK = "/sites";
-export const SITES_FLAG_KEY = "sites";
+export { SITES_FLAG_KEY } from "@notra/ai/constants/sites-access";
 /** Importing every site of a repository at once, rolled out per organization. */
 export const SITES_BULK_IMPORT_FLAG_KEY = "sites-bulk-import";
 export const SITES_FLAG_TIMEOUT_MS = 3000;
@@ -76,7 +77,8 @@ export const SITE_NEW_FILE_FOLDERS = ["blog", "changelog"] as const;
 export const SITE_NEW_FILE_EXTENSION = ".mdx";
 export const SITE_NEW_FILE_SLUG_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
 
-export const SITE_EDITABLE_FILE_PATTERN = /\.(?:mdx?|jsx?|json|css)$/i;
+export const SITE_EDITABLE_FILE_PATTERN =
+  /(?:^\.notraignore$|\.(?:mdx?|jsx?|json|css)$)/i;
 
 export const SITE_PROXY_RECIPES = [
   "vercel",
@@ -95,12 +97,15 @@ export const SITE_DOMAIN_CONNECT_OUTCOMES = [
   "error",
 ] as const;
 
-export const SITE_DOMAIN_STATUS_DOTS: Record<SiteDomainChipStatus, string> = {
-  active: "bg-success",
-  dnsRequired: "bg-warning",
-  proxyRequired: "bg-warning",
-  verifying: "bg-warning motion-safe:animate-pulse",
-  failed: "bg-destructive",
+export const SITE_DOMAIN_STATUS_BADGES: Record<
+  SiteDomainChipStatus,
+  SiteStatusBadgeConfig
+> = {
+  active: { variant: "success", icon: Tick02Icon, square: true },
+  dnsRequired: { variant: "warning", icon: Alert02Icon },
+  proxyRequired: { variant: "warning", icon: Alert02Icon },
+  verifying: { variant: "info", icon: Loading03Icon, spin: true },
+  failed: { variant: "destructive", icon: Cancel01Icon, square: true },
 };
 
 export const SITE_MANUAL_TRIGGER_ICONS: Partial<
@@ -116,8 +121,8 @@ export const SITE_STATUS_BADGES: Record<
   SiteStatusBadgeConfig
 > = {
   queued: { variant: "info", icon: Clock01Icon },
-  building: { variant: "warning", icon: Loading03Icon },
-  uploading: { variant: "warning", icon: Loading03Icon },
+  building: { variant: "warning", icon: Loading03Icon, spin: true },
+  uploading: { variant: "warning", icon: Loading03Icon, spin: true },
   ready: { variant: "success", icon: Tick02Icon, square: true },
   failed: { variant: "destructive", icon: Cancel01Icon, square: true },
   superseded: { variant: "secondary" },

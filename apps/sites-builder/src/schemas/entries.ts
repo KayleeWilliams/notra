@@ -26,6 +26,7 @@ export const entryAuthorSchema = z.object({
   x: linkSchema.optional(),
   linkedin: linkSchema.optional(),
   github: linkSchema.optional(),
+  youtube: linkSchema.optional(),
 });
 
 const authorRefSchema = z.union([z.string(), entryAuthorSchema]);
@@ -41,6 +42,7 @@ export const blogEntrySchema = z.object({
   tags: z.array(z.string()).default([]),
   featured: z.boolean().default(false),
   draft: z.boolean().default(false),
+  hidden: z.boolean().default(false),
   noindex: z.boolean().default(false),
 });
 
@@ -53,4 +55,5 @@ export const changelogEntrySchema = z.object({
   image: z.string().optional(),
   imageAlt: z.string().trim().optional(),
   draft: z.boolean().default(false),
+  hidden: z.boolean().default(false),
 });

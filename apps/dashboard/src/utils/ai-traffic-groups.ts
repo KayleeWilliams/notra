@@ -13,6 +13,7 @@ import {
   formatGeoSource,
   isCitedTrafficSource,
   trafficDayKey,
+  trafficVisitDelta,
 } from "@notra/geo-core/utils/ai-traffic";
 import { resolveEngineIconKey } from "@notra/geo-core/utils/geo-engine-icon";
 
@@ -242,4 +243,42 @@ export function trafficGroupPreviousVisits(
     previous += member.previousVisits;
   }
   return previous;
+}
+
+export function trafficGroupPreviousMarkdownVisits(
+  group: GeoTrafficSourceGroup
+): number | null {
+  let previous = 0;
+  for (const member of group.members) {
+    if (member.previousMarkdownVisits === undefined) {
+      return null;
+    }
+    previous += member.previousMarkdownVisits;
+  }
+  return previous;
+}
+
+/**
+ * Percent change of distinct pages. A group spanning several bots only knows
+ * the busiest member's page count, a lower bound that can move against the real
+ * total, so the trend is limited to single-bot groups in both periods.
+ */
+export function trafficGroupPathsDelta(
+  group: GeoTrafficSourceGroup
+): number | null {
+  if (trafficGroupPathsAreLowerBound(group)) {
+    return null;
+  }
+  let previous = 0;
+  let previousMembers = 0;
+  for (const member of group.members) {
+    if (member.previousPaths === undefined) {
+      return null;
+    }
+    if ((member.previousVisits ?? 0) > 0) {
+      previousMembers += 1;
+      previous = member.previousPaths;
+    }
+  }
+  return previousMembers > 1 ? null : trafficVisitDelta(group.paths, previous);
 }

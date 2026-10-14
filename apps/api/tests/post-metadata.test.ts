@@ -63,6 +63,7 @@ beforeAll(async () => {
       author_ids text[] not null default '{}',
       featured boolean not null default false,
       noindex boolean not null default false,
+      hidden boolean not null default false,
       display_date timestamp,
       status text not null default 'published',
       published_at timestamp,
@@ -130,6 +131,7 @@ describe("post metadata responses", () => {
       ],
       featured: false,
       noindex: false,
+      hidden: false,
       displayDate: "2026-10-01",
     });
     expect(social?.metadata).toBeNull();
@@ -219,6 +221,7 @@ describe("PATCH metadata", () => {
       authors: [{ id: "auth_jane", name: "Jane Doe" }],
       featured: true,
       noindex: false,
+      hidden: false,
       displayDate: "2026-09-15",
     });
 

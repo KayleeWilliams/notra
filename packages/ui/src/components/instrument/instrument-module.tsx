@@ -57,7 +57,7 @@ function DualtoneModule({
 }: InstrumentModuleProps & {
   variant: Exclude<InstrumentModuleProps["variant"], "flat" | undefined>;
 }) {
-  const tableHeader = variant === "table";
+  const tableHeader = variant === "table" || variant === "table-compact";
   const surface = INSTRUMENT_SURFACE_CLASSES[bareBody ? "bare" : variant];
 
   return (

@@ -64,7 +64,11 @@ function manifest(
   };
 }
 
-function setup(state: Partial<SiteServingState> = {}, generated404 = false) {
+function setup(
+  state: Partial<SiteServingState> = {},
+  generated404 = false,
+  agentFiles = false
+) {
   const objects = new Map<string, string>();
   const put = (key: string, value: unknown) =>
     objects.set(key, typeof value === "string" ? value : JSON.stringify(value));
@@ -100,6 +104,12 @@ function setup(state: Partial<SiteServingState> = {}, generated404 = false) {
     "/changelog/index.html",
     "/blog/_notra/assets/app.css",
     ...(generated404 ? ["/blog/404.md", "/changelog/404.md"] : []),
+    ...(agentFiles
+      ? ["", "/blog", "/changelog"].flatMap((mount) => [
+          `${mount}/llms.txt`,
+          `${mount}/llms-full.txt`,
+        ])
+      : []),
   ];
   put(
     `deployments/${SITE}/dep_live/manifest.json`,
@@ -152,6 +162,128 @@ function setup(state: Partial<SiteServingState> = {}, generated404 = false) {
 }
 
 beforeEach(() => resetCachesForTests());
+
+describe("AI resource discovery", () => {
+  test("advertises existing resources on pages, Markdown, assets, redirects and 404s", async () => {
+    for (const generated404 of [false, true]) {
+      resetCachesForTests();
+      const { request, deps } = setup({}, generated404, true);
+      for (const path of [
+        "/blog/post",
+        "/blog/post.md",
+        "/blog/_notra/assets/app.css",
+        "/blog/old",
+        "/blog/missing",
+        "/blog/missing.md",
+        "/changelog/missing",
+        "/changelog/missing.md",
+        "/outside",
+        "/outside.md",
+      ]) {
+        const mount =
+          ["/blog", "/changelog"].find((prefix) =>
+            path.startsWith(`${prefix}/`)
+          ) ?? "";
+        for (const method of ["GET", "HEAD"]) {
+          const response = await handleSiteRequest(
+            new Request(`https://acme.notra.site${path}`, { method }),
+            deps
+          );
+          expect(response.headers.get("X-Llms-Txt")).toBe(`${mount}/llms.txt`);
+          const link = response.headers.get("Link");
+          expect(link).toContain(`<${mount}/llms.txt>; rel="llms-txt"`);
+          expect(link).toContain(
+            `<${mount}/llms-full.txt>; rel="llms-full-txt"`
+          );
+          expect(link?.match(/rel="llms-txt"/g)).toHaveLength(1);
+          if (method === "HEAD") {
+            expect(await response.text()).toBe("");
+          }
+        }
+      }
+      const page = await request("https://acme.notra.site/blog/post");
+      expect(page.headers.get("Link")).toContain('rel="alternate"');
+      const markdown = await request("https://acme.notra.site/blog/post.md");
+      expect(markdown.headers.get("Link")).toContain('rel="canonical"');
+      const cached = await request("https://acme.notra.site/blog/post", {
+        "If-None-Match": page.headers.get("ETag") ?? "",
+      });
+      expect(cached.status).toBe(304);
+      expect(cached.headers.get("X-Llms-Txt")).toBe("/blog/llms.txt");
+    }
+  });
+
+  test("both well-known aliases redirect at the root and section mounts", async () => {
+    const { request } = setup({}, false, true);
+    for (const mount of ["", "/blog", "/changelog"]) {
+      for (const file of ["llms.txt", "llms-full.txt"]) {
+        const alias = await request(
+          `https://acme.notra.site${mount}/.well-known/${file}`
+        );
+        expect(alias.status).toBe(301);
+        expect(alias.headers.get("Location")).toBe(`${mount}/${file}`);
+        const target = await request(`https://acme.notra.site${mount}/${file}`);
+        expect(target.status).toBe(200);
+        expect(await target.text()).toBe(`dep_live:${mount}/${file}`);
+      }
+    }
+  });
+
+  test("legacy deployments do not advertise or redirect to absent resources", async () => {
+    const { request } = setup();
+    for (const path of ["/blog/post", "/outside", "/blog/missing.md"]) {
+      const response = await request(`https://acme.notra.site${path}`);
+      expect(response.headers.get("X-Llms-Txt")).toBeNull();
+      expect(response.headers.get("Link") ?? "").not.toContain(
+        'rel="llms-txt"'
+      );
+    }
+    for (const file of ["llms.txt", "llms-full.txt"]) {
+      const response = await request(
+        `https://acme.notra.site/.well-known/${file}`
+      );
+      expect(response.status).toBe(404);
+      expect(response.headers.get("Location")).toBeNull();
+    }
+  });
+
+  test("protected previews still authorize before exposing discovery resources", async () => {
+    const { request } = setup({}, false, true);
+    for (const path of [
+      "/blog/post",
+      "/blog/missing",
+      "/llms.txt",
+      "/llms-full.txt",
+      "/.well-known/llms-full.txt",
+    ]) {
+      const response = await request(`https://pr-7--acme.notra.site${path}`);
+      expect(response.status).not.toBe(200);
+      expect(response.headers.get("X-Llms-Txt")).toBeNull();
+      expect(response.headers.get("Link")).toBeNull();
+    }
+  });
+
+  test("only available resources are advertised when a deployment has a partial index", async () => {
+    const { put, request } = setup();
+    put(
+      `deployments/${SITE}/dep_live/manifest.json`,
+      manifest("dep_live", "https://acme.com", [
+        "/blog/index.html",
+        "/blog/llms-full.txt",
+      ])
+    );
+    const response = await request("https://acme.notra.site/blog");
+    expect(response.headers.get("Link")).toBe(
+      '</blog/llms-full.txt>; rel="llms-full-txt"'
+    );
+    expect(response.headers.get("X-Llms-Txt")).toBeNull();
+    const missing = await request(
+      "https://acme.notra.site/blog/.well-known/llms.txt"
+    );
+    expect(missing.status).toBe(404);
+    expect(missing.headers.get("Location")).toBeNull();
+  });
+});
 
 describe("production serving", () => {
   test("generated Markdown 404s stay errors for negotiation, direct paths and HEAD", async () => {

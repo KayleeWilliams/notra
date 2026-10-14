@@ -5,15 +5,22 @@ import type {
   PreviewActivationResult,
   ProductionActivationResult,
 } from "@notra/sites-core/types/serving-state";
+import { hashBuildTarget } from "@notra/sites-core/utils/build-target";
 import { referencedDeploymentIds } from "@notra/sites-core/utils/serving-state";
 import { eq } from "drizzle-orm";
 
-import { allocateGeneration } from "./deployments";
+import {
+  allocateGeneration,
+  getProductionDeploymentHistory,
+} from "./deployments";
+import { SiteActivationContentionError, SiteInputError } from "./errors";
 import { r2GetText } from "./r2";
+import { reportOutcome } from "./reporting";
 import {
   activatePreviewDeployment,
   activateProductionDeployment,
   readServingState,
+  reconcileProductionProjection,
 } from "./state";
 import type {
   ActivationOutcome,
@@ -23,6 +30,7 @@ import type {
 import type { Site } from "./types/sites";
 import { invalidateSiteIngestCaches } from "./utils/ingest-cache";
 import { withSiteStorageLock } from "./utils/site-storage-lock";
+import { buildTargetForDeployment } from "./utils/urls";
 
 async function hasStoredFiles(
   site: Site,
@@ -36,6 +44,9 @@ async function hasStoredFiles(
 function liveUnlessSuperseded(
   outcome: ProductionActivationResult | PreviewActivationResult
 ): ActivationOutcome {
+  if (outcome.outcome === "held") {
+    return "held";
+  }
   return outcome.outcome === "superseded" ? "not_live" : "live";
 }
 
@@ -43,61 +54,89 @@ export async function activateDeployment(
   site: Site,
   deployment: SiteDeployment
 ): Promise<ActivationOutcome> {
-  const outcome = await withSiteStorageLock(site.id, async (tx) => {
-    const [currentSite] = await tx
-      .select()
-      .from(sites)
-      .where(eq(sites.id, site.id))
-      .for("update");
-    if (
-      !currentSite ||
-      currentSite.status !== "active" ||
-      (deployment.kind === "preview" && !currentSite.previewsEnabled) ||
-      !(await hasStoredFiles(currentSite, deployment))
-    ) {
-      return "not_live";
-    }
-    if (deployment.kind === "production") {
+  let generation = deployment.generation;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const activationGeneration = generation;
+    const outcome = await withSiteStorageLock(site.id, async (tx) => {
+      const [currentSite] = await tx
+        .select()
+        .from(sites)
+        .where(eq(sites.id, site.id))
+        .for("update");
+      if (
+        !currentSite ||
+        currentSite.status !== "active" ||
+        (deployment.kind === "preview" && !currentSite.previewsEnabled) ||
+        !(await hasStoredFiles(currentSite, deployment))
+      ) {
+        return "not_live";
+      }
+      if (deployment.kind === "production") {
+        const serving = await readServingState(site.id);
+        const current = serving?.state.production;
+        if (
+          !serving?.state.productionRollback &&
+          current &&
+          current.generation >= activationGeneration &&
+          deployment.generation >
+            (current.buildGeneration ?? current.generation)
+        ) {
+          return "reserve_generation";
+        }
+        return liveUnlessSuperseded(
+          await activateProductionDeployment(
+            currentSite,
+            {
+              deploymentId: deployment.id,
+              generation: activationGeneration,
+              buildGeneration: deployment.generation,
+            },
+            tx
+          )
+        );
+      }
+      if (!deployment.previewKey) {
+        throw new Error("Preview deployment without a preview key");
+      }
       return liveUnlessSuperseded(
-        await activateProductionDeployment(
+        await activatePreviewDeployment(
           currentSite,
+          deployment.previewKey,
           {
             deploymentId: deployment.id,
-            generation: deployment.generation,
+            sequence: deployment.generation,
+            visibility: currentSite.previewVisibility,
+            expiresAt: null,
           },
           tx
         )
       );
+    });
+    if (outcome === "reserve_generation") {
+      generation = (await allocateGeneration(db, site.id, site.organizationId))
+        .lastGeneration;
+      continue;
     }
-    if (!deployment.previewKey) {
-      throw new Error("Preview deployment without a preview key");
+    if (outcome === "live" && deployment.kind === "production") {
+      await invalidateSiteIngestCaches(site);
     }
-    return liveUnlessSuperseded(
-      await activatePreviewDeployment(
-        currentSite,
-        deployment.previewKey,
-        {
-          deploymentId: deployment.id,
-          sequence: deployment.generation,
-          visibility: currentSite.previewVisibility,
-          expiresAt: null,
-        },
-        tx
-      )
-    );
-  });
-  if (outcome === "live" && deployment.kind === "production") {
-    await invalidateSiteIngestCaches(site);
+    return outcome;
   }
-  return outcome;
+  throw new SiteActivationContentionError(
+    "Production changed while activating this build. Retry activation."
+  );
 }
 
-export async function restoreProductionDeployment(
+export async function selectProductionDeployment(
   site: Site,
-  deployment: SiteDeployment
-): Promise<ActivationOutcome> {
-  const { lastGeneration } = await allocateGeneration(db, site.id);
-  const outcome = await withSiteStorageLock(site.id, async (tx) => {
+  deploymentId: string | null
+): Promise<void> {
+  const { lastGeneration } = await allocateGeneration(
+    db,
+    site.id,
+    site.organizationId
+  );
+  const selected = await withSiteStorageLock(site.id, async (tx) => {
     const [currentSite] = await tx
       .select()
       .from(sites)
@@ -105,26 +144,75 @@ export async function restoreProductionDeployment(
       .for("update");
     if (
       !currentSite ||
-      currentSite.status !== "active" ||
-      !(await hasStoredFiles(currentSite, deployment))
+      currentSite.organizationId !== site.organizationId ||
+      currentSite.status !== "active"
     ) {
-      return "not_live";
+      throw new SiteInputError(
+        "Only active sites can switch production builds"
+      );
     }
-    return liveUnlessSuperseded(
-      await activateProductionDeployment(
-        currentSite,
-        {
-          deploymentId: deployment.id,
-          generation: lastGeneration,
-        },
-        tx
-      )
+    const serving = await readServingState(site.id);
+    if (
+      deploymentId !== null &&
+      serving?.state.production?.deploymentId === deploymentId
+    ) {
+      if (!serving.state.productionRollback) {
+        throw new SiteInputError("This deployment is already live");
+      }
+      await reconcileProductionProjection(currentSite, tx);
+      return;
+    }
+    const history = await getProductionDeploymentHistory(site.id, tx);
+    const target =
+      deploymentId === null
+        ? history[0]
+        : history.find((deployment) => deployment.id === deploymentId);
+    if (!target) {
+      throw new SiteInputError(
+        "Only the last ten successful production builds can be restored"
+      );
+    }
+    if (deploymentId !== null && history[0]?.id === target.id) {
+      throw new SiteInputError(
+        "Use Promote to publish the latest successful build"
+      );
+    }
+    const currentTarget = buildTargetForDeployment({
+      site: currentSite,
+      kind: "production",
+      previewKey: null,
+    });
+    if ((await hashBuildTarget(currentTarget)) !== target.configHash) {
+      throw new SiteInputError(
+        "This deployment was built for a different domain, path or branding setting. Redeploy its commit instead."
+      );
+    }
+    if (!(await hasStoredFiles(currentSite, target))) {
+      throw new SiteInputError(
+        "This deployment's files were already cleaned up. Redeploy its commit instead."
+      );
+    }
+    const outcome = await activateProductionDeployment(
+      currentSite,
+      {
+        deploymentId: target.id,
+        generation: lastGeneration,
+        buildGeneration: target.generation,
+      },
+      tx,
+      deploymentId !== null
     );
+    if (outcome.outcome === "superseded") {
+      throw new SiteInputError(
+        "Production changed while switching builds. Try again."
+      );
+    }
+    return { site: currentSite, deployment: target };
   });
-  if (outcome === "live") {
-    await invalidateSiteIngestCaches(site);
+  await invalidateSiteIngestCaches(site);
+  if (selected && deploymentId === null) {
+    await reportOutcome(selected.site, selected.deployment, { kind: "live" });
   }
-  return outcome;
 }
 
 export async function readLiveDeployments(
